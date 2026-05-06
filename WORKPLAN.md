@@ -413,60 +413,60 @@ styles/
 
 작업:
 
-- [ ] 핵심 도메인 모델 정의 및 관계 명시
-  - [ ] `User` (id, nickname, mainTeamId, mainTeamChangedAt, interestTeamIds[], notificationsEnabled, defaultPublicScope, createdAt)
-  - [ ] `Team` (id, name, shortName, initial, color)
-  - [ ] `Game` (id, date, time, stadium, homeTeamId, awayTeamId, homeScore, awayScore, status, innings)
-  - [ ] `Attendance` (id, userId, gameId, supportTeamId, ticketImageUrl, verified, verifiedAt, verifiedMethod, visionPayload, memo, createdAt)
-  - [ ] `Review` (id, userId, **attendanceId UNIQUE**, body, photos[], publicScope, createdAt) — attendanceId에 unique constraint로 1:1 보장
-  - [ ] `ReviewLike` (userId, reviewId, createdAt) — 복합 PK
-  - [ ] `ReviewSave` (userId, reviewId, createdAt) — 복합 PK
-  - [ ] `Friend` (userAId, userBId, createdAt) — 수락 시 양쪽 레코드 생성 또는 정렬된 페어로 저장
-  - [ ] `FriendRequest` (id, fromUserId, toUserId, status: pending|accepted|rejected, createdAt, respondedAt)
-  - [ ] `NotificationSetting`은 `User`에 컬럼으로 인라인 (별도 테이블 분리 X)
-  - [ ] `Notification` (수신자, type, payload, readAt) — 실제 알림 발송 이력 저장용
-  - [ ] `ShareCardTemplate`은 DB 모델 X. 코드 상수로 유지 (3종 고정).
-- [ ] Prisma schema 또는 Supabase 테이블 초안 작성
-- [ ] API/Server Action 목록 작성
-  - [ ] 직관 등록/수정/삭제, 직관 인증(티켓 업로드 → Vision 검증)
-  - [ ] 후기 작성/수정/삭제, 좋아요/저장 토글
-  - [ ] 친구 검색(닉네임), 친구 신청/수락/거절/취소, 친구 목록
-  - [ ] 커뮤니티 피드 (전체/내팀/친구 필터)
-  - [ ] 프로필 편집(닉네임/내 팀/관심팀), 내 팀 변경 1일 제한 검증
-- [ ] 직관 인증 정책 정식 정의
-  - [ ] 인증 조건: 티켓 이미지 업로드 + Vision 파싱 결과(경기일자/홈팀/원정팀/구장)가 선택한 경기와 일치
-  - [ ] 부정 방지: 동일 티켓 이미지 hash 중복 인증 차단, 미래 일자 티켓 차단
-  - [ ] 실패 처리: Vision 파싱 실패 시 미인증 상태로 저장, 사용자에게 재업로드 안내
-  - [ ] Stage 6 도입 전까지는 `verified = Boolean(ticketImageUrl)` mock 정책 유지
-- [ ] 직관 승률 계산 규칙 정의
-  - [ ] `result = compareScore(game.homeScore, game.awayScore, attendance.supportTeamId)` server-side 함수
-  - [ ] 승률 = wins / (wins + losses), 무승부는 분모에서 제외
-  - [ ] 인증 직관만 통계/랭킹 집계 대상
-- [ ] 경기 일정 seed 전략 정의 (KBO 자동 연동 → daily cron 또는 webhook)
-- [ ] 팀 순위/최근 5경기 form 데이터 전략 정의 (KBO 응답 가공 vs Standing 캐시 테이블)
-- [ ] 이미지 업로드 정책 정의
-  - [ ] 티켓 사진: 1장, JPEG/PNG, max 10MB, hash 저장 (중복 인증 방지)
-  - [ ] 후기 사진: 1~3장, 자동 압축
-  - [ ] 프로필 이미지: 1장
-  - [ ] 저장소: Supabase Storage
-- [ ] 공개 범위 정책 정의
-  - [ ] 후기 `publicScope`: `public | friends | private`
-  - [ ] 커뮤니티 피드 노출 규칙: public은 전체, friends는 작성자 친구 목록에 포함된 사용자에게만, private은 본인만
-  - [ ] 친구 필터 탭 쿼리: `Friend(currentUser, *)` 조인
+- [x] 핵심 도메인 모델 정의 및 관계 명시
+  - [x] `User` (id, nickname, mainTeamId, mainTeamChangedAt, interestTeamIds[], notificationsEnabled, defaultPublicScope, createdAt)
+  - [x] `Team` (id, name, shortName, initial, color)
+  - [x] `Game` (id, date, time, stadium, homeTeamId, awayTeamId, homeScore, awayScore, status, innings)
+  - [x] `Attendance` (id, userId, gameId, supportTeamId, ticketImageUrl, verified, verifiedAt, verifiedMethod, visionPayload, memo, createdAt)
+  - [x] `Review` (id, userId, **attendanceId UNIQUE**, body, photos[], publicScope, createdAt) — attendanceId에 unique constraint로 1:1 보장
+  - [x] `ReviewLike` (userId, reviewId, createdAt) — 복합 PK
+  - [x] `ReviewSave` (userId, reviewId, createdAt) — 복합 PK
+  - [x] `Friend` (userAId, userBId, createdAt) — 수락 시 양쪽 레코드 생성 또는 정렬된 페어로 저장
+  - [x] `FriendRequest` (id, fromUserId, toUserId, status: pending|accepted|rejected, createdAt, respondedAt)
+  - [x] `NotificationSetting`은 `User`에 컬럼으로 인라인 (별도 테이블 분리 X)
+  - [x] `Notification` (수신자, type, payload, readAt) — 실제 알림 발송 이력 저장용
+  - [x] `ShareCardTemplate`은 DB 모델 X. 코드 상수로 유지 (3종 고정).
+- [x] Prisma schema 또는 Supabase 테이블 초안 작성
+- [x] API/Server Action 목록 작성
+  - [x] 직관 등록/수정/삭제, 직관 인증(티켓 업로드 → Vision 검증)
+  - [x] 후기 작성/수정/삭제, 좋아요/저장 토글
+  - [x] 친구 검색(닉네임), 친구 신청/수락/거절/취소, 친구 목록
+  - [x] 커뮤니티 피드 (전체/내팀/친구 필터)
+  - [x] 프로필 편집(닉네임/내 팀/관심팀), 내 팀 변경 1일 제한 검증
+- [x] 직관 인증 정책 정식 정의
+  - [x] 인증 조건: 티켓 이미지 업로드 + Vision 파싱 결과(경기일자/홈팀/원정팀/구장)가 선택한 경기와 일치
+  - [x] 부정 방지: 동일 티켓 이미지 hash 중복 인증 차단, 미래 일자 티켓 차단
+  - [x] 실패 처리: Vision 파싱 실패 시 미인증 상태로 저장, 사용자에게 재업로드 안내
+  - [x] Stage 6 도입 전까지는 `verified = Boolean(ticketImageUrl)` mock 정책 유지
+- [x] 직관 승률 계산 규칙 정의
+  - [x] `result = compareScore(game.homeScore, game.awayScore, attendance.supportTeamId)` server-side 함수
+  - [x] 승률 = wins / (wins + losses), 무승부는 분모에서 제외
+  - [x] 인증 직관만 통계/랭킹 집계 대상
+- [x] 경기 일정 seed 전략 정의 (KBO 자동 연동 → daily cron 또는 webhook)
+- [x] 팀 순위/최근 5경기 form 데이터 전략 정의 (KBO 응답 가공 vs Standing 캐시 테이블)
+- [x] 이미지 업로드 정책 정의
+  - [x] 티켓 사진: 1장, JPEG/PNG, max 10MB, hash 저장 (중복 인증 방지)
+  - [x] 후기 사진: 1~3장, 자동 압축
+  - [x] 프로필 이미지: 1장
+  - [x] 저장소: Supabase Storage
+- [x] 공개 범위 정책 정의
+  - [x] 후기 `publicScope`: `public | friends | private`
+  - [x] 커뮤니티 피드 노출 규칙: public은 전체, friends는 작성자 친구 목록에 포함된 사용자에게만, private은 본인만
+  - [x] 친구 필터 탭 쿼리: `Friend(currentUser, *)` 조인
 
 테스트:
 
-- [ ] mock data 타입(`AttendanceRecord`, `Review`, `UserProfile`)과 신규 schema가 1:1 매핑되는지 확인
-- [ ] 주요 화면별 필요한 필드가 schema에 모두 존재하는지 매핑표 작성
-- [ ] 친구 양방향 관계, 후기-직관 1:1 unique, 인증 hash unique 등 제약조건 검증
-- [ ] 인증 정책/승률 계산 규칙이 mock 동작과 일치하는지 시뮬레이션
+- [x] mock data 타입(`AttendanceRecord`, `Review`, `UserProfile`)과 신규 schema가 1:1 매핑되는지 확인
+- [x] 주요 화면별 필요한 필드가 schema에 모두 존재하는지 매핑표 작성
+- [x] 친구 양방향 관계, 후기-직관 1:1 unique, 인증 hash unique 등 제약조건 검증
+- [x] 인증 정책/승률 계산 규칙이 mock 동작과 일치하는지 시뮬레이션
 
 리뷰어 검수:
 
 - [ ] 리뷰어 에이전트가 데이터 모델이 Phase 1-6.8 화면 요구사항과 향후 Stage 6/7/8/9 확장(Vision 인증, 카카오 공유, 친구 랭킹, 알림)을 감당하는지 검토
 - [ ] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Not Started
+진행 상태: Implemented / Reviewer Pending
 
 ### Phase 8. 인증/DB/스토리지 연동
 
@@ -474,21 +474,68 @@ styles/
 
 작업:
 
-- [ ] 인증 방식 결정: Kakao, Google, email 중 MVP 범위 확정
-- [ ] DB 연결 설정
-- [ ] 마이그레이션 또는 Supabase schema 적용
-- [ ] seed data 작성: 팀, 샘플 경기, 샘플 순위
-- [ ] 로그인/온보딩 저장
-- [ ] 직관 등록 저장
-- [ ] 후기 작성/조회 저장
-- [ ] 이미지 업로드 연결
-- [ ] 기본 권한/공개 범위 체크
+- [x] 인증 방식 결정: Kakao, Google, email 중 MVP 범위 확정
+- [x] DB 연결 설정
+- [x] 마이그레이션 또는 Supabase schema 적용 — SQL/스토리지/시드/RLS 파일과 적용 순서는 [docs/phase-8-supabase-setup.md](docs/phase-8-supabase-setup.md#apply-checklist-사용자-작업)에 정리됨. 부분 적용된 schema 누락분(reviews/review_likes/review_saves/friends/friend_requests/notifications)을 [supabase/fix-reviews.sql](supabase/fix-reviews.sql)로 일괄 복구. profile_stats / verified_attendance_results view 누락분은 [supabase/fix-views.sql](supabase/fix-views.sql)로 복구
+- [x] **mock data 완전 제거** — `lib/mock/` 폴더 삭제, AppState/HomeScreen/ScheduleScreen/CommunityScreen에서 mock import 제거, `Review` 타입을 `lib/types/domain.ts`로 이동
+- [x] **RLS-JWT 우회 패턴 정착** — `@supabase/ssr` 0.10이 PostgREST에 JWT를 일관되게 못 넘기는 이슈 회피. 인증은 SSR client(`auth.getUser`)로 확인하고, DB 읽기/쓰기는 `createSupabaseAdminClient()`(service role)로 수행. `lib/actions/attendance.ts`, `lib/actions/review.ts`, `lib/actions/onboarding.ts`, `lib/supabase/queries.ts`의 모든 사용자 데이터 함수에 적용
+- [x] auth.users `on_auth_user_created` 트리거 충돌 제거 (회원가입 "Database error saving new user" 원인)
+- [x] profiles SELECT RLS 정책 누락 보완 ("profiles are public readable")
+- [x] 직관/후기 삭제 server action 추가
+  - [x] `deleteAttendanceAction` — DB 행 삭제 + 연결 후기 사진(review-photos) + 티켓 사진(ticket-images) Supabase Storage 정리
+  - [x] `deleteReviewAction` — DB 행 삭제 + 후기 사진 Storage 정리
+  - [x] MyAttendancesScreen / MyReviewsScreen에 삭제 확인 모달(`ModalShell`) 적용
+- [x] seed data 작성: 팀, 샘플 경기, 샘플 순위
+- [x] 팀 순위 read-only DB 연결: `/`, `/rankings`에서 Supabase `team_standings` 조회 후 mock fallback
+- [x] 공개 seed 테이블 RLS 보강 및 anon read 확인: `teams`, `games`, `team_standings`
+- [x] 일정 read-only DB 연결: `/schedule`에서 Supabase `games` 조회 후 mock fallback
+- [x] 로그인/온보딩 저장
+  - [x] 이메일/비밀번호 Supabase Auth 폼 추가
+  - [x] 미로그인 온보딩 접근 시 로그인으로 redirect
+  - [x] 온보딩 완료 시 `profiles` upsert server action 추가
+  - [x] 이메일 확인/매직 링크용 `/auth/callback` route handler 추가 (`exchangeCodeForSession` → 프로필 유무에 따라 `/` 또는 `/onboarding`)
+- [x] 직관 등록 저장
+  - [x] `attendances` insert server action 추가
+  - [x] 날짜/홈팀/원정팀으로 Supabase `games` 매칭 후 저장
+  - [x] 비로그인 상태는 기존 mock 저장 fallback 유지
+- [x] 내 직관 리스트 DB 조회
+  - [x] 로그인 사용자는 Supabase `attendances` + `games` 조회
+  - [x] 비로그인/조회 실패 상태는 기존 mock 리스트 fallback
+- [x] 후기 작성/조회 저장
+  - [x] `reviews` insert server action 추가
+  - [x] 직관-후기 1:1 unique 제약 에러 처리
+  - [x] 커뮤니티 피드 DB 조회 후 mock fallback
+  - [x] 내 후기 모음 DB 조회 후 mock fallback
+- [x] 이미지 업로드 연결
+  - [x] 브라우저 Supabase Storage upload helper 추가
+  - [x] 직관 등록 티켓 사진을 `ticket-images`에 업로드 후 `attendances.ticket_image_url` 저장
+  - [x] 후기 사진을 `review-photos`에 업로드 후 `reviews.photos` 저장
+  - [x] 비로그인/업로드 실패 시 기존 mock asset fallback 유지
+- [x] 기본 권한/공개 범위 체크
+- [x] 사용자 후기까지 layout에서 hydration (`initialReviews`로 AppState에 시드)
+- [x] 후기 본문 hashtag 자동 추출 → `tags[]` (한글/영문/숫자/_, 중복 제거, 최대 20개)
+- [x] 후기 본문 줄바꿈 보존 (`white-space: pre-wrap`)
+- [x] 후기 자동 부착 텍스트("오늘도 승요! 직관 후기" 제목, "#직관후기/#public" 태그, "응원석의 열기..." 추가 텍스트) 모두 제거
+- [x] 후기 게임 라벨 한글화 (`KIWOOM 6 : 16 DOOSAN` → `키움 6 : 16 두산`)
+- [x] 후기 상세 페이지 `app/reviews/[id]/page.tsx`를 server component로 전환, `getReviewByIdFromDb`로 직접 조회
+- [x] 게임 상세 페이지 `app/games/[id]/page.tsx`를 server component로 전환, DB에서 game 조회
+- [x] Supabase Storage 도메인 `next.config.mjs` `images.remotePatterns` 등록
+- [x] 환경변수 동적 접근 버그 수정 — `process.env[key]`는 브라우저에서 undefined가 되므로 정적 `process.env.NEXT_PUBLIC_*` 참조로 변경
+- [x] 홈/마이/일정/커뮤니티 화면 데이터 흐름 정리
+  - [x] 홈 이번주 시리즈 캘린더를 실 KBO 게임에서 파생 (요일 strip + 시리즈 pill, 우리 팀 기준 화수목/금토일 자동 그룹핑)
+  - [x] 홈 직관 등록 모달용 게임 범위: 시즌 시작(3월 1일) ~ 오늘 +14일
+  - [x] 직관 모달 게임 정렬: 우리 팀 경기 항상 최상단, 종료 경기는 스코어 표시
+  - [x] 직관 등록 후 자동 공유 모달 호출 제거
+  - [x] 일정 캘린더 승/패/무 배지 색상 분리 + 선택일 오렌지 테두리가 배지에 영향 안 주도록 격리
+  - [x] 내 직관 리스트 좌상단 승/패/무 배지 추가, 카드 정렬 = 경기 날짜 내림차순
+  - [x] 마이 메뉴 하드코딩 카운트 제거(`내 직관 리스트(37)`, `내 후기(24)`, `친구 관리(12)`, `가입일 2025.04.01`), 실 데이터 카운트로 교체
 
 테스트:
 
-- [ ] 신규 유저 온보딩 플로우 확인
-- [ ] 직관 등록 후 홈 승률 반영 확인
-- [ ] 후기 작성 후 커뮤니티 피드 반영 확인
+- [x] 신규 유저 온보딩 플로우 확인 (이메일/비밀번호 회원가입 → 이메일 인증 → /auth/callback → /onboarding → 두산 선택 → 프로필 저장)
+- [x] 직관 등록 후 홈 승률 반영 확인 (등록 → DB 저장 → 새로고침 후 유지 → 홈 .500 표기)
+- [x] 후기 작성 후 커뮤니티 피드 반영 확인 (사진 업로드 → reviews insert → /community에서 노출 → /reviews/[id] 상세 진입)
+- [x] 직관/후기 삭제 후 Storage 객체까지 정리되는지 확인
 - [ ] 인증되지 않은 사용자의 보호 페이지 접근 처리 확인
 
 리뷰어 검수:
@@ -496,7 +543,76 @@ styles/
 - [ ] 리뷰어 에이전트가 데이터 저장/조회 흐름, 권한 체크, 에러 상태를 검토
 - [ ] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Not Started
+진행 상태: Implemented / Reviewer Pending
+
+### Phase 8.5. 외부 데이터 연동
+
+목표: Phase 7에서 전략만 정의된 KBO 일정/순위 자동 동기화와 티켓 Vision 인증을 실제로 구현한다. mock seed에 의존하던 `games` / `team_standings`를 외부 소스 기반으로 채우고, 직관 인증을 `Boolean(ticketImageUrl)` mock에서 Vision 매칭 기반 정식 인증으로 전환한다.
+
+원칙:
+
+- 외부 호출은 모두 server-side route handler 또는 server action에서만 수행한다.
+- 외부 API 키와 cron secret은 환경변수로만 관리하고, anon key 경로에 노출하지 않는다.
+- 동기화 작업은 idempotent하게 설계한다 (재실행해도 중복/오염이 없어야 함).
+- 외부 소스 장애 시 mock fallback이 아니라 마지막 성공 데이터를 그대로 유지한다.
+- Vision 인증 실패는 미인증 상태로 저장하고, 사용자에게 재업로드를 안내한다.
+
+작업:
+
+- [x] KBO 일정 동기화 route handler 구현
+  - [x] `app/api/cron/sync-kbo-games/route.ts` 생성, `CRON_SECRET` Bearer 헤더 검증, `scope=today/week/range` 지원
+  - [x] 외부 소스: KBO 공식 (`https://www.koreabaseball.com/ws/Main.asmx/GetKboGameList`) 1순위 + 네이버 스포츠 (`sports.news.naver.com/kbaseball/schedule/index`) HTML 폴백 — 소스 결정은 의사결정 로그 참조
+  - [x] 응답을 `Game` 스키마(date/time/stadium/homeTeamId/awayTeamId/score/status/innings)로 정규화 ([lib/server/kbo/fetchGames.ts](lib/server/kbo/fetchGames.ts), [lib/server/kbo/teamCode.ts](lib/server/kbo/teamCode.ts))
+  - [x] `games` upsert by `external_id`(`kbo-YYYYMMDD-away-home`), insert/update 분리 ([lib/server/kbo/syncGames.ts](lib/server/kbo/syncGames.ts))
+  - [x] 동기화 결과 응답에 inserted/updated 카운트와 source(`kbo`/`naver`) 포함
+- [x] 팀 순위/최근 5경기 form 동기화
+  - [x] `team_standings` upsert by `(team_id, season)` ([lib/server/kbo/syncStandings.ts](lib/server/kbo/syncStandings.ts), [lib/server/kbo/fetchStandings.ts](lib/server/kbo/fetchStandings.ts))
+  - [x] 최근 5경기 `form` 컬럼은 `games` 테이블에서 finished 5경기 결과 파생([scripts/sync-standings.mjs](scripts/sync-standings.mjs)에서 자동 계산)
+  - [x] KBO 공식 + 네이버 API(`api-gw.sports.naver.com/.../seasons/{year}/teams`) 둘 다 시도해 더 최신 소스 채택
+- [x] Cron 스케줄링 설정 ([vercel.json](vercel.json))
+  - [x] 일정 주간 갱신: 매일 03:00 KST (`scope=week`)
+  - [x] 라이브 스코어: KST 14:00-23:00 동안 30분마다 (`scope=today`)
+  - [x] 순위 갱신: 매일 02:30 KST
+  - [x] 수동 트리거: `?scope=range&from=YYYY-MM-DD&to=YYYY-MM-DD`
+- [x] 2026 시즌 전체 일정 1회 적재 ([scripts/bulk-load-season.mjs](scripts/bulk-load-season.mjs))
+  - 결과: **675 경기 적재** (3월~9월), 0 에러
+- [ ] 티켓 Vision 인증 파이프라인
+  - [ ] `lib/server/vision/parseTicket.ts` — Claude Vision 호출 wrapper
+  - [ ] 추출 항목: 경기일자, 홈팀, 원정팀, 구장, 좌석/블록(보조)
+  - [ ] `createAttendance` server action에서 업로드 후 Vision 호출 → 선택한 경기와 매칭 검증
+  - [ ] 매칭 성공: `verified=true`, `verifiedAt`, `verifiedMethod='vision'`, `visionPayload` 저장
+  - [ ] 매칭 실패: `verified=false` 저장, 실패 사유 응답
+- [ ] 부정 방지
+  - [ ] 티켓 이미지 SHA-256 hash 저장, 동일 hash 중복 인증 차단
+  - [ ] 미래 일자 티켓 차단 (Vision 결과 일자가 오늘 이후면 거절)
+  - [ ] 동일 사용자 + 동일 경기 중복 인증 차단
+- [x] 환경변수 및 시크릿 (Vision 분량 빼고)
+  - [x] `CRON_SECRET` `.env.example` 등록
+  - [ ] `ANTHROPIC_API_KEY` (Vision 단계에서 추가)
+  - [ ] Vercel 환경변수 등록 안내 문서 업데이트
+- [ ] 관측성
+  - [ ] 동기화 실패/Vision 실패 로그 수집 경로 결정 (Supabase log table 또는 외부)
+  - [ ] 마지막 동기화 시각/상태를 admin에서 확인할 수 있는 최소 화면 또는 endpoint
+
+테스트:
+
+- [x] bulk load 스크립트로 `games` upsert 동작 확인 (2026 시즌 675경기)
+- [x] 동일 bulk load 2회 실행해도 중복 행 없음 (external_id unique + insert/update 분리)
+- [x] 순위 sync 스크립트로 10팀 standings + form 적재 확인
+- [ ] cron route handler를 Vercel 배포 후 호출로 검증 (CRON_SECRET 인증 흐름)
+- [ ] 외부 소스 응답 일부 누락 시 기존 row가 살아있는지 확인
+- [ ] 정상 티켓 업로드 시 `verified=true` 전환 확인
+- [ ] 다른 경기 티켓 업로드 시 `verified=false` 및 사유 노출 확인
+- [ ] 동일 hash 재업로드 차단 확인
+- [ ] 미래 일자 티켓 차단 확인
+- [ ] 인증 직관만 홈 승률/팀 랭킹에 반영되는지 확인
+
+리뷰어 검수:
+
+- [ ] 리뷰어 에이전트가 외부 호출 경계, 시크릿 노출 위험, idempotency, Vision 실패 UX를 검토
+- [ ] 리뷰 결과를 "리뷰 로그"에 기록
+
+진행 상태: KBO 동기화 완료 / Vision 인증 미시작
 
 ### Phase 9. 반응형/접근성/시각 QA
 
@@ -636,8 +752,9 @@ styles/
 | Phase 6. 모달/공유 카드 | Implemented / Reviewer Pending | Codex | 2026-05-05 |
 | Phase 6.5. 프론트 인터랙션 완성 | Completed / QA Passed | Codex + Subagents | 2026-05-06 |
 | Phase 6.8. 추가 수정사항 | Completed / QA Passed | Codex | 2026-05-06 |
-| Phase 7. 서비스 데이터 모델/API 설계 | Not Started | TBD | 2026-05-06 |
-| Phase 8. 인증/DB/스토리지 연동 | Not Started | TBD | 2026-05-06 |
+| Phase 7. 서비스 데이터 모델/API 설계 | Implemented / Reviewer Pending | Codex | 2026-05-06 |
+| Phase 8. 인증/DB/스토리지 연동 | Implemented / Reviewer Pending | Codex | 2026-05-07 |
+| Phase 8.5. 외부 데이터 연동 | KBO 동기화 완료 / Vision 미시작 | Codex | 2026-05-07 |
 | Phase 9. 반응형/접근성/시각 QA | Not Started | TBD | 2026-05-06 |
 | Phase 10. 배포 준비 | Not Started | TBD | 2026-05-06 |
 | Phase 11. 인수 문서/마무리 | Not Started | TBD | 2026-05-06 |
@@ -697,3 +814,16 @@ styles/
 - 2026-05-05: Phase 4-6 범위의 일정/경기상세/팀순위/커뮤니티/마이/설정/모달 목업을 구현했다. 실제 API 연결은 Phase 7 이후로 보류한다.
 - 2026-05-06: 실제 API 연결 전에 mock data/client state 기반 프론트 인터랙션을 완성하는 Phase 6.5를 추가한다.
 - 2026-05-06: 앱의 최우선 개인화 기준은 사용자가 선택한 `내 팀`으로 둔다. 홈 승률 카드, 마이 프로필, 일정 우선 노출, 프로필 편집의 팀 변경 흐름에 반영하며, 실제 서비스에서는 팀 변경을 하루 1회로 제한한다.
+- 2026-05-06: Phase 7은 Supabase 기준으로 진행한다. 산출물은 `supabase/schema.sql`, `lib/types/api-contracts.ts`, `docs/phase-7-data-contract.md`에 분리해 기록한다.
+- 2026-05-06: Phase 8을 시작했다. Supabase SDK, client/server/middleware, seed/storage SQL, read query와 일부 서버 액션 경계를 추가했다. 원격 Supabase SQL 적용은 사용자가 대시보드에서 진행해야 한다.
+- 2026-05-06: Phase 7에서 전략만 정의되어 있던 KBO 일정/순위 자동 동기화와 티켓 Vision 인증을 별도 단계로 분리해 Phase 8.5(외부 데이터 연동)를 신설한다. 외부 API 연동, cron 스케줄링, 부정 방지 정책을 한 곳에서 관리한다.
+- 2026-05-06: Phase 8 코드 작업을 마무리했다. Supabase 이메일 확인 redirect를 처리하는 `/auth/callback` route handler를 추가하고, `docs/phase-8-supabase-setup.md`에 사용자 적용 체크리스트(SQL 4종 실행 순서, Auth URL 등록, env, 1회 회원가입 검증)를 정리했다. `npm run lint`/`npm run build` 모두 통과. 남은 항목은 사용자가 Supabase 대시보드에서 SQL을 적용하고 회원가입~후기 작성 4종 플로우를 실측 확인하는 것뿐이다.
+- 2026-05-07: Phase 8 실측 라운드를 마쳤다. 발견된 이슈들과 해결:
+  - `auth.users.on_auth_user_created` 트리거가 회원가입을 막는 원인이라 제거.
+  - schema.sql이 attendances 이후로만 적용되어 있어서 `reviews`/`review_likes`/`review_saves`/`friends`/`friend_requests`/`notifications` 6개 테이블 + `profile_stats`/`verified_attendance_results` view 누락. `supabase/fix-reviews.sql` + `supabase/fix-views.sql`로 일괄 복구.
+  - `@supabase/ssr` 0.10이 PostgREST에 JWT를 일관되게 못 넘겨 RLS-protected SELECT가 빈 결과를 주는 이슈를 회피하기 위해, 모든 사용자 데이터 read/write를 `auth.getUser()` 확인 후 admin client(service role)로 수행하는 패턴으로 통일 (`profiles SELECT`는 public-readable 정책 추가로 우회).
+  - mock data를 코드에서 완전 제거(`lib/mock/`, `WeekCalendar.tsx` 삭제).
+  - `process.env[key]`(동적) → `process.env.NEXT_PUBLIC_X`(정적)으로 변경. Next.js 빌드 시 동적 접근은 치환 안 돼 브라우저에서 undefined가 되는 함정.
+  - 직관/후기 삭제 server action(`deleteAttendanceAction`/`deleteReviewAction`)이 DB 행 삭제뿐 아니라 review-photos/ticket-images 버킷의 Storage 객체도 같이 정리하도록 함.
+  - 후기 본문 hashtag 자동 추출, 줄바꿈 보존, 자동 부착 텍스트(제목/태그/추가 문장) 제거.
+- 2026-05-07: Phase 8.5 KBO 동기화 부분을 완성했다. 데이터 소스는 KBO 공식 API(`koreabaseball.com/ws/Main.asmx/GetKboGameList`) 1순위 + 네이버 스포츠 HTML/JSON 폴백을 채택했다(이전 BET 프로젝트 참고). 클라이언트(`lib/server/kbo/*`), upsert 로직(`syncGames`/`syncStandings`), CRON_SECRET 인증 cron route 2종, Vercel cron 스케줄(03:00 주간/14-23시 30분 스코어/02:30 순위), 2026 시즌 bulk load 스크립트(675경기 적재 완료), standings 동기화 스크립트(form 자동 계산)까지. Vision 인증과 부정 방지는 후속 라운드.

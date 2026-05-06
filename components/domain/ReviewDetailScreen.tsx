@@ -5,14 +5,16 @@ import { ArrowLeft, Bookmark, Heart, Send } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { useAppState } from "@/lib/state/AppState";
+import type { Review } from "@/lib/types/domain";
 
 type ReviewDetailScreenProps = {
   id: string;
+  dbReview?: Review | null;
 };
 
-export function ReviewDetailScreen({ id }: ReviewDetailScreenProps) {
+export function ReviewDetailScreen({ id, dbReview }: ReviewDetailScreenProps) {
   const { reviews, likedReviewIds, savedReviewIds, toggleLike, toggleSave, showToast } = useAppState();
-  const review = reviews.find((item) => item.id === id);
+  const review = dbReview ?? reviews.find((item) => item.id === id);
 
   if (!review) {
     return (
@@ -47,11 +49,13 @@ export function ReviewDetailScreen({ id }: ReviewDetailScreenProps) {
           <TeamBadge teamId={review.teamId} size="md" />
           <span>{review.gameLabel}</span>
         </div>
-        <h1>{review.title}</h1>
-        <p>{review.body} 응원석의 열기와 경기장 분위기까지 오래 남을 직관이었습니다.</p>
-        <div className="review-tags">
-          {review.tags.map((tag) => <span key={tag}>{tag}</span>)}
-        </div>
+        {review.title ? <h1>{review.title}</h1> : null}
+        <p>{review.body}</p>
+        {review.tags.length > 0 && (
+          <div className="review-tags">
+            {review.tags.map((tag) => <span key={tag}>{tag}</span>)}
+          </div>
+        )}
         <div className="review-detail-actions">
           <button type="button" onClick={() => toggleLike(review.id)} style={liked ? { color: "#e11d48" } : undefined}>
             <Heart fill={liked ? "currentColor" : "none"} size={18} /> {review.likes + (liked ? 1 : 0)}

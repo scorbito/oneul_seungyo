@@ -1,12 +1,10 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { Review } from "@/lib/mock/app";
-import { myAttendances as initialAttendances, reviews as initialReviews } from "@/lib/mock/app";
-import { userProfile as initialProfile } from "@/lib/mock/home";
-import type { UserProfile } from "@/lib/types/domain";
+import type { Review, UserProfile } from "@/lib/types/domain";
+import type { ProfileStats, UserProfileRecord } from "@/lib/types/api-contracts";
 
-type AttendanceRecord = {
+export type AttendanceRecord = {
   id: string;
   date: string;
   time?: string;
@@ -52,8 +50,6 @@ type AppState = {
   showToast: (message: string) => void;
 };
 
-const STORAGE_KEY = "oneul-seungyo-mock-state-v1";
-
 const AppStateContext = createContext<AppState | null>(null);
 
 function inferAttendanceResult(attendance: Pick<AttendanceRecord, "awayTeamId" | "homeTeamId" | "score" | "supportTeamId">) {
@@ -77,7 +73,7 @@ function inferAttendanceResult(attendance: Pick<AttendanceRecord, "awayTeamId" |
 }
 
 function normalizeAttendance(attendance: RawAttendanceRecord): AttendanceRecord {
-  const supportTeamId = attendance.supportTeamId ?? (attendance.awayTeamId === "lg" ? attendance.awayTeamId : attendance.homeTeamId);
+  const supportTeamId = attendance.supportTeamId ?? attendance.homeTeamId;
   const result = attendance.result === "win" || attendance.result === "lose" || attendance.result === "draw"
     ? attendance.result
     : undefined;
@@ -89,14 +85,16 @@ function normalizeAttendance(attendance: RawAttendanceRecord): AttendanceRecord 
   };
 }
 
-function createProfile(attendances: AttendanceRecord[], profileSettings: ProfileSettings): UserProfile {
-  const wins = Math.max(0, initialProfile.wins + attendances.length - initialAttendances.length);
-  const losses = initialProfile.losses;
-  const draws = initialProfile.draws;
+function createDbProfile(attendances: AttendanceRecord[], profileSettings: ProfileSettings, _stats: ProfileStats | null): UserProfile {
+  // MVP는 등록된 모든 직관(인증 여부 무관)을 카운트.
+  // profile_stats view는 verified=true만 세기 때문에 비인증 직관이 누락됨 → 로컬 계산이 정답.
+  const wins = attendances.filter((a) => a.result === "win").length;
+  const losses = attendances.filter((a) => a.result === "lose").length;
+  const draws = attendances.filter((a) => a.result === "draw").length;
   const totalDecision = wins + losses;
   return {
-    ...initialProfile,
     ...profileSettings,
+    interestTeamIds: profileSettings.interestTeamIds,
     attendanceCount: attendances.length,
     wins,
     losses,
@@ -105,49 +103,47 @@ function createProfile(attendances: AttendanceRecord[], profileSettings: Profile
   };
 }
 
-export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [attendances, setAttendances] = useState<AttendanceRecord[]>(initialAttendances.map(normalizeAttendance));
-  const [reviews, setReviews] = useState<Review[]>(initialReviews);
-  const [profileSettings, setProfileSettings] = useState<ProfileSettings>({
-    nickname: initialProfile.nickname,
-    mainTeamId: initialProfile.mainTeamId,
-    interestTeamIds: initialProfile.interestTeamIds
-  });
+const emptyProfileSettings: ProfileSettings = {
+  nickname: "",
+  mainTeamId: "lg",
+  interestTeamIds: []
+};
+
+type AppStateProviderProps = {
+  children: ReactNode;
+  initialProfile?: UserProfileRecord | null;
+  initialStats?: ProfileStats | null;
+  initialAttendances?: AttendanceRecord[];
+  initialReviews?: Review[];
+};
+
+export function AppStateProvider({ children, initialProfile, initialStats, initialAttendances, initialReviews }: AppStateProviderProps) {
+  const isAuthed = Boolean(initialProfile);
+  const [attendances, setAttendances] = useState<AttendanceRecord[]>(
+    (initialAttendances ?? []).map(normalizeAttendance)
+  );
+  const [reviews, setReviews] = useState<Review[]>(initialReviews ?? []);
+  const [profileSettings, setProfileSettings] = useState<ProfileSettings>(
+    initialProfile
+      ? {
+          nickname: initialProfile.nickname,
+          mainTeamId: initialProfile.mainTeamId,
+          interestTeamIds: initialProfile.interestTeamIds ?? []
+        }
+      : emptyProfileSettings
+  );
+  const [dbStats] = useState<ProfileStats | null>(initialStats ?? null);
   const [likedReviewIds, setLikedReviewIds] = useState<string[]>([]);
   const [savedReviewIds, setSavedReviewIds] = useState<string[]>([]);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [publicScope, setPublicScope] = useState("전체 공개");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    initialProfile?.notificationsEnabled ?? true
+  );
+  const [publicScope, setPublicScope] = useState(
+    initialProfile?.defaultPublicScope === "friends" ? "친구 공개"
+    : initialProfile?.defaultPublicScope === "private" ? "나만 보기"
+    : "전체 공개"
+  );
   const [toast, setToast] = useState<Toast | null>(null);
-
-  useEffect(() => {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return;
-    }
-    try {
-      const parsed = JSON.parse(raw) as Partial<Pick<AppState, "attendances" | "reviews" | "likedReviewIds" | "savedReviewIds" | "notificationsEnabled" | "publicScope">> & {
-        profileSettings?: Partial<ProfileSettings>;
-      };
-      if (parsed.attendances) setAttendances(parsed.attendances.map(normalizeAttendance));
-      if (parsed.reviews) setReviews(parsed.reviews);
-      if (parsed.profileSettings) {
-        setProfileSettings((current) => ({ ...current, ...parsed.profileSettings }));
-      }
-      if (parsed.likedReviewIds) setLikedReviewIds(parsed.likedReviewIds);
-      if (parsed.savedReviewIds) setSavedReviewIds(parsed.savedReviewIds);
-      if (typeof parsed.notificationsEnabled === "boolean") setNotificationsEnabled(parsed.notificationsEnabled);
-      if (parsed.publicScope) setPublicScope(parsed.publicScope);
-    } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ attendances, reviews, profileSettings, likedReviewIds, savedReviewIds, notificationsEnabled, publicScope })
-    );
-  }, [attendances, likedReviewIds, notificationsEnabled, profileSettings, publicScope, reviews, savedReviewIds]);
 
   const showToast = (message: string) => {
     const id = Date.now();
@@ -158,7 +154,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<AppState>(() => {
-    const profile = createProfile(attendances, profileSettings);
+    const profile = createDbProfile(attendances, profileSettings, isAuthed ? dbStats : null);
 
     return {
       attendances,
@@ -214,7 +210,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       },
       showToast
     };
-  }, [attendances, likedReviewIds, notificationsEnabled, profileSettings, publicScope, reviews, savedReviewIds, toast]);
+  }, [attendances, dbStats, isAuthed, likedReviewIds, notificationsEnabled, profileSettings, publicScope, reviews, savedReviewIds, toast]);
 
   return (
     <AppStateContext.Provider value={value}>

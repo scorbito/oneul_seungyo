@@ -1,14 +1,12 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
-import { WeekCalendar } from "@/components/domain/WeekCalendar";
 import { WinRateHeroCard } from "@/components/domain/WinRateHeroCard";
 import { getTeam } from "@/lib/constants/teams";
-import { allStandings } from "@/lib/mock/app";
 import { useAppState } from "@/lib/state/AppState";
-
-const mockToday = new Date(2025, 4, 7);
+import type { Game, TeamStanding } from "@/lib/types/domain";
 
 function parseDotDate(date: string) {
   const [year, month, day] = date.split(".").map(Number);
@@ -17,8 +15,10 @@ function parseDotDate(date: string) {
 }
 
 function getDday(date: string) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const targetDate = parseDotDate(date);
-  const diffDays = Math.ceil((targetDate.getTime() - mockToday.getTime()) / 86400000);
+  const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / 86400000);
 
   if (diffDays === 0) {
     return "D-Day";
@@ -27,17 +27,99 @@ function getDday(date: string) {
   return diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`;
 }
 
-export function HomeScreen() {
+type HomeScreenProps = {
+  standings?: TeamStanding[];
+  weekGames?: Game[];
+  weekStart?: string; // YYYY-MM-DD (월요일)
+  modalGames?: Game[]; // 직관 등록 모달용 넓은 범위
+};
+
+const WEEK_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
+
+type MyWeekGame = Game & {
+  isHome: boolean;
+  opponentTeamId: string;
+  dateObj: Date;
+};
+
+export function HomeScreen({ standings = [], weekGames = [], weekStart, modalGames = [] }: HomeScreenProps) {
   const { attendances, profile } = useAppState();
+
+  const myTeam = getTeam(profile.mainTeamId);
+  const myWeekGames: MyWeekGame[] = weekGames
+    .filter((g) => g.homeTeamId === profile.mainTeamId || g.awayTeamId === profile.mainTeamId)
+    .map((g) => ({
+      ...g,
+      isHome: g.homeTeamId === profile.mainTeamId,
+      opponentTeamId: g.homeTeamId === profile.mainTeamId ? g.awayTeamId : g.homeTeamId,
+      dateObj: parseDotDate(g.date)
+    }))
+    .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+
+  const weekStartDate = weekStart ? new Date(`${weekStart}T00:00:00`) : null;
+  const todayDateOnly = new Date();
+  todayDateOnly.setHours(0, 0, 0, 0);
+
+  // 7일 strip
+  const weekDays = weekStartDate
+    ? Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i);
+        const game = myWeekGames.find((g) => g.dateObj.getTime() === d.getTime());
+        const isToday = d.getTime() === todayDateOnly.getTime();
+        let badge: string | undefined;
+        if (game) {
+          if (game.status === "finished" && game.homeScore !== undefined && game.awayScore !== undefined) {
+            const won = game.isHome ? game.homeScore > game.awayScore : game.awayScore > game.homeScore;
+            const drew = game.homeScore === game.awayScore;
+            badge = drew ? "무" : won ? "승" : "패";
+          } else {
+            badge = "예정";
+          }
+        }
+        return { date: d, label: WEEK_LABELS[i], dayNum: d.getDate(), isToday, badge };
+      })
+    : [];
+
+  // 시리즈: 연속 날짜 + 같은 상대 + 같은 홈/원정으로 묶음. 이 주 범위에서 잘라냄.
+  const weekSeries = (() => {
+    if (!weekStartDate) return [] as Array<{ key: string; opponentTeamId: string; venue: "홈" | "원정"; startDay: number; span: number }>;
+    const sorted = [...myWeekGames].sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    type Group = { startIdx: number; endIdx: number; opponentTeamId: string; venue: "홈" | "원정" };
+    const groups: Group[] = [];
+    for (const g of sorted) {
+      const dayIdx = Math.round((g.dateObj.getTime() - weekStartDate.getTime()) / 86400000);
+      if (dayIdx < 0 || dayIdx > 6) continue;
+      const venue = g.isHome ? "홈" : "원정";
+      const prev = groups[groups.length - 1];
+      const isContiguous = prev
+        && prev.opponentTeamId === g.opponentTeamId
+        && prev.venue === venue
+        && dayIdx === prev.endIdx + 1;
+      if (isContiguous) {
+        prev.endIdx = dayIdx;
+      } else {
+        groups.push({ startIdx: dayIdx, endIdx: dayIdx, opponentTeamId: g.opponentTeamId, venue });
+      }
+    }
+    return groups.map((g, idx) => ({
+      key: `${idx}-${g.opponentTeamId}-${g.startIdx}`,
+      opponentTeamId: g.opponentTeamId,
+      venue: g.venue,
+      startDay: g.startIdx + 1,
+      span: g.endIdx - g.startIdx + 1
+    }));
+  })();
 
   const upcomingAttendances = attendances
     .filter((a) => !a.result)
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  // 최근 직관 5개: 경기 날짜 기준 정렬 (왼쪽=오래된, 오른쪽=최신)
   const recentAttendances = attendances
     .filter((a) => !!a.result)
-    .slice(0, 5)
-    .reverse();
+    .sort((a, b) => b.date.localeCompare(a.date)) // 최신순으로 정렬
+    .slice(0, 5)                                   // 최근 5개 추출
+    .reverse();                                    // 표시는 오래된→최신
 
   const recentWins = recentAttendances.filter((a) => a.result === "win").length;
   const recentLosses = recentAttendances.filter((a) => a.result === "lose").length;
@@ -45,7 +127,7 @@ export function HomeScreen() {
 
   return (
     <AppShell activeTab="home">
-      <WinRateHeroCard profile={profile} />
+      <WinRateHeroCard profile={profile} games={modalGames} />
 
       {upcomingAttendances.length > 0 && (() => {
         const att = upcomingAttendances[0];
@@ -108,7 +190,46 @@ export function HomeScreen() {
         </div>
       </section>
 
-      <WeekCalendar />
+      {weekDays.length > 0 && (
+        <section className="section-block">
+          <div className="section-title-row">
+            <h2>이번주 {myTeam.shortName} 일정</h2>
+            <a href="/schedule">전체 보기</a>
+          </div>
+          <div className="series-week-grid" aria-label="이번 주 시리즈 일정">
+            <div className="week-strip">
+              {weekDays.map((day) => (
+                <div className={`week-day ${day.isToday ? "week-day-active" : ""}`} key={day.date.toISOString()}>
+                  <span>{day.label}</span>
+                  <strong>{day.dayNum}</strong>
+                  {day.badge ? <b>{day.badge}</b> : null}
+                </div>
+              ))}
+            </div>
+            <div className="week-series-row">
+              {weekSeries.map((series) => {
+                const opponent = getTeam(series.opponentTeamId);
+                const label = series.span > 1
+                  ? `${opponent.shortName}전 ${series.venue}`
+                  : `${opponent.shortName} ${series.venue}`;
+                return (
+                  <span
+                    className="week-series-pill"
+                    key={series.key}
+                    style={{
+                      "--series-color": opponent.color,
+                      "--series-accent": opponent.accent ?? opponent.color,
+                      gridColumn: `${series.startDay} / span ${series.span}`
+                    } as CSSProperties}
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="section-block rank-section">
         <div className="section-title-row">
@@ -124,7 +245,7 @@ export function HomeScreen() {
             <span>최근5</span>
           </div>
           <ol className="ranking-table-body">
-            {allStandings.map((standing) => {
+            {standings.map((standing) => {
               const team = getTeam(standing.teamId);
               return (
                 <li className={standing.teamId === profile.mainTeamId ? "ranking-row ranking-row-highlighted" : "ranking-row"} key={standing.teamId}>

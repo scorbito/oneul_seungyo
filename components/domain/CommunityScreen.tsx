@@ -5,8 +5,8 @@ import { PenLine } from "lucide-react";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { AppShell } from "@/components/layout/AppShell";
 import { ReviewCard } from "@/components/domain/ReviewCard";
-import { userProfile } from "@/lib/mock/home";
 import { useAppState } from "@/lib/state/AppState";
+import type { Review } from "@/lib/types/domain";
 
 type FeedFilter = "all" | "myTeam" | "friends";
 
@@ -18,21 +18,26 @@ const filters: { id: FeedFilter; label: string }[] = [
 
 const friendAuthorNames = ["야구광이123", "승요팬", "불꽃직관"];
 
-export function CommunityScreen() {
-  const { reviews, likedReviewIds, savedReviewIds, toggleLike, toggleSave } = useAppState();
+type CommunityScreenProps = {
+  dbReviews?: Review[];
+};
+
+export function CommunityScreen({ dbReviews = [] }: CommunityScreenProps) {
+  const { reviews, profile, likedReviewIds, savedReviewIds, toggleLike, toggleSave } = useAppState();
+  const sourceReviews = dbReviews.length > 0 ? dbReviews : reviews;
   const [activeFilter, setActiveFilter] = useState<FeedFilter>("all");
   const [modal, setModal] = useState<ModalKind>(null);
   const filteredReviews = useMemo(() => {
     if (activeFilter === "myTeam") {
-      return reviews.filter((review) => review.teamId === userProfile.mainTeamId);
+      return sourceReviews.filter((review) => review.teamId === profile.mainTeamId);
     }
 
     if (activeFilter === "friends") {
-      return reviews.filter((review) => friendAuthorNames.includes(review.author));
+      return sourceReviews.filter((review) => friendAuthorNames.includes(review.author));
     }
 
-    return reviews;
-  }, [activeFilter, reviews]);
+    return sourceReviews;
+  }, [activeFilter, sourceReviews]);
 
   return (
     <AppShell activeTab="community" title="커뮤니티">

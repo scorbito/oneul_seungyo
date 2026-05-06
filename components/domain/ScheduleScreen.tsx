@@ -7,22 +7,10 @@ import { AppShell } from "@/components/layout/AppShell";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { GameCard } from "@/components/domain/GameCard";
 import { getTeam } from "@/lib/constants/teams";
-import { scheduleGames } from "@/lib/mock/app";
 import { useAppState } from "@/lib/state/AppState";
 import type { Game } from "@/lib/types/domain";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-const PRIMARY_GAME_DAYS = [10, 13, 17, 26, 28, 31];
-const MONTH_TEAM_SERIES = [
-  { start: "2025.05.06", end: "2025.05.08", opponentTeamId: "lotte", venue: "홈" },
-  { start: "2025.05.09", end: "2025.05.11", opponentTeamId: "kt", venue: "원정" },
-  { start: "2025.05.13", end: "2025.05.15", opponentTeamId: "nc", venue: "홈" },
-  { start: "2025.05.16", end: "2025.05.18", opponentTeamId: "doosan", venue: "원정" },
-  { start: "2025.05.20", end: "2025.05.22", opponentTeamId: "kia", venue: "원정" },
-  { start: "2025.05.23", end: "2025.05.25", opponentTeamId: "ssg", venue: "홈" },
-  { start: "2025.05.27", end: "2025.05.29", opponentTeamId: "samsung", venue: "홈" },
-  { start: "2025.05.30", end: "2025.06.01", opponentTeamId: "lg", venue: "원정" }
-] as const;
 
 type CalendarDate = {
   date: Date;
@@ -51,11 +39,6 @@ const getMonthDates = (visibleMonth: Date): CalendarDate[] => {
     date.setDate(start.getDate() + index);
     return { date, inMonth: date.getMonth() === month };
   });
-};
-
-const hasGamesOnDate = (date: Date) => {
-  const day = date.getDate();
-  return PRIMARY_GAME_DAYS.includes(day) || ((date.getMonth() + day) % 11 === 0 && day < 29);
 };
 
 const getMainTeamResult = (game: Game, mainTeamId: string) => {
@@ -94,75 +77,33 @@ const getResultText = (result?: Game["result"]) => {
   return "";
 };
 
-const getDateBadge = (games: Game[], mainTeamId: string) => {
+const getDateBadge = (games: Game[], mainTeamId: string): { label: string; result?: "win" | "lose" | "draw" } | null => {
   const attendedGame = games.find((game) => game.attended);
 
   if (attendedGame) {
     if (attendedGame.status !== "finished") {
-      return "직";
+      return { label: "직" };
     }
-
-    const attendedResult = attendedGame.result ?? getMainTeamResult(attendedGame, mainTeamId);
-    return `직${getResultText(attendedResult)}`;
+    const result = attendedGame.result ?? getMainTeamResult(attendedGame, mainTeamId);
+    return { label: `직${getResultText(result)}`, result };
   }
 
   const mainTeamGame = games.find((game) => game.homeTeamId === mainTeamId || game.awayTeamId === mainTeamId);
-  return getResultText(mainTeamGame ? getMainTeamResult(mainTeamGame, mainTeamId) : undefined);
+  if (!mainTeamGame) return null;
+  const result = getMainTeamResult(mainTeamGame, mainTeamId);
+  if (!result) return null;
+  return { label: getResultText(result), result };
 };
 
-const getSeriesSegmentsForWeek = (week: CalendarDate[]) => {
-  const weekStart = week[0].date.getTime();
-  const weekEnd = week[6].date.getTime();
-
-  return MONTH_TEAM_SERIES.map((series) => {
-    const seriesStart = parseDotDate(series.start).getTime();
-    const seriesEnd = parseDotDate(series.end).getTime();
-    const segmentStart = Math.max(seriesStart, weekStart);
-    const segmentEnd = Math.min(seriesEnd, weekEnd);
-
-    if (segmentStart > segmentEnd) {
-      return null;
-    }
-
-    const startDate = new Date(segmentStart);
-    const endDate = new Date(segmentEnd);
-    const startDay = startDate.getDay() + 1;
-    const span = Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
-
-    return { ...series, startDay, span, continuesFromPreviousWeek: seriesStart < weekStart, continuesToNextWeek: seriesEnd > weekEnd };
-  }).filter((series): series is NonNullable<typeof series> => series !== null);
+type ScheduleScreenProps = {
+  games?: Game[];
 };
 
-const getGamesForDate = (date: Date): Game[] => {
-  if (!hasGamesOnDate(date)) {
-    return [];
-  }
-
-  const day = date.getDate();
-  const gameCount = day === 10 ? scheduleGames.length : Math.max(1, (day % scheduleGames.length) + 1);
-
-  return scheduleGames.slice(0, gameCount).map((game, index) => {
-    const finished = day <= 17 && index === 0;
-    const attended = (day === 10 || day === 26) && index === 0;
-
-    return {
-      ...game,
-      id: `${game.id}-${toDateKey(date).replaceAll(".", "")}`,
-      date: toDateKey(date),
-      status: finished ? "finished" : "scheduled",
-      homeScore: finished ? game.homeScore ?? 4 : undefined,
-      awayScore: finished ? game.awayScore ?? 2 : undefined,
-      attended,
-      verified: attended && day === 10,
-      result: attended ? game.result : undefined
-    };
-  });
-};
-
-export function ScheduleScreen() {
+export function ScheduleScreen({ games = [] }: ScheduleScreenProps) {
   const { profile } = useAppState();
-  const [visibleMonth, setVisibleMonth] = useState(() => new Date(2025, 4, 1));
-  const [selectedDate, setSelectedDate] = useState(() => new Date(2025, 4, 10));
+  const today = new Date();
+  const [visibleMonth, setVisibleMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), today.getDate()));
   const [modal, setModal] = useState<ModalKind>(null);
 
   const calendarDates = useMemo(() => getMonthDates(visibleMonth), [visibleMonth]);
@@ -170,6 +111,74 @@ export function ScheduleScreen() {
     () => Array.from({ length: Math.ceil(calendarDates.length / 7) }, (_, index) => calendarDates.slice(index * 7, index * 7 + 7)),
     [calendarDates]
   );
+  const getGamesForDate = useMemo(() => {
+    const dbGamesByDate = new Map<string, Game[]>();
+    games.forEach((game) => {
+      const current = dbGamesByDate.get(game.date) ?? [];
+      current.push(game);
+      dbGamesByDate.set(game.date, current);
+    });
+
+    return (date: Date) => {
+      const dateKey = toDateKey(date);
+      return dbGamesByDate.get(dateKey) ?? [];
+    };
+  }, [games]);
+
+  // 우리 팀이 출전한 경기를 연속 날짜 + 같은 상대 + 같은 홈/원정으로 묶어 시리즈 산출
+  const teamSeries = useMemo(() => {
+    type Series = { startDate: Date; endDate: Date; opponentTeamId: string; venue: "홈" | "원정" };
+    const myGames = games
+      .filter((g) => g.homeTeamId === profile.mainTeamId || g.awayTeamId === profile.mainTeamId)
+      .map((g) => ({
+        date: parseDotDate(g.date),
+        isHome: g.homeTeamId === profile.mainTeamId,
+        opponentTeamId: g.homeTeamId === profile.mainTeamId ? g.awayTeamId : g.homeTeamId
+      }))
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    const series: Series[] = [];
+    for (const g of myGames) {
+      const prev = series[series.length - 1];
+      const isContiguous = prev
+        && prev.opponentTeamId === g.opponentTeamId
+        && (prev.venue === "홈") === g.isHome
+        && (g.date.getTime() - prev.endDate.getTime()) <= 86400000;
+      if (isContiguous) {
+        prev.endDate = g.date;
+      } else {
+        series.push({
+          startDate: g.date,
+          endDate: g.date,
+          opponentTeamId: g.opponentTeamId,
+          venue: g.isHome ? "홈" : "원정"
+        });
+      }
+    }
+    return series;
+  }, [games, profile.mainTeamId]);
+
+  const getSeriesSegmentsForWeek = (week: CalendarDate[]) => {
+    const weekStart = week[0].date.getTime();
+    const weekEnd = week[6].date.getTime();
+    return teamSeries
+      .map((s) => {
+        const segStart = Math.max(s.startDate.getTime(), weekStart);
+        const segEnd = Math.min(s.endDate.getTime(), weekEnd);
+        if (segStart > segEnd) return null;
+        const startDay = new Date(segStart).getDay() + 1;
+        const span = Math.round((segEnd - segStart) / 86400000) + 1;
+        return {
+          opponentTeamId: s.opponentTeamId,
+          venue: s.venue,
+          startDay,
+          span,
+          continuesFromPreviousWeek: s.startDate.getTime() < weekStart,
+          continuesToNextWeek: s.endDate.getTime() > weekEnd
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+  };
   const selectedGames = useMemo(() => {
     return [...getGamesForDate(selectedDate)].sort((a, b) => {
       const aHasMainTeam = a.homeTeamId === profile.mainTeamId || a.awayTeamId === profile.mainTeamId;
@@ -181,7 +190,7 @@ export function ScheduleScreen() {
 
       return aHasMainTeam ? -1 : 1;
     });
-  }, [profile.mainTeamId, selectedDate]);
+  }, [getGamesForDate, profile.mainTeamId, selectedDate]);
   const attendedCount = selectedGames.filter((game) => game.attended).length;
   const verifiedCount = selectedGames.filter((game) => game.verified).length;
 
@@ -249,20 +258,23 @@ export function ScheduleScreen() {
                     >
                       <span className="month-date-line">
                         <span>{date.getDate()}</span>
-                        {dateBadge ? <b>{dateBadge}</b> : null}
+                        {dateBadge ? (
+                          <b className={dateBadge.result ? `month-cell-badge month-cell-badge-${dateBadge.result}` : "month-cell-badge"}>
+                            {dateBadge.label}
+                          </b>
+                        ) : null}
                       </span>
                     </button>
                   );
                 })}
               </div>
               <div className="month-series-row">
-                {getSeriesSegmentsForWeek(week).map((series) => {
+                {getSeriesSegmentsForWeek(week).map((series, index) => {
                   const opponent = getTeam(series.opponentTeamId);
-
                   return (
                     <span
                       className={`month-series-bar month-series-${series.venue === "홈" ? "home" : "away"} ${series.continuesFromPreviousWeek ? "month-series-continued-start" : ""} ${series.continuesToNextWeek ? "month-series-continued-end" : ""}`}
-                      key={`${weekIndex}-${series.opponentTeamId}-${series.venue}-${series.startDay}`}
+                      key={`${weekIndex}-${series.opponentTeamId}-${series.venue}-${series.startDay}-${index}`}
                       style={{
                         "--series-color": opponent.color,
                         "--series-accent": opponent.accent ?? opponent.color,
@@ -308,7 +320,7 @@ export function ScheduleScreen() {
           )}
         </div>
       </section>
-      <AppModals open={modal} setOpen={setModal} initialDate={toDateKey(selectedDate)} />
+      <AppModals open={modal} setOpen={setModal} games={games} initialDate={toDateKey(selectedDate)} />
     </AppShell>
   );
 }

@@ -6,13 +6,14 @@ import { Button } from "@/components/common/Button";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { getTeam } from "@/lib/constants/teams";
-import type { UserProfile } from "@/lib/types/domain";
+import type { Game, UserProfile } from "@/lib/types/domain";
 
 type WinRateHeroCardProps = {
   profile: UserProfile;
+  games?: Game[];
 };
 
-export function WinRateHeroCard({ profile }: WinRateHeroCardProps) {
+export function WinRateHeroCard({ profile, games = [] }: WinRateHeroCardProps) {
   const team = getTeam(profile.mainTeamId);
   const [modal, setModal] = useState<ModalKind>(null);
 
@@ -51,7 +52,7 @@ export function WinRateHeroCard({ profile }: WinRateHeroCardProps) {
           </button>
         </div>
       </section>
-      <AppModals open={modal} setOpen={setModal} />
+      <AppModals open={modal} setOpen={setModal} games={games} />
     </>
   );
 }

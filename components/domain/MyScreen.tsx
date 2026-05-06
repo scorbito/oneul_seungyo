@@ -11,10 +11,10 @@ import { getTeam, teams } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
 
 const menuItems = [
-  { label: "내 직관 리스트", value: "37", href: "/my/attendances", icon: ListChecks },
-  { label: "내 후기 모음", value: "24", href: "/my/reviews", icon: MessageSquareText },
-  { label: "친구 관리", value: "12", href: "/my/friends", icon: UserPlus },
-  { label: "설정", value: "", href: "/my/settings", icon: Settings }
+  { label: "내 직관 리스트", href: "/my/attendances", icon: ListChecks },
+  { label: "내 후기 모음", href: "/my/reviews", icon: MessageSquareText },
+  { label: "친구 관리", href: "/my/friends", icon: UserPlus },
+  { label: "설정", href: "/my/settings", icon: Settings }
 ];
 
 export function MyScreen() {
@@ -39,7 +39,7 @@ export function MyScreen() {
           <TeamBadge teamId={profile.mainTeamId} size="lg" />
           <div>
             <h1>{profile.nickname}</h1>
-            <p>내 팀 {profileTeam.name} · 가입일 2025.04.01</p>
+            <p>내 팀 {profileTeam.name}</p>
           </div>
         </div>
         <strong className="profile-rate">{profile.winRate}</strong>
@@ -63,7 +63,6 @@ export function MyScreen() {
               <strong>{item.label}</strong>
               {item.label === "내 직관 리스트" ? <span>({attendances.length})</span> : null}
               {item.label === "내 후기 모음" ? <span>({reviews.length})</span> : null}
-              {item.value && !["내 직관 리스트", "내 후기 모음"].includes(item.label) ? <span>({item.value})</span> : null}
               <ChevronRight size={17} />
             </a>
           );

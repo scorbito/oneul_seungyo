@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Bookmark, Heart, MessageCircle, Send } from "lucide-react";
 import { TeamBadge } from "@/components/common/TeamBadge";
-import type { Review } from "@/lib/mock/app";
+import type { Review } from "@/lib/types/domain";
 
 type ReviewCardProps = {
   review: Review;
@@ -34,10 +34,10 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
         <TeamBadge teamId={review.teamId} size="sm" />
       </div>
       <a className="review-image-link" href={`/reviews/${review.id}`}>
-        <Image alt={review.title} className="review-image" height={220} src={review.image} width={330} />
+        <Image alt={review.title || "후기 사진"} className="review-image" height={220} src={review.image} width={330} />
         <span>1/3</span>
       </a>
-      <a className="review-title" href={`/reviews/${review.id}`}>{review.title}</a>
+      {review.title ? <a className="review-title" href={`/reviews/${review.id}`}>{review.title}</a> : null}
       <p>
         {body}
         {canToggleBody ? (
@@ -60,9 +60,11 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
           </button>
         ) : null}
       </p>
-      <div className="review-tags">
-        {review.tags.map((tag) => <span key={tag}>{tag}</span>)}
-      </div>
+      {review.tags.length > 0 && (
+        <div className="review-tags">
+          {review.tags.map((tag) => <span key={tag}>{tag}</span>)}
+        </div>
+      )}
       <div className="review-actions">
         <button
           aria-label={liked ? "좋아요 취소" : "좋아요"}

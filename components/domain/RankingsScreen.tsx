@@ -3,9 +3,13 @@ import { AppShell } from "@/components/layout/AppShell";
 import { SegmentedControl } from "@/components/common/SegmentedControl";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { getTeam } from "@/lib/constants/teams";
-import { allStandings } from "@/lib/mock/app";
+import type { TeamStanding } from "@/lib/types/domain";
 
-export function RankingsScreen() {
+type RankingsScreenProps = {
+  standings?: TeamStanding[];
+};
+
+export function RankingsScreen({ standings = [] }: RankingsScreenProps) {
   return (
     <AppShell activeTab="home" title="팀순위">
       <a className="back-link" href="/">
@@ -26,7 +30,7 @@ export function RankingsScreen() {
           <span>최근5</span>
         </div>
         <ol className="ranking-table-body">
-          {allStandings.map((standing) => {
+          {standings.map((standing) => {
             const team = getTeam(standing.teamId);
             return (
               <li className={standing.teamId === "hanwha" ? "ranking-row ranking-row-highlighted" : "ranking-row"} key={standing.teamId}>

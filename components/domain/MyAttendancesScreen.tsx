@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, PenSquare, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/common/Button";
@@ -8,20 +9,31 @@ import { ModalShell } from "@/components/common/ModalShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { getTeam } from "@/lib/constants/teams";
-import { useAppState } from "@/lib/state/AppState";
+import { deleteAttendanceAction } from "@/lib/actions/attendance";
+import { useAppState, type AttendanceRecord } from "@/lib/state/AppState";
 
-export function MyAttendancesScreen() {
-  const { attendances, reviews, deleteAttendance } = useAppState();
+type MyAttendancesScreenProps = {
+  dbAttendances?: AttendanceRecord[];
+};
+
+export function MyAttendancesScreen({ dbAttendances = [] }: MyAttendancesScreenProps) {
+  const { attendances, reviews, deleteAttendance, deleteReview, showToast } = useAppState();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const sourceAttendances = dbAttendances.length > 0 ? dbAttendances : attendances;
   const [filter, setFilter] = useState("전체");
   const [modal, setModal] = useState<ModalKind>(null);
   const [reviewTargetId, setReviewTargetId] = useState<string | undefined>();
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-  const deleteTarget = deleteTargetId ? attendances.find((item) => item.id === deleteTargetId) : null;
-  const filtered = attendances.filter((item) => {
-    if (filter === "인증") return item.verified;
-    if (filter === "미인증") return !item.verified;
-    return true;
-  });
+  const deleteTarget = deleteTargetId ? sourceAttendances.find((item) => item.id === deleteTargetId) : null;
+  const filtered = sourceAttendances
+    .filter((item) => {
+      if (filter === "인증") return item.verified;
+      if (filter === "미인증") return !item.verified;
+      return true;
+    })
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date));
   const reviewByAttendanceId = new Map(
     reviews.filter((review) => review.attendanceId).map((review) => [review.attendanceId as string, review])
   );
@@ -47,8 +59,12 @@ export function MyAttendancesScreen() {
           const away = getTeam(item.awayTeamId);
           const hasReview = reviewByAttendanceId.has(item.id);
           const isReviewable = Boolean(item.result);
+          const resultLabel = item.result === "win" ? "승" : item.result === "lose" ? "패" : item.result === "draw" ? "무" : null;
           return (
             <article className="attendance-item" key={item.id}>
+              {resultLabel ? (
+                <span className={`attendance-result-badge attendance-result-${item.result}`}>{resultLabel}</span>
+              ) : null}
               <span>
                 {item.date} ({item.stadium})
                 <em className={item.verified ? "status-verified" : "status-muted"}>{item.verified ? "인증" : "미인증"}</em>
@@ -88,15 +104,25 @@ export function MyAttendancesScreen() {
             {deleteTarget ? `${deleteTarget.date} ${getTeam(deleteTarget.homeTeamId).shortName} vs ${getTeam(deleteTarget.awayTeamId).shortName}` : ""}
             <br />이 직관 기록을 삭제할까요?
           </p>
-          <span className="confirm-hint">연결된 후기가 있다면 함께 정리해주세요.</span>
+          <span className="confirm-hint">연결된 후기와 인증 사진도 함께 삭제됩니다.</span>
           <div className="confirm-actions">
-            <button type="button" className="confirm-cancel" onClick={() => setDeleteTargetId(null)}>취소</button>
-            <Button onClick={() => {
-              if (deleteTargetId) {
-                deleteAttendance(deleteTargetId);
-              }
-              setDeleteTargetId(null);
-            }}>삭제하기</Button>
+            <button type="button" className="confirm-cancel" disabled={isPending} onClick={() => setDeleteTargetId(null)}>취소</button>
+            <Button disabled={isPending} onClick={() => {
+              if (!deleteTargetId) return;
+              const id = deleteTargetId;
+              const linkedReview = reviews.find((r) => r.attendanceId === id);
+              startTransition(async () => {
+                try {
+                  await deleteAttendanceAction(id);
+                  deleteAttendance(id);
+                  if (linkedReview) deleteReview(linkedReview.id);
+                  setDeleteTargetId(null);
+                  router.refresh();
+                } catch (err) {
+                  showToast(err instanceof Error ? err.message : "직관 삭제에 실패했어요.");
+                }
+              });
+            }}>{isPending ? "삭제 중" : "삭제하기"}</Button>
           </div>
         </div>
       </ModalShell>

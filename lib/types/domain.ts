@@ -43,3 +43,18 @@ export type UserProfile = {
   draws: number;
   winRate: string;
 };
+
+export type Review = {
+  id: string;
+  author: string;
+  teamId: string;
+  timeAgo: string;
+  title: string;
+  body: string;
+  gameLabel: string;
+  image: string;
+  likes: number;
+  comments: number;
+  tags: string[];
+  attendanceId?: string;
+};
