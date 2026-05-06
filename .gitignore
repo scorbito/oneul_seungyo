@@ -1,0 +1,14 @@
+.next/
+node_modules/
+
+.env*.local
+
+*.log
+dev-server*.log
+dev-server*.err.log
+
+tsconfig.tsbuildinfo
+
+out/
+dist/
+coverage/
