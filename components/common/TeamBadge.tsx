@@ -1,4 +1,5 @@
 import { getTeam } from "@/lib/constants/teams";
+import type { CSSProperties } from "react";
 
 type TeamBadgeProps = {
   teamId: string;
@@ -20,8 +21,10 @@ export function TeamBadge({ teamId, size = "md", showName = false }: TeamBadgePr
       <span
         className={`team-badge ${sizeClass[size]}`}
         style={{
-          background: team.color
-        }}
+          background: team.color,
+          "--team-color": team.color,
+          "--team-accent": team.accent ?? team.color
+        } as CSSProperties}
         aria-label={team.name}
       >
         <span className="team-badge-initial">{team.initial}</span>

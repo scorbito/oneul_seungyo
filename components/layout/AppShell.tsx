@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 type AppShellProps = {
   activeTab?: "home" | "schedule" | "community" | "my";
   title?: string;
+  theme?: "default" | "dark";
   children: ReactNode;
 };
 
@@ -14,10 +15,10 @@ const tabs = [
   { id: "my", label: "마이", icon: UserRound, href: "/my" }
 ] as const;
 
-export function AppShell({ activeTab = "home", title = "오늘은 승요", children }: AppShellProps) {
+export function AppShell({ activeTab = "home", title = "오늘은 승요", theme = "default", children }: AppShellProps) {
   return (
     <main className="app-backdrop">
-      <section className="phone-frame" aria-label="오늘은 승요 앱 화면">
+      <section className={`phone-frame${theme === "dark" ? " phone-frame-dark" : ""}`} aria-label="오늘은 승요 앱 화면">
         <div className="app-scroll">
           <header className="app-header">
             <a className="brand" href="/">

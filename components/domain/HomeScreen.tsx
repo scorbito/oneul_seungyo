@@ -1,16 +1,19 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useState } from "react";
+import { ChevronRight, Plus, Share2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
-import { WinRateHeroCard } from "@/components/domain/WinRateHeroCard";
+import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { getTeam } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
 import type { Game, TeamStanding } from "@/lib/types/domain";
 
+const WEEK_LABELS_SUN = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEK_LABELS_MON = ["월", "화", "수", "목", "금", "토", "일"];
+
 function parseDotDate(date: string) {
   const [year, month, day] = date.split(".").map(Number);
-
   return new Date(year, month - 1, day);
 }
 
@@ -19,255 +22,274 @@ function getDday(date: string) {
   today.setHours(0, 0, 0, 0);
   const targetDate = parseDotDate(date);
   const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / 86400000);
-
-  if (diffDays === 0) {
-    return "D-Day";
-  }
-
+  if (diffDays === 0) return "D-Day";
   return diffDays > 0 ? `D-${diffDays}` : `D+${Math.abs(diffDays)}`;
+}
+
+function formatDateWithDay(date: string) {
+  const dateObj = parseDotDate(date);
+  return `${date} (${WEEK_LABELS_SUN[dateObj.getDay()]})`;
+}
+
+function formatMonthDay(date: Date) {
+  return `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function getGameResult(game: Game, mainTeamId: string): "win" | "lose" | "draw" | null {
+  if (game.status !== "finished" || game.homeScore == null || game.awayScore == null) return null;
+  const myScore = game.homeTeamId === mainTeamId ? game.homeScore : game.awayScore;
+  const opponentScore = game.homeTeamId === mainTeamId ? game.awayScore : game.homeScore;
+  if (myScore === opponentScore) return "draw";
+  return myScore > opponentScore ? "win" : "lose";
 }
 
 type HomeScreenProps = {
   standings?: TeamStanding[];
   weekGames?: Game[];
-  weekStart?: string; // YYYY-MM-DD (월요일)
-  modalGames?: Game[]; // 직관 등록 모달용 넓은 범위
+  weekStart?: string;
+  modalGames?: Game[];
 };
 
-const WEEK_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
-
-type MyWeekGame = Game & {
-  isHome: boolean;
-  opponentTeamId: string;
-  dateObj: Date;
-};
-
-export function HomeScreen({ standings = [], weekGames = [], weekStart, modalGames = [] }: HomeScreenProps) {
+export function HomeScreen({ weekGames = [], weekStart, modalGames = [] }: HomeScreenProps) {
   const { attendances, profile } = useAppState();
+  const [modal, setModal] = useState<ModalKind>(null);
 
   const myTeam = getTeam(profile.mainTeamId);
-  const myWeekGames: MyWeekGame[] = weekGames
+
+  const todayDateOnly = new Date();
+  todayDateOnly.setHours(0, 0, 0, 0);
+
+  // page.tsx에서 월요일을 보냄 — 월~일 순서로 표시
+  const monday = weekStart ? new Date(`${weekStart}T00:00:00`) : null;
+
+  const myWeekGames = weekGames
     .filter((g) => g.homeTeamId === profile.mainTeamId || g.awayTeamId === profile.mainTeamId)
     .map((g) => ({
       ...g,
       isHome: g.homeTeamId === profile.mainTeamId,
       opponentTeamId: g.homeTeamId === profile.mainTeamId ? g.awayTeamId : g.homeTeamId,
       dateObj: parseDotDate(g.date)
-    }))
-    .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    }));
 
-  const weekStartDate = weekStart ? new Date(`${weekStart}T00:00:00`) : null;
-  const todayDateOnly = new Date();
-  todayDateOnly.setHours(0, 0, 0, 0);
-
-  // 7일 strip
-  const weekDays = weekStartDate
+  const weekDays = monday
     ? Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + i);
+        const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
         const game = myWeekGames.find((g) => g.dateObj.getTime() === d.getTime());
         const isToday = d.getTime() === todayDateOnly.getTime();
-        let badge: string | undefined;
-        if (game) {
-          if (game.status === "finished" && game.homeScore !== undefined && game.awayScore !== undefined) {
-            const won = game.isHome ? game.homeScore > game.awayScore : game.awayScore > game.homeScore;
-            const drew = game.homeScore === game.awayScore;
-            badge = drew ? "무" : won ? "승" : "패";
-          } else {
-            badge = "예정";
-          }
-        }
-        return { date: d, label: WEEK_LABELS[i], dayNum: d.getDate(), isToday, badge };
+        return { date: d, label: WEEK_LABELS_MON[i], dayNum: d.getDate(), isToday, game, dayIndex: i };
       })
     : [];
 
-  // 시리즈: 연속 날짜 + 같은 상대 + 같은 홈/원정으로 묶음. 이 주 범위에서 잘라냄.
-  const weekSeries = (() => {
-    if (!weekStartDate) return [] as Array<{ key: string; opponentTeamId: string; venue: "홈" | "원정"; startDay: number; span: number }>;
-    const sorted = [...myWeekGames].sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
-    type Group = { startIdx: number; endIdx: number; opponentTeamId: string; venue: "홈" | "원정" };
-    const groups: Group[] = [];
-    for (const g of sorted) {
-      const dayIdx = Math.round((g.dateObj.getTime() - weekStartDate.getTime()) / 86400000);
-      if (dayIdx < 0 || dayIdx > 6) continue;
-      const venue = g.isHome ? "홈" : "원정";
-      const prev = groups[groups.length - 1];
-      const isContiguous = prev
-        && prev.opponentTeamId === g.opponentTeamId
-        && prev.venue === venue
-        && dayIdx === prev.endIdx + 1;
-      if (isContiguous) {
-        prev.endIdx = dayIdx;
-      } else {
-        groups.push({ startIdx: dayIdx, endIdx: dayIdx, opponentTeamId: g.opponentTeamId, venue });
-      }
-    }
-    return groups.map((g, idx) => ({
-      key: `${idx}-${g.opponentTeamId}-${g.startIdx}`,
-      opponentTeamId: g.opponentTeamId,
-      venue: g.venue,
-      startDay: g.startIdx + 1,
-      span: g.endIdx - g.startIdx + 1
-    }));
-  })();
+  const weekHomeCount = weekDays.filter((d) => d.game?.isHome).length;
+  const weekAwayCount = weekDays.filter((d) => d.game && !d.game.isHome).length;
 
   const upcomingAttendances = attendances
     .filter((a) => !a.result)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  // 최근 직관 5개: 경기 날짜 기준 정렬 (왼쪽=오래된, 오른쪽=최신)
+  // 최근 직관: 오래된 → 최신 (좌→우)
   const recentAttendances = attendances
     .filter((a) => !!a.result)
-    .sort((a, b) => b.date.localeCompare(a.date)) // 최신순으로 정렬
-    .slice(0, 5)                                   // 최근 5개 추출
-    .reverse();                                    // 표시는 오래된→최신
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 4)
+    .reverse();
 
-  const recentWins = recentAttendances.filter((a) => a.result === "win").length;
-  const recentLosses = recentAttendances.filter((a) => a.result === "lose").length;
-  const recentDraws = recentAttendances.filter((a) => a.result === "draw").length;
+  // 섹션 헤더용: 최근 5경기 승/패 집계
+  const last5Attendances = attendances
+    .filter((a) => !!a.result)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
+  const last5Wins = last5Attendances.filter((a) => a.result === "win").length;
+  const last5Losses = last5Attendances.filter((a) => a.result === "lose").length;
+
+  const totalAttendances = attendances.length;
+  const wins = attendances.filter((a) => a.result === "win").length;
+  const losses = attendances.filter((a) => a.result === "lose").length;
+  const draws = attendances.filter((a) => a.result === "draw").length;
 
   return (
-    <AppShell activeTab="home">
-      <WinRateHeroCard profile={profile} games={modalGames} />
+    <AppShell activeTab="home" theme="dark">
+      {/* HERO */}
+      <section className="hd-card hd-hero" aria-label="내 직관 승률">
+        <div className="hd-hero-bg" aria-hidden="true" />
 
+        <div className="hd-hero-top">
+          <div className="hd-team-pill">
+            <TeamBadge teamId={profile.mainTeamId} size="md" />
+            <span className="hd-team-pill-text">내 팀 {myTeam.shortName}</span>
+          </div>
+        </div>
+
+        <div className="hd-hero-center">
+          <p className="hd-hero-label">내 직관 승률</p>
+          <p className="hd-hero-number">{profile.winRate}</p>
+          <p className="hd-hero-summary">
+            <span>총 {totalAttendances}경기 ·</span>
+            <span className="hd-text-win">{wins}승</span>
+            <span className="hd-text-loss">{losses}패</span>
+            <span className="hd-text-draw">{draws}무</span>
+          </p>
+        </div>
+
+        <div className="hd-hero-actions">
+          <button type="button" className="hd-btn hd-btn-primary" onClick={() => setModal("attendance")}>
+            <Plus size={18} /> 직관 등록
+          </button>
+          <button type="button" className="hd-btn hd-btn-secondary" onClick={() => setModal("review")}>
+            후기 작성
+          </button>
+          <button type="button" className="hd-btn hd-btn-tertiary" onClick={() => setModal("share")} aria-label="공유">
+            <Share2 size={16} /> 공유
+          </button>
+        </div>
+      </section>
+
+      {/* NEXT GAME */}
       {upcomingAttendances.length > 0 && (() => {
         const att = upcomingAttendances[0];
         const home = getTeam(att.homeTeamId);
         const away = getTeam(att.awayTeamId);
-
         return (
-          <section className="next-game-section">
-            <div className="game-banner">
-              <div className="next-game-card">
-                <div className="next-game-meta">
-                  <p className="next-game-label">
-                    <span>다음 직관</span>
-                    <b>{getDday(att.date)}</b>
-                  </p>
-                  <time>{att.date}{att.time ? ` ${att.time}` : ""}</time>
-                  <em>{att.stadium}</em>
-                </div>
-                <div className="game-banner-teams">
-                  <TeamBadge teamId={att.homeTeamId} size="md" />
-                  <strong>{home.shortName}</strong>
-                  <b>VS</b>
-                  <strong>{away.shortName}</strong>
-                  <TeamBadge teamId={att.awayTeamId} size="md" />
+          <section className="hd-card hd-next" aria-label="다음 직관">
+            <div className="hd-section-header">
+              <h2 className="hd-section-title">다음 직관</h2>
+              <button type="button" className="hd-icon-link" aria-label="상세 보기">
+                <ChevronRight size={20} />
+              </button>
+            </div>
+
+            <div className="hd-next-meta-row">
+              <span className="hd-status-chip hd-status-chip-dday">{getDday(att.date)}</span>
+              <span className="hd-next-datetime">
+                {formatDateWithDay(att.date)} {att.time ? att.time.slice(0, 5) : ""}
+              </span>
+              <span className="hd-next-location">{att.stadium}</span>
+            </div>
+
+            <div className="hd-matchup-row">
+              <div className="hd-matchup-team">
+                <TeamBadge teamId={att.awayTeamId} size="md" />
+                <div className="hd-matchup-team-info">
+                  <span className="hd-team-name">{away.shortName}</span>
+                  <span className="hd-tiny-chip">원정</span>
                 </div>
               </div>
+              <div className="hd-matchup-vs">VS</div>
+              <div className="hd-matchup-team hd-matchup-team-right">
+                <div className="hd-matchup-team-info">
+                  <span className="hd-team-name">{home.shortName}</span>
+                  <span className="hd-tiny-chip">홈</span>
+                </div>
+                <TeamBadge teamId={att.homeTeamId} size="md" />
+              </div>
             </div>
-            {upcomingAttendances.length >= 2 && (
-              <a className="next-game-view-all" href="/my/attendances">전체 보기</a>
-            )}
           </section>
         );
       })()}
 
-      <section className="recent-attendance-card">
-        <div className="section-title-row">
-          <div className="recent-attendance-title">
-            <h2>최근 직관 경기</h2>
-            <p>{recentWins}승 {recentLosses}패 {recentDraws}무</p>
-          </div>
-          <a href="/my/attendances">더보기</a>
-        </div>
-        <div className="recent-attendance-list">
-          {recentAttendances.map((attendance) => {
-            const home = getTeam(attendance.homeTeamId);
-            const away = getTeam(attendance.awayTeamId);
-            const resultLabel = attendance.result === "win" ? "승" : attendance.result === "lose" ? "패" : attendance.result === "draw" ? "무" : "예정";
-            const compactDate = attendance.date.split(".").slice(1).join(".");
-            const [homeScore, awayScore] = attendance.score.split(":").map((value) => value.trim());
-
-            return (
-              <article className="recent-attendance-row" key={attendance.id}>
-                <span>{compactDate}</span>
-                <strong>{home.shortName} <b>{homeScore}</b></strong>
-                <strong>{away.shortName} <b>{awayScore}</b></strong>
-                <em className={`recent-result recent-result-${attendance.result ?? "pending"}`}>{resultLabel}</em>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      {weekDays.length > 0 && (
-        <section className="section-block">
-          <div className="section-title-row">
-            <h2>이번주 {myTeam.shortName} 일정</h2>
-            <a href="/schedule">전체 보기</a>
-          </div>
-          <div className="series-week-grid" aria-label="이번 주 시리즈 일정">
-            <div className="week-strip">
-              {weekDays.map((day) => (
-                <div className={`week-day ${day.isToday ? "week-day-active" : ""}`} key={day.date.toISOString()}>
-                  <span>{day.label}</span>
-                  <strong>{day.dayNum}</strong>
-                  {day.badge ? <b>{day.badge}</b> : null}
-                </div>
-              ))}
+      {/* RECENT GAMES */}
+      {recentAttendances.length > 0 && (
+        <section className="hd-card" aria-label="최근 직관 경기">
+          <div className="hd-section-header">
+            <div className="hd-section-title-wrap">
+              <h2 className="hd-section-title">최근 직관 경기</h2>
+              <p className="hd-section-substat">
+                <span className="hd-text-win">{last5Wins}승</span>
+                <span className="hd-text-loss">{last5Losses}패</span>
+              </p>
             </div>
-            <div className="week-series-row">
-              {weekSeries.map((series) => {
-                const opponent = getTeam(series.opponentTeamId);
-                const label = series.span > 1
-                  ? `${opponent.shortName}전 ${series.venue}`
-                  : `${opponent.shortName} ${series.venue}`;
-                return (
-                  <span
-                    className="week-series-pill"
-                    key={series.key}
-                    style={{
-                      "--series-color": opponent.color,
-                      "--series-accent": opponent.accent ?? opponent.color,
-                      gridColumn: `${series.startDay} / span ${series.span}`
-                    } as CSSProperties}
-                  >
-                    {label}
-                  </span>
-                );
-              })}
-            </div>
+            <a href="/my/attendances" className="hd-text-link">더보기 <ChevronRight size={14} /></a>
+          </div>
+
+          <div className="hd-recent-list">
+            {recentAttendances.map((att) => {
+              const compactDate = att.date.split(".").slice(1).join(".");
+              const dateObj = parseDotDate(att.date);
+              const dayLabel = WEEK_LABELS_SUN[dateObj.getDay()];
+              const result = att.result as "win" | "lose" | "draw";
+              const resultLabel = result === "win" ? "승" : result === "lose" ? "패" : "무";
+
+              // 점수 표기: home : away (홈팀 좌측)
+              const score = att.score && att.score.includes(":")
+                ? att.score.replace(/\s/g, "").split(":").join(" : ")
+                : "- : -";
+
+              return (
+                <article className="hd-recent-card" key={att.id}>
+                  <p className="hd-recent-date">{compactDate} ({dayLabel})</p>
+                  <div className="hd-recent-score">
+                    <TeamBadge teamId={att.homeTeamId} size="sm" />
+                    <span className="hd-score-text">{score}</span>
+                    <TeamBadge teamId={att.awayTeamId} size="sm" />
+                  </div>
+                  <div className="hd-result-line">
+                    <span className={`hd-result-dot hd-result-${result === "lose" ? "loss" : result}`} />
+                    <span className={`hd-result-text hd-text-${result === "lose" ? "loss" : result}`}>{resultLabel}</span>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       )}
 
-      <section className="section-block rank-section">
-        <div className="section-title-row">
-          <h2>팀 순위</h2>
-        </div>
-        <div className="ranking-table">
-          <div className="ranking-table-head">
-            <span>순위</span>
-            <span>팀</span>
-            <span>승률</span>
-            <span>차</span>
-            <span>승-무-패</span>
-            <span>최근5</span>
+      {/* WEEKLY SCHEDULE */}
+      {weekDays.length > 0 && (
+        <section className="hd-card" aria-label="우리팀 일정">
+          <div className="hd-section-header">
+            <h2 className="hd-section-title">우리팀 일정</h2>
+            <a href="/schedule" className="hd-text-link">전체 일정 <ChevronRight size={14} /></a>
           </div>
-          <ol className="ranking-table-body">
-            {standings.map((standing) => {
-              const team = getTeam(standing.teamId);
+
+          <div className="hd-week-list">
+            {weekDays.map((d) => {
+              const result = d.game ? getGameResult(d.game, profile.mainTeamId) : null;
+              const dayClass = d.dayIndex === 6 ? "hd-week-day-sun" : d.dayIndex === 5 ? "hd-week-day-sat" : "";
+
+              let statusLabel: string | null = null;
+              let statusClass = "";
+              if (d.isToday) {
+                statusLabel = "오늘";
+                statusClass = "hd-week-status-today";
+              } else if (result === "win") {
+                statusLabel = "승";
+                statusClass = "hd-text-win";
+              } else if (result === "lose") {
+                statusLabel = "패";
+                statusClass = "hd-text-loss";
+              } else if (result === "draw") {
+                statusLabel = "무";
+                statusClass = "hd-text-draw";
+              } else if (d.game) {
+                statusLabel = "예정";
+                statusClass = "hd-text-info";
+              }
+
               return (
-                <li className={standing.teamId === profile.mainTeamId ? "ranking-row ranking-row-highlighted" : "ranking-row"} key={standing.teamId}>
-                  <span className="ranking-rank">{standing.rank}</span>
-                  <span className="ranking-team">
-                    <TeamBadge teamId={standing.teamId} size="sm" />
-                    <strong style={{ color: team.color }}>{team.shortName}</strong>
-                  </span>
-                  <span className="ranking-rate">{standing.winRate}</span>
-                  <span className="ranking-gap">{standing.gamesBehind === "-" ? "-" : standing.gamesBehind}</span>
-                  <span className="ranking-record">{standing.wins}-{standing.draws}-{standing.losses}</span>
-                  <span className="ranking-form">
-                    {standing.form.slice(-5).map((result, index) => (
-                      <i className={`ranking-dot ranking-dot-${result.toLowerCase()}`} key={`${standing.teamId}-${index}`} />
-                    ))}
-                  </span>
-                </li>
+                <article
+                  className={`hd-week-cell${d.isToday ? " hd-week-cell-today" : ""}`}
+                  key={d.date.toISOString()}
+                >
+                  <p className={`hd-week-day ${dayClass}`}>{d.label}</p>
+                  <p className="hd-week-date">{formatMonthDay(d.date)}</p>
+                  {d.game ? (
+                    <TeamBadge teamId={d.game.opponentTeamId} size="sm" />
+                  ) : (
+                    <span className="hd-week-rest" aria-label="휴식" />
+                  )}
+                  {statusLabel ? <p className={`hd-week-status ${statusClass}`}>{statusLabel}</p> : null}
+                </article>
               );
             })}
-          </ol>
-        </div>
-      </section>
+          </div>
+
+          <p className="hd-week-summary">
+            {weekAwayCount}경기 원정 · {weekHomeCount}경기 홈
+          </p>
+        </section>
+      )}
+
+      <AppModals open={modal} setOpen={setModal} games={modalGames} />
     </AppShell>
   );
 }
