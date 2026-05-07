@@ -1,7 +1,7 @@
 import type { Team, TeamStanding } from "@/lib/types/domain";
 import type { GameRecord, ProfileStats, UserProfileRecord } from "@/lib/types/api-contracts";
 import type { AttendanceRecord } from "@/lib/state/AppState";
-import type { Review } from "@/lib/types/domain";
+import type { Review, ReviewComment } from "@/lib/types/domain";
 import { getTeam } from "@/lib/constants/teams";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -347,7 +347,7 @@ function toReview(row: ReviewRow, profile: ReviewProfileRow | undefined, attenda
   away_team_id: string;
   home_score: number | null;
   away_score: number | null;
-} | undefined): Review {
+} | undefined, commentCount = 0): Review {
   const homeName = game?.home_team_id ? getTeam(game.home_team_id).shortName : "";
   const awayName = game?.away_team_id ? getTeam(game.away_team_id).shortName : "";
   const score = game?.home_score !== null && game?.away_score !== null && game
@@ -357,6 +357,7 @@ function toReview(row: ReviewRow, profile: ReviewProfileRow | undefined, attenda
 
   return {
     id: row.id,
+    ownerId: row.user_id,
     author: profile?.nickname ?? "승요팬",
     teamId: attendance?.support_team_id ?? profile?.main_team_id ?? "lg",
     timeAgo: getTimeAgo(row.created_at),
@@ -365,7 +366,7 @@ function toReview(row: ReviewRow, profile: ReviewProfileRow | undefined, attenda
     gameLabel: date && homeName && awayName ? `${date} · ${homeName} ${score} ${awayName}` : "",
     image: row.photos[0] ?? "/assets/stadium-review-day.png",
     likes: 0,
-    comments: 0,
+    comments: commentCount,
     tags: extractHashtags(row.body),
     attendanceId: row.attendance_id
   };
@@ -428,13 +429,27 @@ export async function listReviewsFromDb(params: { onlyMine?: boolean } = {}): Pr
   const attendancesById = new Map(attendances.map((attendance) => [attendance.id, attendance]));
   const gamesById = new Map(games.map((game) => [game.id, game]));
 
+  // 댓글 카운트
+  const commentCounts = new Map<string, number>();
+  const reviewIds = reviews.map((r) => r.id);
+  if (reviewIds.length > 0) {
+    const { data: commentRows } = await admin
+      .from("review_comments")
+      .select("review_id")
+      .in("review_id", reviewIds);
+    for (const c of commentRows ?? []) {
+      commentCounts.set(c.review_id, (commentCounts.get(c.review_id) ?? 0) + 1);
+    }
+  }
+
   return reviews.map((review) => {
     const attendance = attendancesById.get(review.attendance_id);
     return toReview(
       review,
       profilesById.get(review.user_id),
       attendance,
-      attendance ? gamesById.get(attendance.game_id) : undefined
+      attendance ? gamesById.get(attendance.game_id) : undefined,
+      commentCounts.get(review.id) ?? 0
     );
   });
 }
@@ -449,9 +464,10 @@ export async function getReviewByIdFromDb(id: string): Promise<Review | null> {
   if (error) throw new Error(`Failed to load review: ${error.message}`);
   if (!review) return null;
 
-  const [{ data: profile }, { data: attendance }] = await Promise.all([
+  const [{ data: profile }, { data: attendance }, { count: commentCount }] = await Promise.all([
     admin.from("profiles").select("id,nickname,main_team_id").eq("id", review.user_id).maybeSingle(),
-    admin.from("attendances").select("id,support_team_id,game_id").eq("id", review.attendance_id).maybeSingle()
+    admin.from("attendances").select("id,support_team_id,game_id").eq("id", review.attendance_id).maybeSingle(),
+    admin.from("review_comments").select("id", { count: "exact", head: true }).eq("review_id", id)
   ]);
 
   let game: { game_date: string; home_team_id: string; away_team_id: string; home_score: number | null; away_score: number | null } | undefined;
@@ -464,5 +480,37 @@ export async function getReviewByIdFromDb(id: string): Promise<Review | null> {
     if (g) game = g;
   }
 
-  return toReview(review, profile ?? undefined, attendance ?? undefined, game);
+  return toReview(review, profile ?? undefined, attendance ?? undefined, game, commentCount ?? 0);
+}
+
+export async function listCommentsByReviewId(reviewId: string): Promise<ReviewComment[]> {
+  const admin = createSupabaseAdminClient();
+  const { data: rows, error } = await admin
+    .from("review_comments")
+    .select("id, review_id, user_id, body, created_at")
+    .eq("review_id", reviewId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(`Failed to load comments: ${error.message}`);
+  if (!rows || rows.length === 0) return [];
+
+  const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, nickname, main_team_id")
+    .in("id", userIds);
+  const profilesById = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  return rows.map((row) => {
+    const profile = profilesById.get(row.user_id);
+    return {
+      id: row.id,
+      reviewId: row.review_id,
+      userId: row.user_id,
+      authorNickname: profile?.nickname ?? "승요팬",
+      authorTeamId: profile?.main_team_id ?? "lg",
+      body: row.body,
+      createdAt: row.created_at,
+      timeAgo: getTimeAgo(row.created_at)
+    };
+  });
 }

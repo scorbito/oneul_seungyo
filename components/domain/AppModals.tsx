@@ -9,6 +9,7 @@ import { TeamBadge } from "@/components/common/TeamBadge";
 import { getTeam, teams } from "@/lib/constants/teams";
 import { createAttendanceAction, findCurrentUserAttendanceId } from "@/lib/actions/attendance";
 import { createReviewAction } from "@/lib/actions/review";
+import { previewTicket, registerAttendanceFromTicket } from "@/lib/actions/ticket";
 import { useAppState } from "@/lib/state/AppState";
 import { uploadUserFile } from "@/lib/supabase/storage-client";
 import type { Game } from "@/lib/types/domain";
@@ -133,6 +134,16 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
   const [attendanceMemo, setAttendanceMemo] = useState("");
   const [ticketFileName, setTicketFileName] = useState("");
   const [ticketFile, setTicketFile] = useState<File | null>(null);
+  const [processingTicket, setProcessingTicket] = useState(false);
+  // Vision으로 미리 분석된 티켓 정보. 등록 시 hash dedup + ticket 인증 흐름에 사용.
+  const [ticketPreview, setTicketPreview] = useState<{
+    imageBase64: string;
+    mimeType: string;
+    hash: string;
+    gameId: string;
+    homeTeamId: string;
+    awayTeamId: string;
+  } | null>(null);
   const [reviewBody, setReviewBody] = useState("");
   const [privacy, setPrivacy] = useState("전체 공개");
   const [reviewPhotos, setReviewPhotos] = useState<string[]>(["/assets/stadium-review-sunset.png"]);
@@ -254,19 +265,33 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
 
     setSavingAttendance(true);
     try {
-      const ticketImagePath = ticketFile
-        ? await uploadUserFile("ticket-images", ticketFile, `attendance-${Date.now()}`)
-        : undefined;
-      await createAttendanceAction({
-        date: attendance.date,
-        homeTeamId: attendance.homeTeamId,
-        awayTeamId: attendance.awayTeamId,
-        supportTeamId,
-        memo: attendanceMemo,
-        ticketImageUrl: ticketImagePath
-      });
-      addAttendance(attendance);
-      showToast("직관을 DB에 저장했어요.");
+      if (ticketPreview) {
+        // 티켓 흐름: Vision 인증 + Storage 업로드 + DB insert를 server action 한 번에
+        const result = await registerAttendanceFromTicket({
+          imageBase64: ticketPreview.imageBase64,
+          mimeType: ticketPreview.mimeType,
+          supportTeamId,
+          memo: attendanceMemo
+        });
+        if (!result.ok) {
+          showToast(result.reason);
+          setSavingAttendance(false);
+          return;
+        }
+        addAttendance({ ...attendance, verified: true });
+        showToast("티켓 인증 직관 등록 완료!");
+      } else {
+        // 수동 흐름
+        await createAttendanceAction({
+          date: attendance.date,
+          homeTeamId: attendance.homeTeamId,
+          awayTeamId: attendance.awayTeamId,
+          supportTeamId,
+          memo: attendanceMemo
+        });
+        addAttendance(attendance);
+        showToast("직관을 DB에 저장했어요.");
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "직관 저장에 실패했습니다.";
       if (message.includes("로그인")) {
@@ -282,6 +307,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
     setAttendanceMemo("");
     setTicketFileName("");
     setTicketFile(null);
+    setTicketPreview(null);
     setOpen(null);
   };
 
@@ -355,17 +381,66 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
         <div className="form-stack">
           <label className="upload-box">
             <Camera size={24} />
-            <strong>{ticketFileName || "티켓 사진 추가"}</strong>
-            <span>티켓을 촬영하거나 사진을 등록하면 날짜와 경기 정보를 자동으로 맞출 수 있어요.</span>
+            <strong>
+              {processingTicket
+                ? "티켓 인식 중..."
+                : ticketPreview
+                  ? "티켓 인식 완료 — 아래에서 확인 후 등록"
+                  : (ticketFileName || "티켓 사진으로 빠른 등록")}
+            </strong>
+            <span>티켓 사진을 올리면 경기와 응원팀이 자동으로 채워져요. 확인 후 등록 버튼을 누르세요.</span>
             <input
               type="file"
               accept="image/*"
-              onChange={(event) => {
+              disabled={processingTicket}
+              onChange={async (event) => {
                 const file = event.target.files?.[0] ?? null;
+                event.target.value = "";
+                if (!file) return;
                 setTicketFile(file);
-                setTicketFileName(file?.name ?? "");
-                if (file) {
-                  showToast("티켓 인식은 다음 단계에서 자동 선택으로 연결할게요.");
+                setTicketFileName(file.name);
+                setTicketPreview(null);
+                setProcessingTicket(true);
+                try {
+                  const arrayBuffer = await file.arrayBuffer();
+                  const bytes = new Uint8Array(arrayBuffer);
+                  let binary = "";
+                  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+                  const imageBase64 = btoa(binary);
+                  const mimeType = file.type || "image/jpeg";
+
+                  const result = await previewTicket({ imageBase64, mimeType });
+                  if (!result.ok) {
+                    showToast(result.reason);
+                    setTicketFile(null);
+                    setTicketFileName("");
+                    return;
+                  }
+
+                  // 폼 자동 채우기
+                  setSelectedDate(result.gameDate);
+                  setSelectedGameId(result.gameId);
+                  if (result.suggestedSupportTeamId) {
+                    setSupportTeamId(result.suggestedSupportTeamId);
+                  } else {
+                    // mainTeamId가 경기에 없으면 일단 홈팀을 기본 선택, 사용자가 응원팀 드롭다운에서 변경
+                    setSupportTeamId(result.homeTeamId);
+                    showToast("응원팀을 직접 선택해 주세요.");
+                  }
+                  setTicketPreview({
+                    imageBase64,
+                    mimeType,
+                    hash: result.hash,
+                    gameId: result.gameId,
+                    homeTeamId: result.homeTeamId,
+                    awayTeamId: result.awayTeamId
+                  });
+                } catch (err) {
+                  showToast(err instanceof Error ? err.message : "티켓 인식 실패");
+                  setTicketFile(null);
+                  setTicketFileName("");
+                } finally {
+                  setProcessingTicket(false);
                 }
               }}
             />
@@ -549,6 +624,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
           <p className="share-help"><ShieldCheck size={14} /> 공유하면 더 많은 팬들과 기록을 나눌 수 있어요.</p>
         </div>
       </ModalShell>
+
     </>
   );
 }

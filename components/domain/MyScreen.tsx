@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronRight, ListChecks, MessageSquareText, Settings, UserPlus } from "lucide-react";
+import { ChevronRight, ListChecks, MessageSquareText, Settings, Ticket, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Card } from "@/components/common/Card";
@@ -12,6 +12,7 @@ import { useAppState } from "@/lib/state/AppState";
 
 const menuItems = [
   { label: "내 직관 리스트", href: "/my/attendances", icon: ListChecks },
+  { label: "내 티켓 컬렉션", href: "/my/tickets", icon: Ticket },
   { label: "내 후기 모음", href: "/my/reviews", icon: MessageSquareText },
   { label: "친구 관리", href: "/my/friends", icon: UserPlus },
   { label: "설정", href: "/my/settings", icon: Settings }
@@ -62,6 +63,7 @@ export function MyScreen() {
               <Icon size={18} />
               <strong>{item.label}</strong>
               {item.label === "내 직관 리스트" ? <span>({attendances.length})</span> : null}
+              {item.label === "내 티켓 컬렉션" ? <span>({attendances.filter((a) => a.verified).length})</span> : null}
               {item.label === "내 후기 모음" ? <span>({reviews.length})</span> : null}
               <ChevronRight size={17} />
             </a>

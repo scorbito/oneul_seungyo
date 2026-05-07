@@ -2301,6 +2301,254 @@ button {
   background: #6b7280;
 }
 
+.ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.ticket-card {
+  background: #fff;
+  border: 1px solid #edf0f4;
+  border-radius: 14px;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ticket-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #f4f6f9;
+}
+
+.ticket-result-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 24px;
+  z-index: 2;
+}
+
+.ticket-result-win { background: #2563eb; }
+.ticket-result-lose { background: #ef4444; }
+.ticket-result-draw { background: #6b7280; }
+
+.ticket-meta {
+  padding: 10px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ticket-date {
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b7280;
+}
+
+.ticket-teams {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  font-size: 12px;
+}
+
+.ticket-teams strong {
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.ticket-teams em {
+  margin: 0 4px;
+  color: #94a3b8;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.ticket-stadium {
+  font-size: 11px;
+  color: #7b8290;
+}
+
+.ticket-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.ticket-zoom-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 0;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ticket-zoom-image-wrap {
+  max-width: 600px;
+  width: 100%;
+}
+
+.ticket-zoom-caption {
+  margin-top: 10px;
+  text-align: center;
+  color: #f4f6f9;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.comments-section {
+  margin-top: 18px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #edf0f4;
+}
+
+.comments-heading {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #1f2937;
+}
+
+.comments-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comments-empty {
+  margin: 12px 0;
+  color: #9ca3af;
+  font-size: 13px;
+  text-align: center;
+}
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.comment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.comment-meta strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.comment-meta span {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.comment-item p {
+  margin: 0;
+  font-size: 13px;
+  color: #3f4652;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-delete {
+  background: transparent;
+  border: 0;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-delete:hover {
+  color: #ef4444;
+}
+
+.comment-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  border-top: 1px solid #f1f3f5;
+  padding-top: 12px;
+}
+
+.comment-input-row input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #e5e9ef;
+  border-radius: 10px;
+  font-size: 13px;
+  outline: none;
+}
+
+.comment-input-row input:focus {
+  border-color: var(--primary);
+}
+
+.comment-input-row button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.comment-input-row button:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
 .settings-list a {
   grid-template-columns: 24px 1fr auto;
 }

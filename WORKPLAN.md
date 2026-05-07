@@ -576,21 +576,27 @@ styles/
   - [x] 수동 트리거: `?scope=range&from=YYYY-MM-DD&to=YYYY-MM-DD`
 - [x] 2026 시즌 전체 일정 1회 적재 ([scripts/bulk-load-season.mjs](scripts/bulk-load-season.mjs))
   - 결과: **675 경기 적재** (3월~9월), 0 에러
-- [ ] 티켓 Vision 인증 파이프라인
-  - [ ] `lib/server/vision/parseTicket.ts` — Claude Vision 호출 wrapper
-  - [ ] 추출 항목: 경기일자, 홈팀, 원정팀, 구장, 좌석/블록(보조)
-  - [ ] `createAttendance` server action에서 업로드 후 Vision 호출 → 선택한 경기와 매칭 검증
-  - [ ] 매칭 성공: `verified=true`, `verifiedAt`, `verifiedMethod='vision'`, `visionPayload` 저장
-  - [ ] 매칭 실패: `verified=false` 저장, 실패 사유 응답
-- [ ] 부정 방지
-  - [ ] 티켓 이미지 SHA-256 hash 저장, 동일 hash 중복 인증 차단
-  - [ ] 미래 일자 티켓 차단 (Vision 결과 일자가 오늘 이후면 거절)
-  - [ ] 동일 사용자 + 동일 경기 중복 인증 차단
-- [x] 환경변수 및 시크릿 (Vision 분량 빼고)
+- [x] 티켓 Vision 인증 파이프라인 (Gemini 채택)
+  - [x] `lib/server/vision/parseTicket.ts` — Gemini 2.5 Flash Vision 호출 wrapper (한국어 OCR + JSON 구조화 출력)
+  - [x] 추출 항목: 경기일자, 홈팀명/원정팀명, 경기장 (좌석/블록은 후순위)
+  - [x] `previewTicket` server action — Vision 분석만 (DB write 없음). 모달이 사진 업로드 즉시 호출해 폼 자동 채움
+  - [x] `registerAttendanceFromTicket` server action — 등록 버튼 누를 때 호출. 인증된 직관 행 + Storage 업로드 + `verified_method='ticket_image_vision'` + `vision_payload` 저장
+  - [x] 응원팀 자동 결정: 사용자 `mainTeamId`가 경기에 있으면 자동, 아니면 사용자가 응원팀 드롭다운으로 직접 선택
+  - [x] 매칭 실패(Vision OCR 실패 / DB 게임 못 찾음): 토스트로 사유 안내 + 수동 등록 흐름 fallback 가능
+- [x] 부정 방지 (정책 단순화)
+  - [x] 티켓 이미지 SHA-256 hash 저장, 동일 hash 중복 인증 차단 (DB unique constraint + preview 시점 사전 체크)
+  - [x] 동일 사용자 + 동일 경기 중복 인증 차단 (`attendances.unique(user_id, game_id)`)
+  - 미래 일자 차단 룰은 빠짐 — 사용자가 티켓을 며칠 전에 받는 게 정상이라, 인증 정책은 "티켓 업로드 = verified=true"로 단순화 (의사결정 로그 2026-05-07 참조)
+- [x] 환경변수 및 시크릿
   - [x] `CRON_SECRET` `.env.example` 등록
-  - [ ] `ANTHROPIC_API_KEY` (Vision 단계에서 추가)
-  - [ ] Vercel 환경변수 등록 안내 문서 업데이트
-- [ ] 관측성
+  - [x] `GEMINI_API_KEY` `.env.example` 등록 (Anthropic Vision 대신 Gemini 채택)
+  - [ ] Vercel 환경변수 등록 안내 문서 업데이트 (배포 단계에서)
+- [x] 티켓 컬렉션 페이지 (`/my/tickets`)
+  - [x] 인증된 직관의 티켓 사진을 그리드로 표시
+  - [x] ticket-images 버킷이 private이라 admin client로 1시간 signed URL 발급
+  - [x] 카드 클릭 시 전체 화면 줌 모달
+  - [x] 마이 메뉴에 "내 티켓 컬렉션 (N)" 항목 추가
+- [ ] 관측성 (MVP에선 제외, 운영 단계로 이연)
   - [ ] 동기화 실패/Vision 실패 로그 수집 경로 결정 (Supabase log table 또는 외부)
   - [ ] 마지막 동기화 시각/상태를 admin에서 확인할 수 있는 최소 화면 또는 endpoint
 
@@ -599,20 +605,66 @@ styles/
 - [x] bulk load 스크립트로 `games` upsert 동작 확인 (2026 시즌 675경기)
 - [x] 동일 bulk load 2회 실행해도 중복 행 없음 (external_id unique + insert/update 분리)
 - [x] 순위 sync 스크립트로 10팀 standings + form 적재 확인
+- [x] 실 KBO 티켓 사진 업로드 → Vision 인식 → DB 매칭 → 인증 직관 등록까지 동작 확인 (사용자 실측)
+- [x] 동일 티켓 hash 재업로드 차단 확인 (preview 단계에서 메시지)
 - [ ] cron route handler를 Vercel 배포 후 호출로 검증 (CRON_SECRET 인증 흐름)
 - [ ] 외부 소스 응답 일부 누락 시 기존 row가 살아있는지 확인
-- [ ] 정상 티켓 업로드 시 `verified=true` 전환 확인
-- [ ] 다른 경기 티켓 업로드 시 `verified=false` 및 사유 노출 확인
-- [ ] 동일 hash 재업로드 차단 확인
-- [ ] 미래 일자 티켓 차단 확인
-- [ ] 인증 직관만 홈 승률/팀 랭킹에 반영되는지 확인
+- [ ] 인증 직관만 홈 승률/팀 랭킹에 반영되는지 확인 — 현 정책은 "모든 등록 직관 카운트"로 변경되어 검증 불필요해짐
 
 리뷰어 검수:
 
 - [ ] 리뷰어 에이전트가 외부 호출 경계, 시크릿 노출 위험, idempotency, Vision 실패 UX를 검토
 - [ ] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: KBO 동기화 완료 / Vision 인증 미시작
+진행 상태: Implemented / Reviewer Pending
+
+### Phase 8.6. 후기 댓글 기능
+
+목표: 원래 Phase 2(스펙)에서 후순위로 미뤄둔 후기 댓글을 추가한다. Phase 8에서 정착한 admin client 기반 server action 패턴과 Phase 8.5 후기 본문/태그/카운트 흐름을 그대로 활용한다.
+
+원칙:
+
+- 댓글은 flat 리스트 (대댓글 없음)
+- 수정 없음 (삭제 후 재작성)
+- 댓글 좋아요/멘션/알림 없음 — 추후 단계
+- 가시성은 후기 `publicScope`를 따름 (public/friends/private)
+
+작업:
+
+- [x] DB: `review_comments` 테이블 + RLS + 인덱스 + `touch_updated_at` 트리거 ([supabase/add-comments.sql](supabase/add-comments.sql))
+  - body 1~500자 check constraint
+  - read 정책: 후기 가시 범위 따라 (public + 본인 + 친구)
+  - insert 정책: 본인만, 단 해당 후기를 볼 수 있어야 함
+  - delete 정책: 본인 댓글 또는 후기 작성자
+- [x] Server actions ([lib/actions/comment.ts](lib/actions/comment.ts))
+  - `createCommentAction({ reviewId, body })`
+  - `deleteCommentAction(commentId)` — 권한 검증 후 삭제
+- [x] Queries ([lib/supabase/queries.ts](lib/supabase/queries.ts))
+  - `listCommentsByReviewId(reviewId)` — 작성자 닉네임/팀까지 조인
+  - `getReviewByIdFromDb` / `listReviewsFromDb`에 댓글 카운트 조회 추가
+- [x] Domain types ([lib/types/domain.ts](lib/types/domain.ts))
+  - `ReviewComment` 타입 신규
+  - `Review.ownerId` 추가 — UI에서 본인 후기 여부 판정
+- [x] UI ([components/domain/ReviewDetailScreen.tsx](components/domain/ReviewDetailScreen.tsx))
+  - 댓글 리스트 (작성자 팀 배지 + 닉네임 + 시간 + 본문)
+  - 본인 댓글 또는 후기 owner면 삭제 버튼 노출
+  - 입력창 + 등록 버튼 (Enter 키 등록 지원, 500자 제한)
+  - 비로그인은 로그인 안내
+  - 낙관적 업데이트 + `router.refresh()`로 서버 데이터 동기화
+- [x] ReviewCard 댓글 카운트가 실 DB 데이터로 표시 (`review.comments`)
+- [x] `ReviewDetailPage` server component에서 comments + currentUserId 같이 fetch
+
+테스트:
+
+- [x] 댓글 등록/표시/삭제 동작 확인 (로컬)
+- [ ] 다른 사용자 후기 댓글 작성/삭제 권한 분리 확인 (RLS)
+- [ ] 친구 공개 후기 댓글 가시성 확인
+
+리뷰어 검수:
+
+- [ ] 리뷰어 에이전트가 RLS 정책 + UX 흐름 검토
+
+진행 상태: Implemented / SQL 적용 필요
 
 ### Phase 9. 반응형/접근성/시각 QA
 
@@ -754,7 +806,8 @@ styles/
 | Phase 6.8. 추가 수정사항 | Completed / QA Passed | Codex | 2026-05-06 |
 | Phase 7. 서비스 데이터 모델/API 설계 | Implemented / Reviewer Pending | Codex | 2026-05-06 |
 | Phase 8. 인증/DB/스토리지 연동 | Implemented / Reviewer Pending | Codex | 2026-05-07 |
-| Phase 8.5. 외부 데이터 연동 | KBO 동기화 완료 / Vision 미시작 | Codex | 2026-05-07 |
+| Phase 8.5. 외부 데이터 연동 | Implemented / Reviewer Pending | Codex | 2026-05-07 |
+| Phase 8.6. 후기 댓글 기능 | Implemented / SQL 적용 필요 | Codex | 2026-05-07 |
 | Phase 9. 반응형/접근성/시각 QA | Not Started | TBD | 2026-05-06 |
 | Phase 10. 배포 준비 | Not Started | TBD | 2026-05-06 |
 | Phase 11. 인수 문서/마무리 | Not Started | TBD | 2026-05-06 |
@@ -827,3 +880,7 @@ styles/
   - 직관/후기 삭제 server action(`deleteAttendanceAction`/`deleteReviewAction`)이 DB 행 삭제뿐 아니라 review-photos/ticket-images 버킷의 Storage 객체도 같이 정리하도록 함.
   - 후기 본문 hashtag 자동 추출, 줄바꿈 보존, 자동 부착 텍스트(제목/태그/추가 문장) 제거.
 - 2026-05-07: Phase 8.5 KBO 동기화 부분을 완성했다. 데이터 소스는 KBO 공식 API(`koreabaseball.com/ws/Main.asmx/GetKboGameList`) 1순위 + 네이버 스포츠 HTML/JSON 폴백을 채택했다(이전 BET 프로젝트 참고). 클라이언트(`lib/server/kbo/*`), upsert 로직(`syncGames`/`syncStandings`), CRON_SECRET 인증 cron route 2종, Vercel cron 스케줄(03:00 주간/14-23시 30분 스코어/02:30 순위), 2026 시즌 bulk load 스크립트(675경기 적재 완료), standings 동기화 스크립트(form 자동 계산)까지. Vision 인증과 부정 방지는 후속 라운드.
+- 2026-05-07: 티켓 Vision 인증 SDK는 **Anthropic Claude → Google Gemini로 변경**. Anthropic API가 결제 충전 필수인데 사용자 카드(JCB) 결제 실패 + 일정 단축 목적. Gemini 2.5 Flash는 무료 티어가 하루 1,500회로 충분하고 한국어 OCR 정확도가 높다. `@google/genai` SDK 사용, `lib/server/vision/parseTicket.ts`에서 JSON 구조화 응답으로 (날짜/홈팀/원정팀/구장) 추출.
+- 2026-05-07: 티켓 인증 정책을 **단순화**. 원안의 "Vision 결과 일자가 미래면 거절" 룰은 빠짐 — 티켓을 며칠 전에 받는 것이 정상이라 사용자 경험을 해친다. 새 정책: **티켓 업로드 = `verified=true`**, 부정 방지는 (1) SHA-256 hash 중복 차단, (2) 동일 사용자+경기 unique constraint 두 가지로만. Vision은 어떤 경기 티켓인지 매칭하기 위한 OCR 용도에 집중.
+- 2026-05-07: 티켓 등록 흐름은 **자동 채움 + 사용자 확인** 방식. 사진 업로드 즉시 `previewTicket` server action(DB write 없음)이 Vision 분석 + 게임 매칭 + 응원팀 추천을 수행해 모달 폼을 자동 채우고, 사용자가 등록 버튼을 누르면 그제서야 `registerAttendanceFromTicket`이 Storage 업로드 + DB insert를 실행. 자동 채움/자동 등록 모두 가능했지만 사용자 검토 단계를 두는 게 신뢰감 있음.
+- 2026-05-07: 후기 댓글 기능을 **Phase 8.6으로 추가**. 원래 Phase 2 스펙에서 "댓글 Phase 2"로 미뤄둔 것이지만, Phase 8/8.5에서 admin client + RLS 정책 패턴이 안정화돼서 1시간 내 추가 가능했음. flat 리스트, 본인/후기 owner만 삭제, 가시성은 후기 publicScope를 따름. `supabase/add-comments.sql`로 테이블 + RLS + 인덱스 + 트리거를 일괄 적용.

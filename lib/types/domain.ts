@@ -46,6 +46,7 @@ export type UserProfile = {
 
 export type Review = {
   id: string;
+  ownerId?: string;     // DB 후기일 때만 채워짐. UI에서 본인 여부 체크에 사용.
   author: string;
   teamId: string;
   timeAgo: string;
@@ -57,4 +58,15 @@ export type Review = {
   comments: number;
   tags: string[];
   attendanceId?: string;
+};
+
+export type ReviewComment = {
+  id: string;
+  reviewId: string;
+  userId: string;
+  authorNickname: string;
+  authorTeamId: string;
+  body: string;
+  createdAt: string;
+  timeAgo: string;
 };
