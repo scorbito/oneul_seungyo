@@ -1,5 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
+import { redirect } from "next/navigation";
 import { HomeScreen } from "@/components/domain/HomeScreen";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listGamesFromDb, listStandingsFromDb } from "@/lib/supabase/queries";
 import type { Game } from "@/lib/types/domain";
 
@@ -22,6 +24,13 @@ function toDomainGame(game: Awaited<ReturnType<typeof listGamesFromDb>>[number])
 
 export default async function HomePage() {
   noStore();
+
+  // 비로그인 사용자는 랜딩으로
+  const ssr = createSupabaseServerClient();
+  const { data: authData } = await ssr.auth.getUser();
+  if (!authData?.user) {
+    redirect("/landing");
+  }
 
   // 이번주 (월요일 시작 ~ 일요일 끝) 범위
   const today = new Date();

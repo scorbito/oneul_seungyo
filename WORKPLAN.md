@@ -657,14 +657,207 @@ styles/
 테스트:
 
 - [x] 댓글 등록/표시/삭제 동작 확인 (로컬)
-- [ ] 다른 사용자 후기 댓글 작성/삭제 권한 분리 확인 (RLS)
-- [ ] 친구 공개 후기 댓글 가시성 확인
+- [x] 다른 사용자 후기 댓글 작성/삭제 권한 분리 확인 (RLS)
+- [x] 친구 공개 후기 댓글 가시성 확인
 
 리뷰어 검수:
 
 - [ ] 리뷰어 에이전트가 RLS 정책 + UX 흐름 검토
 
-진행 상태: Implemented / SQL 적용 필요
+진행 상태: Completed
+
+### Phase 8.7. 다크 컨셉 전면 리디자인
+
+목표: `data/oneul-seungyo-home-spec`(홈 시안)을 기준으로 전 페이지·전 팝업을 다크 프리미엄 스포츠 대시보드 스타일로 통일한다. 시안 이미지(main.png, calender.png, community.png, mypage.png, livelist.png, ticket_collection.png, myreviews.png, review_detail.png, friends.png, setting.png, write_review..png, registration.png, profile_edit.png, share.png)를 1:1 대조하며 마크업과 CSS를 다듬고, 부족했던 인터랙션·기능을 함께 추가한다.
+
+원칙:
+
+- AppShell에 `theme="default" | "dark"` prop 도입 → 페이지별 진입만으로 다크 적용
+- 모든 다크 스타일은 `.phone-frame-dark` 스코프 안에서만 동작 → default 테마 영향 없음
+- 디자인 토큰 변수화 (`--hd-bg-card`, `--hd-accent-orange #ff6a2b`, `--hd-success #24c26a`, `--hd-danger #ff5a64`, `--hd-info #6d8cff`, `--hd-radius-pill 999px` 등)
+- 모달은 panelClassName 기반 다크 override (`review-modal-panel`, `attendance-modal-panel`, `profile-modal-panel`, `share-modal-panel`, `dark-confirm-panel`)
+- 카드/리스트 사이 간격은 인접 셀렉터(`+`)로 통합 룰화 — 상단 보조 요소(back-link / detail-topbar / community-head / friend-search / segmented-control) 다음 콘텐츠는 자동으로 좁혀짐
+
+작업 — 페이지 다크 적용:
+
+- [x] 홈 ([components/domain/HomeScreen.tsx](components/domain/HomeScreen.tsx)) — Hero(.500), 다음 직관, 최근 직관(3장), 우리팀 일정(월~일 7등분 grid)
+- [x] 일정 ([components/domain/ScheduleScreen.tsx](components/domain/ScheduleScreen.tsx)) — 캘린더 그리드 라인, 셀에 [날짜·상대팀 배지·직관체크/결과점], 일=빨강/토=파랑, 시리즈 막대 제거
+- [x] 커뮤니티 ([components/domain/CommunityScreen.tsx](components/domain/CommunityScreen.tsx)) — 필터 칩 + 후기 작성 버튼 + 피드
+- [x] 마이 ([components/domain/MyScreen.tsx](components/domain/MyScreen.tsx)) — 야구장 배경 hero(`/assets/mypagemyinfobg.png`), 통계 3개 카드, 메뉴 리스트
+- [x] 내 직관 리스트 ([components/domain/MyAttendancesScreen.tsx](components/domain/MyAttendancesScreen.tsx)) — segmented 필터, 결과 코너칩, 후기 작성 버튼 + 우측 하단 휴지통
+- [x] 내 티켓 컬렉션 ([components/domain/TicketCollectionScreen.tsx](components/domain/TicketCollectionScreen.tsx)) — 2열 그리드, 3:4 썸네일, 매치 + 구장 표기
+- [x] 내 후기 모음 ([components/domain/MyReviewsScreen.tsx](components/domain/MyReviewsScreen.tsx)) — 본인 후기 피드 (액션은 후기 상세로 위임)
+- [x] 친구 관리 ([components/domain/FriendsScreen.tsx](components/domain/FriendsScreen.tsx)) — 검색 input + segmented + 빈 상태(둥근 회색 원 + Inbox 아이콘)
+- [x] 설정 ([app/my/settings/page.tsx](app/my/settings/page.tsx)) — 메뉴 행 + 빨강 outline 로그아웃
+- [x] 후기 상세 ([components/domain/ReviewDetailScreen.tsx](components/domain/ReviewDetailScreen.tsx)) — 톱바(작성자 아바타+닉네임), 이미지, 게임 메타, 본문, 액션, 댓글
+- [x] 경기 상세는 추후 버전으로 보류 → `/games/[id]` redirect로 진입 차단, 일정 페이지 행도 클릭 비활성화
+
+작업 — 팝업 다크 적용:
+
+- [x] 후기 작성 모달 — 사진 strip, 직관 경기 picker, textarea, 공개 범위, 등록하기
+- [x] 직관 등록 모달 — 티켓 업로드 박스, 날짜/매치/응원팀/메모, 등록하기
+- [x] 프로필 편집 모달 — 96px 아바타 미리보기 + 사진 변경 버튼, 닉네임, 팀 grid(2열) + ✓ 마크
+- [x] 공유 모달 — 9:16 비율 카드 미리보기(배경 이미지 비율과 일치), 템플릿 picker, 카카오/인스타/저장 액션
+- [x] 다크 confirm 모달 (`dark-confirm-panel`) — 후기 삭제, 로그아웃 등 재사용
+
+작업 — 인터랙션·기능 추가:
+
+- [x] 팀 컬러 톤다운 ([lib/constants/teams.ts](lib/constants/teams.ts)) — 채도/명도 한 단계 낮춰 시안 톤에 맞춤
+- [x] TeamBadge에 흰색 얇은 링(border 1px / opacity 0.55) 다크 스코프 override
+- [x] 다음 직관 카드: `<` `>` 페이지네이션 + 좌/우 슬라이드 애니메이션, 사용 불가시 흐림
+- [x] 이미지 캐러셀 — 후기 상세에 좌우 화살표 + `n/N` 카운터 + 도트 인디케이터
+- [x] 후기 게시물에 게임 메타 행(`review-game-meta`) 추가 — `[날짜] [홈배지 홈팀명 점수 원정팀명 원정배지] [결과 칩(녹/빨/회)]`, 카드와 상세 모두 동일
+- [x] ReviewCard 본문 3줄 line-clamp + 자동 더보기 토글 (글자수 휴리스틱 → CSS line-clamp + ref measure)
+- [x] 무한 스크롤 ([app/community/page.tsx](app/community/page.tsx) + [components/domain/CommunityScreen.tsx](components/domain/CommunityScreen.tsx)) — 초기 20개 + IntersectionObserver, `loadMoreReviewsAction(cursor)` server action, `created_at` cursor pagination
+- [x] 후기 수정/삭제 — 후기 상세 우측 상단 `...` 드롭다운 메뉴 (수정 → AppModals editReview prop, 삭제 → 다크 confirm + `/community` redirect). 직관 매핑은 잠금
+  - [x] `updateReviewAction` server action — 본인 글 권한 체크 + body/photos/scope 갱신 + 미사용 사진 storage 정리
+  - [x] AppModals `editReview` prop — 사진/본문 prefill, 직관 카드 잠금 표시, 등록 → "수정하기"
+- [x] 프로필 사진 (option A: 즉시 삭제)
+  - [x] `updateAvatarAction` — Storage 업로드한 새 URL 받아 DB 갱신 + 이전 파일 삭제
+  - [x] 프로필 편집 모달에 96px 원형 + 이름 첫 글자 fallback + "사진 변경" 버튼 (5MB 제한)
+  - [x] Review/ReviewComment에 `authorAvatarUrl` 필드 추가, queries에서 매핑
+  - [x] ReviewCard / 후기 상세 톱바 / 댓글 모두 아바타 우선 + 이름 첫 글자 fallback
+- [x] 해시태그 칩 노출 제거 (본문 안 `#태그` 텍스트는 유지) — 추후 클릭 가능 링크화 여지 남김
+- [x] 로그아웃 기능 — 설정 → 다크 confirm 모달 → `signOutAction` (`/landing` redirect)
+- [x] 첫 진입 흐름 — `/` 비로그인 시 `/landing` redirect, 랜딩 "시작하기"는 `/login`으로
+
+작업 — 공통 정리:
+
+- [x] `globals.css`에서 중복된 `home-dark-*` 1700여 줄 제거 후 단일 토큰 기반 블록으로 재작성
+- [x] 상단 보조 요소 다음 콘텐츠 간격 통합 룰 (`back-link + *`, `detail-topbar + *`, `community-head + *`, `friend-search + *`, `segmented-control + *`)
+- [x] 모든 모달의 스크롤바 숨김 (`scrollbar-width: none` + `::-webkit-scrollbar { display: none }`)
+
+테스트:
+
+- [x] 각 페이지/모달 다크 시안과 1:1 대조 (모바일 뷰포트)
+- [x] `npx tsc --noEmit` 통과
+- [ ] 360px / 414px 스크롤 영역 점검 (Phase 9에서 일괄)
+- [ ] 라이트 테마 페이지(landing/login/onboarding) 다크 통일 — 별도 단계로 분리 (Phase 8.8 OAuth와 함께)
+
+리뷰어 검수:
+
+- [ ] 리뷰어 에이전트가 시안 vs 구현, 다크 토큰 일관성, 인터랙션 회귀 검토
+
+진행 상태: Implemented / Reviewer Pending (인증 흐름 페이지는 Phase 8.8에서 다룸)
+
+### Phase 8.8. 소셜 로그인(Google + 카카오) + 인증/온보딩 다크 리디자인
+
+목표: 이메일/비밀번호 가입의 마찰을 줄이고 인증·온보딩 흐름을 Phase 8.7과 동일한 다크 컨셉으로 통일한다. 한국 사용자 비중을 고려해 Google과 카카오를 함께 활성화 — 둘 다 Supabase Auth Provider 공식 지원이라 절차가 거의 동일.
+
+원칙:
+
+- 두 OAuth 모두 Supabase Auth Provider 기능 그대로 사용 (별도 백엔드 없음)
+- redirect 흐름은 기존 `emailAuthAction`과 동일하게 정렬 — 프로필 있으면 `/`, 없으면 `/onboarding`
+- 다크 디자인은 Phase 8.7 토큰(`--hd-*`)과 모달/카드 패턴을 그대로 재사용
+- 카카오는 **개인 앱**으로 진행 (닉네임/프로필 사진 동의항목만 사용, 이메일 불필요 → 비즈 앱 신청 회피)
+
+작업 — Google OAuth:
+
+- [ ] **콘솔 설정** (사용자 작업)
+  - Google Cloud Console: OAuth 2.0 Client ID 생성 + Authorized redirect URIs에 `https://<project>.supabase.co/auth/v1/callback` 등록
+  - Supabase Dashboard → Authentication → Providers → Google 활성화 + Client ID/Secret 입력
+  - Supabase Dashboard → Authentication → URL Configuration → Site URL/Redirect URL에 개발(`http://localhost:3000`)·운영 URL 등록
+
+작업 — 카카오 OAuth:
+
+- [ ] **콘솔 설정** (사용자 작업)
+  - 카카오 디벨로퍼스(developers.kakao.com) → 내 애플리케이션 → 앱 생성
+  - 앱 설정 → 플랫폼 → Web 플랫폼 추가에 `http://localhost:3000` + 운영 도메인 등록
+  - 제품 설정 → 카카오 로그인 → 활성화 ON
+  - 카카오 로그인 → Redirect URI에 `https://<project>.supabase.co/auth/v1/callback` 등록
+  - 카카오 로그인 → 동의 항목에서 "닉네임"·"프로필 사진" 필수/선택 동의 설정 (이메일은 미사용)
+  - 앱 키에서 **REST API 키** + 보안 → **Client Secret** 발급
+  - Supabase Dashboard → Authentication → Providers → Kakao 활성화 + Client ID(REST API 키)·Client Secret 입력
+
+작업 — 코드 (Codex):
+
+- [ ] `lib/actions/auth.ts`: `signInWithOAuthAction(provider: "google" | "kakao")` server action — `supabase.auth.signInWithOAuth({ provider, options: { redirectTo: '${origin}/auth/callback' } })` 호출 후 반환된 URL로 redirect
+- [ ] `app/auth/callback/route.ts`: `?code=...` 받아 `supabase.auth.exchangeCodeForSession(code)` → 프로필 존재 여부에 따라 `/` 또는 `/onboarding`으로 redirect
+- [ ] `LoginForm`/login 페이지: "Google로 계속하기" + "카카오로 계속하기" 버튼 활성화 + 로딩 상태
+- [ ] middleware는 그대로 (세션 갱신만)
+
+작업 — 인증/온보딩 다크 리디자인:
+
+- [ ] `/landing` ([app/landing/page.tsx](app/landing/page.tsx)) — 다크 톤 정리, 시작하기/로그인 버튼 다크 스타일, 마스코트/카피 정렬
+- [ ] `/login` ([app/login/page.tsx](app/login/page.tsx) + [components/domain/LoginForm.tsx](components/domain/LoginForm.tsx))
+  - 다크 카드 + 흰 보더(0.22)
+  - Google/카카오 버튼: 채널 컬러 (Google 흰색 카드 + 다채색 G 로고, 카카오 #fee500 + 검정 텍스트, disabled 시 흐림)
+  - 로그인/가입 탭 segmented (Phase 8.7 segmented-control과 일관)
+  - input/label/메시지 다크 스타일
+  - 약관 안내 회색 작은 텍스트
+- [ ] `/onboarding` ([app/onboarding/page.tsx](app/onboarding/page.tsx) + [components/domain/OnboardingForm.tsx](components/domain/OnboardingForm.tsx))
+  - 환영 카피 + 닉네임 input + 팀 선택(2열 grid + ✓ 체크, profile-modal-panel과 동일 패턴)
+  - "시작하기" 큰 오렌지 버튼 (필수 입력 검증 시 disabled)
+  - 진행률 표시 (옵션) — 1/2 닉네임, 2/2 내 팀
+
+테스트:
+
+- [ ] 콘솔 설정 후 Google 로그인 1회 수동 검증 (신규/기존 모두)
+- [ ] 콘솔 설정 후 카카오 로그인 1회 수동 검증 (신규/기존 모두)
+- [ ] OAuth 신규 사용자는 `/onboarding`, 기존 사용자는 `/`로 진입
+- [ ] 카카오 로그인 시 이메일 미수신 → Supabase가 자동 생성한 임시 이메일이 profiles 행에 정상 매핑되는지 확인
+- [ ] 로그인 페이지 다크 + 마스코트/버튼 컬러(Google 흰색·카카오 #fee500) 시안 일치
+- [ ] 온보딩 팀 선택 ✓ 마크 + 저장 후 `/`로 이동
+- [ ] 로그아웃 → `/landing` 흐름이 OAuth 사용자에게도 정상 동작
+- [ ] `npx tsc --noEmit` 통과
+
+리뷰어 검수:
+
+- [ ] OAuth callback 보안 (state/PKCE), 세션 쿠키, redirect 화이트리스트
+- [ ] 다크 인증 화면이 Phase 8.7 토큰/패턴과 일관
+
+진행 상태: Planned
+
+### Phase 8.9. 익명 로그인 + 정식 계정 업그레이드
+
+목표: 가입 마찰을 0으로 줄여 "일단 써보고 마음에 들면 가입" 흐름을 만든다. 첫 진입 시 자동 익명 세션 발급으로 직관 등록·후기 작성을 즉시 가능하게 하고, 친구 관리·다른 기기 동기화가 필요해지는 시점에 자연스럽게 정식 계정으로 업그레이드 유도한다.
+
+원칙:
+
+- Supabase 공식 익명 로그인(`signInAnonymously`) 사용 — 별도 백엔드 0
+- 업그레이드 시 `user.id` 그대로 유지되어 그동안 쌓은 데이터 손실 없음
+  - 이메일/비번: `supabase.auth.updateUser({ email, password })`
+  - OAuth: `supabase.auth.linkIdentity({ provider: 'google' | 'kakao' })`
+- 익명 user는 디바이스 의존(폰 바꾸면 데이터 못 봄)이라는 한계를 사용자에게 명시
+- 익명 user의 권한은 RLS에서 정식 user보다 좁게 (예: 후기 공개 범위 = `public` 강제, friends/private 비활성)
+- 30일 미사용 익명 세션은 Supabase 자동 삭제 (설정 그대로)
+
+작업 — 인프라:
+
+- [ ] Supabase Dashboard → Authentication → Providers → Anonymous sign-ins 활성화
+- [ ] RLS 정책 점검: `is_anonymous = true` user에 대해 후기 publicScope를 `public`만 허용, 친구 요청/팔로우 등 소셜 기능 차단
+
+작업 — 코드:
+
+- [ ] middleware 또는 root layout에서 비로그인 사용자에게 자동 익명 세션 발급
+  - `/landing` 진입 시 익명 세션이 없으면 `signInAnonymously()` 호출 → 직접 `/`로 진입 가능
+  - 또는 "체험하기" 버튼을 별도로 두고 클릭 시 익명 세션 발급
+- [ ] AppState에 `isAnonymous` 플래그 노출 (`profile.isAnonymous`)
+- [ ] 친구 관리·공유·다른 기기 동기화 등 정식 계정이 필요한 액션에 가드 추가 → "정식 계정으로 전환" 모달
+- [ ] 전환 모달: Google/카카오/이메일 중 선택 → `linkIdentity` 또는 `updateUser` 호출 → 동일 user.id로 업그레이드
+- [ ] 업그레이드 성공 토스트 + 데이터 그대로 유지 안내
+
+작업 — UX 흐름 정리:
+
+- [ ] 랜딩 흐름 재정리: "시작하기"(익명 자동 진입) + "로그인"(정식 계정) 2개 버튼
+- [ ] 마이 페이지 hero에 "정식 계정으로 전환" CTA 표시 (익명 user일 때만)
+- [ ] 후기 공개 범위 선택 시 익명 user는 friends/private 옵션을 disabled + 안내 (정식 가입 시 사용 가능)
+
+테스트:
+
+- [ ] 첫 방문 → 익명 세션 발급 → 직관 등록 → 데이터 저장 확인
+- [ ] 익명 → 이메일 가입으로 업그레이드 → user.id 유지 + 직관 데이터 그대로
+- [ ] 익명 → Google/카카오 연동으로 업그레이드 → 동일 검증
+- [ ] 다른 브라우저/시크릿창 → 별도 익명 user 발급 (데이터 분리) 확인
+- [ ] 익명 user의 RLS 가드 확인 (friends/private 후기 작성 차단)
+- [ ] `npx tsc --noEmit` 통과
+
+리뷰어 검수:
+
+- [ ] 익명 → 정식 업그레이드 시 데이터 손실 / 중복 / 권한 누수 케이스 점검
+- [ ] 봇/스팸 익명 user 누적 위험 평가 + 정리 정책
+
+진행 상태: Planned (Phase 8.8 종료 후 진행)
 
 ### Phase 9. 반응형/접근성/시각 QA
 
@@ -807,7 +1000,10 @@ styles/
 | Phase 7. 서비스 데이터 모델/API 설계 | Implemented / Reviewer Pending | Codex | 2026-05-06 |
 | Phase 8. 인증/DB/스토리지 연동 | Implemented / Reviewer Pending | Codex | 2026-05-07 |
 | Phase 8.5. 외부 데이터 연동 | Implemented / Reviewer Pending | Codex | 2026-05-07 |
-| Phase 8.6. 후기 댓글 기능 | Implemented / SQL 적용 필요 | Codex | 2026-05-07 |
+| Phase 8.6. 후기 댓글 기능 | Completed | Codex | 2026-05-08 |
+| Phase 8.7. 다크 컨셉 전면 리디자인 | Implemented / Reviewer Pending | Codex | 2026-05-08 |
+| Phase 8.8. 소셜 로그인(Google + 카카오) + 인증/온보딩 다크 리디자인 | Planned | Codex | 2026-05-08 |
+| Phase 8.9. 익명 로그인 + 정식 계정 업그레이드 | Planned | Codex | 2026-05-08 |
 | Phase 9. 반응형/접근성/시각 QA | Not Started | TBD | 2026-05-06 |
 | Phase 10. 배포 준비 | Not Started | TBD | 2026-05-06 |
 | Phase 11. 인수 문서/마무리 | Not Started | TBD | 2026-05-06 |
@@ -884,3 +1080,6 @@ styles/
 - 2026-05-07: 티켓 인증 정책을 **단순화**. 원안의 "Vision 결과 일자가 미래면 거절" 룰은 빠짐 — 티켓을 며칠 전에 받는 것이 정상이라 사용자 경험을 해친다. 새 정책: **티켓 업로드 = `verified=true`**, 부정 방지는 (1) SHA-256 hash 중복 차단, (2) 동일 사용자+경기 unique constraint 두 가지로만. Vision은 어떤 경기 티켓인지 매칭하기 위한 OCR 용도에 집중.
 - 2026-05-07: 티켓 등록 흐름은 **자동 채움 + 사용자 확인** 방식. 사진 업로드 즉시 `previewTicket` server action(DB write 없음)이 Vision 분석 + 게임 매칭 + 응원팀 추천을 수행해 모달 폼을 자동 채우고, 사용자가 등록 버튼을 누르면 그제서야 `registerAttendanceFromTicket`이 Storage 업로드 + DB insert를 실행. 자동 채움/자동 등록 모두 가능했지만 사용자 검토 단계를 두는 게 신뢰감 있음.
 - 2026-05-07: 후기 댓글 기능을 **Phase 8.6으로 추가**. 원래 Phase 2 스펙에서 "댓글 Phase 2"로 미뤄둔 것이지만, Phase 8/8.5에서 admin client + RLS 정책 패턴이 안정화돼서 1시간 내 추가 가능했음. flat 리스트, 본인/후기 owner만 삭제, 가시성은 후기 publicScope를 따름. `supabase/add-comments.sql`로 테이블 + RLS + 인덱스 + 트리거를 일괄 적용.
+- 2026-05-08: **Phase 8.7 다크 컨셉 전면 리디자인**. `data/oneul-seungyo-home-spec`의 design-tokens/wireframe을 기준점으로 잡고, 시안 이미지(main/calender/community/mypage/livelist/ticket_collection/myreviews/review_detail/friends/setting/write_review/registration/profile_edit/share)를 1:1 대조하며 모든 페이지·모달을 다크 프리미엄 스포츠 대시보드 스타일로 통일. AppShell `theme="dark"` prop 도입으로 페이지별 진입만으로 다크 적용, 모달은 panelClassName 기반 override. 함께 추가된 기능 — 다음 직관 페이지네이션+슬라이드 애니메이션, 후기 이미지 캐러셀, 게임 메타 행, 본문 line-clamp(3줄), 무한 스크롤(cursor pagination), 후기 수정/삭제(상세 ⋯ 메뉴), 프로필 사진(이전 사진 즉시 삭제 옵션 A), 로그아웃, 비로그인 → 랜딩 redirect. 경기 상세는 추후 버전으로 보류 → `/games/[id]` redirect로 진입 차단. 인증/온보딩 페이지(login/landing/onboarding)는 Phase 8.8 OAuth 작업과 함께 다룸.
+- 2026-05-08: **Phase 8.9 익명 로그인 + 정식 계정 업그레이드** 신설. 가입 마찰을 0으로 줄여 "체험 → 가입" 흐름을 만들기 위한 단계. Supabase 공식 익명 로그인(`signInAnonymously`) + `linkIdentity`/`updateUser`로 업그레이드해 user.id를 유지한 채 데이터 손실 없이 정식 계정으로 전환. 익명 user는 디바이스 의존이라는 한계가 있으므로, 친구 관리/공유/다른 기기 동기화가 필요한 시점에 자연스럽게 전환 모달을 띄우는 흐름. 익명 user의 RLS 권한은 정식 user보다 좁게(public 공개만 허용) 잡아 봇/스팸 위험을 완화. Phase 8.8 종료 후 진행.
+- 2026-05-08: **Phase 8.8 소셜 로그인 + 인증/온보딩 다크 리디자인** 신설. 이메일/비번 가입 마찰을 줄이기 위해 Google + 카카오 OAuth를 함께 추가(Supabase Auth Provider 공식 지원 + `app/auth/callback/route.ts`). 카카오는 처음에 보류했으나 Supabase가 카카오 provider를 공식 지원해 Google과 절차가 거의 동일한 점(콘솔 설정 + `provider: 'kakao'` 한 줄)을 확인하고 함께 진행하기로. 카카오는 **개인 앱**으로 진행 — 닉네임/프로필 사진만 동의항목으로 사용해 비즈 앱 신청을 회피(이메일은 Supabase가 임시 이메일을 자동 생성). 동시에 `/landing` `/login` `/onboarding` 세 화면을 Phase 8.7 토큰/패턴과 동일한 다크 컨셉으로 리디자인. 콘솔 설정(Google Cloud + 카카오 디벨로퍼스 + Supabase Dashboard)은 사용자가 직접 처리하고, 코드는 Codex가 담당.

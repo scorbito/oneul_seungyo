@@ -37,6 +37,7 @@ export type UserProfile = {
   nickname: string;
   mainTeamId: string;
   interestTeamIds: string[];
+  avatarUrl?: string | null;
   attendanceCount: number;
   wins: number;
   losses: number;
@@ -54,10 +55,22 @@ export type Review = {
   body: string;
   gameLabel: string;
   image: string;
+  images?: string[];
   likes: number;
   comments: number;
   tags: string[];
   attendanceId?: string;
+  createdAt?: string;
+  authorAvatarUrl?: string | null;
+  game?: {
+    date: string;
+    homeTeamId: string;
+    awayTeamId: string;
+    homeScore: number | null;
+    awayScore: number | null;
+    supportTeamId: string;
+    result: "win" | "lose" | "draw" | null;
+  };
 };
 
 export type ReviewComment = {
@@ -66,6 +79,7 @@ export type ReviewComment = {
   userId: string;
   authorNickname: string;
   authorTeamId: string;
+  authorAvatarUrl?: string | null;
   body: string;
   createdAt: string;
   timeAgo: string;

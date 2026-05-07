@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Download, Globe2, Instagram, Lock, MessageCircle, Plus, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/common/Button";
@@ -8,11 +9,11 @@ import { ModalShell } from "@/components/common/ModalShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { getTeam, teams } from "@/lib/constants/teams";
 import { createAttendanceAction, findCurrentUserAttendanceId } from "@/lib/actions/attendance";
-import { createReviewAction } from "@/lib/actions/review";
+import { createReviewAction, updateReviewAction } from "@/lib/actions/review";
 import { previewTicket, registerAttendanceFromTicket } from "@/lib/actions/ticket";
 import { useAppState } from "@/lib/state/AppState";
 import { uploadUserFile } from "@/lib/supabase/storage-client";
-import type { Game } from "@/lib/types/domain";
+import type { Game, Review } from "@/lib/types/domain";
 
 export type ModalKind = "attendance" | "review" | "share" | null;
 
@@ -23,6 +24,8 @@ type AppModalsProps = {
   initialGameId?: string;
   initialDate?: string;
   initialAttendanceId?: string;
+  /** 후기 수정 모드: 전달되면 review 모달이 수정 흐름으로 전환됨 */
+  editReview?: Review | null;
 };
 
 const templates = [
@@ -126,8 +129,9 @@ function getAttendanceResult(game: Game, supportTeamId: string): "win" | "lose" 
   return undefined;
 }
 
-export function AppModals({ open, setOpen, games = [], initialGameId, initialDate, initialAttendanceId }: AppModalsProps) {
+export function AppModals({ open, setOpen, games = [], initialGameId, initialDate, initialAttendanceId, editReview = null }: AppModalsProps) {
   const { addAttendance, addReview, attendances, reviews, profile, showToast } = useAppState();
+  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [selectedGameId, setSelectedGameId] = useState(games[0]?.id ?? "");
   const [supportTeamId, setSupportTeamId] = useState("lg");
@@ -175,10 +179,13 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
       .slice()
       .sort((a, b) => a.date.localeCompare(b.date)); // 왼쪽=오래된, 오른쪽=최신
   }, [attendances, reviews]);
-  const selectedReviewAttendance = useMemo(
-    () => reviewableAttendances.find((attendance) => attendance.id === selectedReviewAttendanceId) ?? reviewableAttendances[0],
-    [reviewableAttendances, selectedReviewAttendanceId]
-  );
+  const selectedReviewAttendance = useMemo(() => {
+    if (editReview) {
+      return attendances.find((a) => a.id === selectedReviewAttendanceId)
+        ?? attendances.find((a) => a.id === editReview.attendanceId);
+    }
+    return reviewableAttendances.find((attendance) => attendance.id === selectedReviewAttendanceId) ?? reviewableAttendances[0];
+  }, [attendances, editReview, reviewableAttendances, selectedReviewAttendanceId]);
   const onClose = () => setOpen(null);
   const selectGameAndTeam = (gameId: string, teamId: string) => {
     setSelectedGameId(gameId);
@@ -234,6 +241,15 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
     if (open !== "review" || reviewableAttendances.length === 0) {
       return;
     }
+    if (editReview?.attendanceId) {
+      // 수정 모드: 그 attendance가 reviewableAttendances에 없을 가능성 → attendances에서 찾아서 selectedReviewAttendanceId만 직접 세팅
+      const target = reviewableAttendances.find((a) => a.id === editReview.attendanceId)
+        ?? attendances.find((a) => a.id === editReview.attendanceId);
+      if (target) {
+        setSelectedReviewAttendanceId(target.id);
+      }
+      return;
+    }
     if (initialAttendanceId) {
       const target = reviewableAttendances.find((attendance) => attendance.id === initialAttendanceId);
       if (target) {
@@ -244,7 +260,17 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
     if (!reviewableAttendances.some((attendance) => attendance.id === selectedReviewAttendanceId)) {
       selectReviewAttendance(reviewableAttendances[0]);
     }
-  }, [initialAttendanceId, open, reviewableAttendances, selectReviewAttendance, selectedReviewAttendanceId]);
+  }, [attendances, editReview, initialAttendanceId, open, reviewableAttendances, selectReviewAttendance, selectedReviewAttendanceId]);
+
+  // 수정 모드: body, photos, privacy 기존 값으로 prefill
+  useEffect(() => {
+    if (open !== "review") return;
+    if (!editReview) return;
+    setReviewBody(editReview.body);
+    const photos = editReview.images && editReview.images.length > 0 ? editReview.images : [editReview.image];
+    setReviewPhotos(photos);
+    setReviewPhotoFiles([]);
+  }, [open, editReview]);
 
   const submitAttendance = async () => {
     if (!selectedGame) {
@@ -309,6 +335,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
     setTicketFile(null);
     setTicketPreview(null);
     setOpen(null);
+    router.refresh();
   };
 
   const submitReview = async () => {
@@ -335,32 +362,45 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
 
     setSavingReview(true);
     try {
-      const attendanceId = await findCurrentUserAttendanceId({
-        date: selectedReviewAttendance.date,
-        homeTeamId: selectedReviewAttendance.homeTeamId,
-        awayTeamId: selectedReviewAttendance.awayTeamId
-      });
-
-      if (!attendanceId) {
-        throw new Error("DB에 저장된 직관 기록을 찾지 못했습니다.");
-      }
-
       const uploadedPhotos = await Promise.all(
         reviewPhotoFiles.map((item, index) => uploadUserFile("review-photos", item.file, `review-${Date.now()}-${index}`))
       );
-      const persistedPhotos = uploadedPhotos.length > 0 ? uploadedPhotos : reviewPhotos;
 
-      await createReviewAction({
-        attendanceId,
-        body: reviewBody.trim(),
-        photos: persistedPhotos,
-        publicScope: publicScopeMap[privacy as keyof typeof publicScopeMap] ?? "public"
-      });
-      addReview({ ...review, attendanceId, image: persistedPhotos[0] ?? review.image });
-      showToast("후기를 DB에 저장했어요.");
+      if (editReview) {
+        // 수정 모드: 새로 업로드한 파일 + 유지하는 기존 사진들 (blob: URL은 제외)
+        const keptExisting = reviewPhotos.filter((url) => !url.startsWith("blob:"));
+        const persistedPhotos = [...keptExisting, ...uploadedPhotos];
+        await updateReviewAction({
+          reviewId: editReview.id,
+          body: reviewBody.trim(),
+          photos: persistedPhotos,
+          publicScope: publicScopeMap[privacy as keyof typeof publicScopeMap] ?? "public"
+        });
+        showToast("후기를 수정했어요.");
+      } else {
+        const attendanceId = await findCurrentUserAttendanceId({
+          date: selectedReviewAttendance.date,
+          homeTeamId: selectedReviewAttendance.homeTeamId,
+          awayTeamId: selectedReviewAttendance.awayTeamId
+        });
+
+        if (!attendanceId) {
+          throw new Error("DB에 저장된 직관 기록을 찾지 못했습니다.");
+        }
+
+        const persistedPhotos = uploadedPhotos.length > 0 ? uploadedPhotos : reviewPhotos;
+        await createReviewAction({
+          attendanceId,
+          body: reviewBody.trim(),
+          photos: persistedPhotos,
+          publicScope: publicScopeMap[privacy as keyof typeof publicScopeMap] ?? "public"
+        });
+        addReview({ ...review, attendanceId, image: persistedPhotos[0] ?? review.image });
+        showToast("후기를 DB에 저장했어요.");
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "후기 저장에 실패했습니다.";
-      if (message.includes("로그인") || message.includes("DB에 저장된 직관")) {
+      if (!editReview && (message.includes("로그인") || message.includes("DB에 저장된 직관"))) {
         addReview(review);
         showToast("DB 연결 전이라 mock 후기로 저장했어요.");
       } else {
@@ -373,11 +413,12 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
     setReviewBody("");
     setReviewPhotoFiles([]);
     setOpen(null);
+    router.refresh();
   };
 
   return (
     <>
-      <ModalShell open={open === "attendance"} title="직관 등록" onClose={onClose}>
+      <ModalShell open={open === "attendance"} title="직관 등록" onClose={onClose} panelClassName="attendance-modal-panel">
         <div className="form-stack">
           <label className="upload-box">
             <Camera size={24} />
@@ -388,7 +429,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
                   ? "티켓 인식 완료 — 아래에서 확인 후 등록"
                   : (ticketFileName || "티켓 사진으로 빠른 등록")}
             </strong>
-            <span>티켓 사진을 올리면 경기와 응원팀이 자동으로 채워져요. 확인 후 등록 버튼을 누르세요.</span>
+            <span>티켓 사진을 올리면 경기와 응원팀이 자동으로 채워져요.<br />확인 후 등록 버튼을 누르세요.</span>
             <input
               type="file"
               accept="image/*"
@@ -501,7 +542,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
         </div>
       </ModalShell>
 
-      <ModalShell open={open === "review"} title="후기 작성" onClose={onClose} panelClassName="review-modal-panel">
+      <ModalShell open={open === "review"} title={editReview ? "후기 수정" : "후기 작성"} onClose={onClose} panelClassName="review-modal-panel">
         <div className="form-stack">
           <div className="photo-strip">
             {reviewPhotos.map((photo) => (
@@ -541,41 +582,53 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
               </label>
             ) : null}
           </div>
-          <div className="review-attendance-picker">
-            <span>1. 직관 경기 선택</span>
-            <div className="review-attendance-list" ref={attendanceDrag.ref} onPointerDown={attendanceDrag.onPointerDown} onPointerMove={attendanceDrag.onPointerMove} onPointerUp={attendanceDrag.onPointerUp} onPointerLeave={attendanceDrag.onPointerLeave} onPointerCancel={attendanceDrag.onPointerCancel} onClickCapture={attendanceDrag.onClickCapture}>
-              {reviewableAttendances.map((attendance) => (
-                <button
-                  className={selectedReviewAttendance?.id === attendance.id ? "review-attendance-option review-attendance-option-active" : "review-attendance-option"}
-                  key={attendance.id}
-                  type="button"
-                  onClick={() => selectReviewAttendance(attendance)}
-                >
-                  <span>{attendance.date}</span>
-                  <div className="review-attendance-teams">
-                    <span>
-                      <TeamBadge teamId={attendance.homeTeamId} size="sm" />
-                      <b>{getTeam(attendance.homeTeamId).shortName}</b>
-                      <em>{attendance.score.split(":")[0]?.trim() ?? "-"}</em>
-                    </span>
-                    <span>
-                      <TeamBadge teamId={attendance.awayTeamId} size="sm" />
-                      <b>{getTeam(attendance.awayTeamId).shortName}</b>
-                      <em>{attendance.score.split(":")[1]?.trim() ?? "-"}</em>
-                    </span>
-                  </div>
-                </button>
-              ))}
-              {reviewableAttendances.length === 0 ? <p>후기를 작성할 수 있는 종료된 직관 경기가 없어요.</p> : null}
+          {editReview && selectedReviewAttendance ? (
+            <div className="review-attendance-picker">
+              <span>직관 경기 (수정 불가)</span>
+              <div className="review-attendance-locked">
+                <span className="review-attendance-date">{selectedReviewAttendance.date}</span>
+                <div className="review-attendance-teams">
+                  <span>
+                    <TeamBadge teamId={selectedReviewAttendance.homeTeamId} size="sm" />
+                    <b>{getTeam(selectedReviewAttendance.homeTeamId).shortName}</b>
+                  </span>
+                  <span>
+                    <TeamBadge teamId={selectedReviewAttendance.awayTeamId} size="sm" />
+                    <b>{getTeam(selectedReviewAttendance.awayTeamId).shortName}</b>
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="auto-meta">
-            <span>2025.05.10 (토) 14:00</span>
-            <strong>잠실야구장 · 두산 베어스 vs LG 트윈스</strong>
-          </div>
+          ) : (
+            <div className="review-attendance-picker">
+              <span>1. 직관 경기 선택</span>
+              <div className="review-attendance-list" ref={attendanceDrag.ref} onPointerDown={attendanceDrag.onPointerDown} onPointerMove={attendanceDrag.onPointerMove} onPointerUp={attendanceDrag.onPointerUp} onPointerLeave={attendanceDrag.onPointerLeave} onPointerCancel={attendanceDrag.onPointerCancel} onClickCapture={attendanceDrag.onClickCapture}>
+                {reviewableAttendances.map((attendance) => (
+                  <button
+                    className={selectedReviewAttendance?.id === attendance.id ? "review-attendance-option review-attendance-option-active" : "review-attendance-option"}
+                    key={attendance.id}
+                    type="button"
+                    onClick={() => selectReviewAttendance(attendance)}
+                  >
+                    <span className="review-attendance-date">{attendance.date}</span>
+                    <div className="review-attendance-teams">
+                      <span>
+                        <TeamBadge teamId={attendance.homeTeamId} size="sm" />
+                        <b>{getTeam(attendance.homeTeamId).shortName}</b>
+                      </span>
+                      <span>
+                        <TeamBadge teamId={attendance.awayTeamId} size="sm" />
+                        <b>{getTeam(attendance.awayTeamId).shortName}</b>
+                      </span>
+                    </div>
+                  </button>
+                ))}
+                {reviewableAttendances.length === 0 ? <p>후기를 작성할 수 있는 종료된 직관 경기가 없어요.</p> : null}
+              </div>
+            </div>
+          )}
           <label className="textarea-field review-body-field">
-            <span className="review-body-label">2. 후기 내용</span>
-            <span>3. 후기 내용</span>
+            <span className="review-body-label">{editReview ? "후기 내용" : "2. 후기 내용"}</span>
             <textarea value={reviewBody} placeholder="오늘 경기 어땠나요? 생생한 후기를 남겨주세요!" onChange={(event) => setReviewBody(event.target.value)} />
           </label>
           <div className="privacy-row">
@@ -592,11 +645,13 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
               );
             })}
           </div>
-          <Button disabled={savingReview} onClick={submitReview}>{savingReview ? "저장 중" : "등록하기"}</Button>
+          <Button disabled={savingReview} onClick={submitReview}>
+            {editReview ? (savingReview ? "수정 중" : "수정하기") : (savingReview ? "저장 중" : "등록하기")}
+          </Button>
         </div>
       </ModalShell>
 
-      <ModalShell open={open === "share"} title="공유하기" onClose={onClose}>
+      <ModalShell open={open === "share"} title="공유하기" onClose={onClose} panelClassName="share-modal-panel">
         <div className="share-modal-content">
           <div className="share-card-preview">
             <Image alt="공유 카드 배경" fill src={selectedTemplate.src} />

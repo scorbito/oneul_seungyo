@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, Plus, Share2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Share2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
@@ -53,6 +53,8 @@ type HomeScreenProps = {
 export function HomeScreen({ weekGames = [], weekStart, modalGames = [] }: HomeScreenProps) {
   const { attendances, profile } = useAppState();
   const [modal, setModal] = useState<ModalKind>(null);
+  const [nextIndex, setNextIndex] = useState(0);
+  const [nextDir, setNextDir] = useState<"next" | "prev">("next");
 
   const myTeam = getTeam(profile.mainTeamId);
 
@@ -91,7 +93,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [] }: HomeS
   const recentAttendances = attendances
     .filter((a) => !!a.result)
     .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 4)
+    .slice(0, 3)
     .reverse();
 
   // 섹션 헤더용: 최근 5경기 승/패 집계
@@ -146,41 +148,61 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [] }: HomeS
 
       {/* NEXT GAME */}
       {upcomingAttendances.length > 0 && (() => {
-        const att = upcomingAttendances[0];
+        const safeIndex = Math.min(nextIndex, upcomingAttendances.length - 1);
+        const att = upcomingAttendances[safeIndex];
         const home = getTeam(att.homeTeamId);
         const away = getTeam(att.awayTeamId);
+        const hasPrev = safeIndex > 0;
+        const hasNext = safeIndex < upcomingAttendances.length - 1;
         return (
           <section className="hd-card hd-next" aria-label="다음 직관">
             <div className="hd-section-header">
               <h2 className="hd-section-title">다음 직관</h2>
-              <button type="button" className="hd-icon-link" aria-label="상세 보기">
-                <ChevronRight size={20} />
-              </button>
-            </div>
-
-            <div className="hd-next-meta-row">
-              <span className="hd-status-chip hd-status-chip-dday">{getDday(att.date)}</span>
-              <span className="hd-next-datetime">
-                {formatDateWithDay(att.date)} {att.time ? att.time.slice(0, 5) : ""}
-              </span>
-              <span className="hd-next-location">{att.stadium}</span>
-            </div>
-
-            <div className="hd-matchup-row">
-              <div className="hd-matchup-team">
-                <TeamBadge teamId={att.awayTeamId} size="md" />
-                <div className="hd-matchup-team-info">
-                  <span className="hd-team-name">{away.shortName}</span>
-                  <span className="hd-tiny-chip">원정</span>
-                </div>
+              <div className="hd-next-nav">
+                <button
+                  type="button"
+                  aria-label="이전 직관"
+                  disabled={!hasPrev}
+                  onClick={() => { setNextDir("prev"); setNextIndex((i) => Math.max(0, i - 1)); }}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="다음 직관"
+                  disabled={!hasNext}
+                  onClick={() => { setNextDir("next"); setNextIndex((i) => i + 1); }}
+                >
+                  <ChevronRight size={20} />
+                </button>
               </div>
-              <div className="hd-matchup-vs">VS</div>
-              <div className="hd-matchup-team hd-matchup-team-right">
-                <div className="hd-matchup-team-info">
-                  <span className="hd-team-name">{home.shortName}</span>
-                  <span className="hd-tiny-chip">홈</span>
+            </div>
+
+            <div className="hd-next-content" key={att.id} data-dir={nextDir}>
+              <div className="hd-next-meta-row">
+                <span className="hd-status-chip hd-status-chip-dday">{getDday(att.date)}</span>
+                <span className="hd-next-datetime">
+                  {formatDateWithDay(att.date)} {att.time ? att.time.slice(0, 5) : ""}
+                </span>
+                <span className="hd-next-location">{att.stadium}</span>
+              </div>
+
+              <div className="hd-matchup-row">
+                <div className="hd-matchup-team">
+                  <TeamBadge teamId={att.awayTeamId} size="md" />
+                  <div className="hd-matchup-team-info">
+                    <span className="hd-team-name">{away.shortName}</span>
+                    <span className="hd-tiny-chip">원정</span>
+                  </div>
                 </div>
-                <TeamBadge teamId={att.homeTeamId} size="md" />
+                <div className="hd-matchup-vs">VS</div>
+                <div className="hd-matchup-team hd-matchup-team-right">
+                  <div className="hd-matchup-team-info">
+                    <span className="hd-team-name">{home.shortName}</span>
+                    <span className="hd-tiny-chip">홈</span>
+                  </div>
+                  <TeamBadge teamId={att.homeTeamId} size="md" />
+                </div>
               </div>
             </div>
           </section>

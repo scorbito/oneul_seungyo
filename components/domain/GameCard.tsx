@@ -15,9 +15,8 @@ export function GameCard({ game, compact = false, highlighted = false }: GameCar
   const away = getTeam(game.awayTeamId);
 
   return (
-    <a
+    <div
       className={`game-card ${compact ? "game-card-compact" : ""} ${highlighted ? "game-card-highlighted" : ""}`}
-      href={`/games/${game.id}`}
       style={{
         "--home-team-color": home.color,
         "--away-team-color": away.color
@@ -43,6 +42,6 @@ export function GameCard({ game, compact = false, highlighted = false }: GameCar
         {game.attended && !game.verified ? <span className="status-attended">직관</span> : null}
         {game.status === "scheduled" ? <span className="status-muted">경기전</span> : null}
       </div>
-    </a>
+    </div>
   );
 }

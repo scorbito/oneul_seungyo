@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, Check, Search, UserPlus } from "lucide-react";
+import { ArrowLeft, Check, Inbox, Search, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { useAppState } from "@/lib/state/AppState";
@@ -31,8 +31,8 @@ export function FriendsScreen() {
   };
 
   return (
-    <AppShell activeTab="my" title="친구 관리">
-      <a className="back-link" href="/my"><ArrowLeft size={18} /> 마이로 돌아가기</a>
+    <AppShell activeTab="my" title="친구 관리" theme="dark">
+      <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
       <div className="friend-search">
         <Search size={16} />
         <input
@@ -94,7 +94,12 @@ export function FriendsScreen() {
                 )}
               </article>
             ))}
-            {requests.length === 0 ? <p className="empty-inline">처리할 항목이 없어요.</p> : null}
+            {requests.length === 0 ? (
+              <div className="empty-state-large">
+                <div className="empty-state-icon"><Inbox size={32} strokeWidth={1.8} /></div>
+                <p>처리할 항목이 없어요.</p>
+              </div>
+            ) : null}
           </section>
         </>
       )}

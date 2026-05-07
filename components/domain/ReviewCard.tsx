@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import Image from "next/image";
 import { Bookmark, Heart, MessageCircle, Send } from "lucide-react";
 import { TeamBadge } from "@/components/common/TeamBadge";
+import { getTeam } from "@/lib/constants/teams";
 import type { Review } from "@/lib/types/domain";
 
 type ReviewCardProps = {
@@ -12,59 +14,85 @@ type ReviewCardProps = {
   saved?: boolean;
   onToggleLike?: () => void;
   onToggleSave?: () => void;
+  actionSlot?: ReactNode;
 };
 
-const BODY_PREVIEW_LENGTH = 90;
-
-export function ReviewCard({ review, liked = false, saved = false, onToggleLike, onToggleSave }: ReviewCardProps) {
+export function ReviewCard({ review, liked = false, saved = false, onToggleLike, onToggleSave, actionSlot }: ReviewCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [isClamped, setIsClamped] = useState(false);
+  const bodyRef = useRef<HTMLParagraphElement>(null);
 
-  const canToggleBody = review.body.length > BODY_PREVIEW_LENGTH;
-  const body = canToggleBody && !expanded ? `${review.body.slice(0, BODY_PREVIEW_LENGTH)}...` : review.body;
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    setIsClamped(el.scrollHeight > el.clientHeight + 1);
+  }, [review.body]);
+
   const likeCount = review.likes + (liked ? 1 : 0);
+  const showToggle = isClamped || expanded;
 
   return (
     <article className="review-card">
       <div className="review-author">
-        <span className="review-avatar" aria-hidden="true" />
+        {review.authorAvatarUrl ? (
+          <span className="review-avatar review-avatar-image" aria-hidden="true">
+            <Image alt="" src={review.authorAvatarUrl} fill sizes="32px" style={{ objectFit: "cover" }} />
+          </span>
+        ) : (
+          <span className="review-avatar review-avatar-initial" aria-hidden="true">
+            {(review.author || "?").slice(0, 1)}
+          </span>
+        )}
         <div>
           <strong>{review.author}</strong>
           <span>{review.timeAgo}</span>
         </div>
+        {actionSlot ? <div className="review-author-action">{actionSlot}</div> : null}
         <TeamBadge teamId={review.teamId} size="sm" />
       </div>
       <a className="review-image-link" href={`/reviews/${review.id}`}>
         <Image alt={review.title || "후기 사진"} className="review-image" height={220} src={review.image} width={330} />
-        <span>1/3</span>
+        {review.images && review.images.length > 1 ? <span>1/{review.images.length}</span> : null}
       </a>
+      {review.game ? (() => {
+        const home = getTeam(review.game.homeTeamId);
+        const away = getTeam(review.game.awayTeamId);
+        const score = review.game.homeScore !== null && review.game.awayScore !== null
+          ? `${review.game.homeScore} : ${review.game.awayScore}`
+          : "경기전";
+        const result = review.game.result;
+        const resultLabel = result === "win" ? "승" : result === "lose" ? "패" : result === "draw" ? "무" : null;
+        return (
+          <div className="review-game-meta">
+            <span className="review-game-meta-date">{review.game.date}</span>
+            <div className="review-game-meta-match">
+              <TeamBadge teamId={review.game.homeTeamId} size="sm" />
+              <strong>{home.shortName}</strong>
+              <b>{score}</b>
+              <strong>{away.shortName}</strong>
+              <TeamBadge teamId={review.game.awayTeamId} size="sm" />
+            </div>
+            {resultLabel ? (
+              <span className={`review-game-meta-result review-game-meta-result-${result}`}>{resultLabel}</span>
+            ) : null}
+          </div>
+        );
+      })() : null}
       {review.title ? <a className="review-title" href={`/reviews/${review.id}`}>{review.title}</a> : null}
-      <p>
-        {body}
-        {canToggleBody ? (
-          <button
-            aria-expanded={expanded}
-            onClick={() => setExpanded((current) => !current)}
-            style={{
-              background: "transparent",
-              border: 0,
-              color: "#4371b7",
-              cursor: "pointer",
-              font: "inherit",
-              fontWeight: 900,
-              marginLeft: 6,
-              padding: 0
-            }}
-            type="button"
-          >
-            {expanded ? "접기" : "더보기"}
-          </button>
-        ) : null}
+      <p ref={bodyRef} className={expanded ? "review-body" : "review-body review-body-clamped"}>
+        {review.body}
       </p>
-      {review.tags.length > 0 && (
-        <div className="review-tags">
-          {review.tags.map((tag) => <span key={tag}>{tag}</span>)}
-        </div>
-      )}
+      {showToggle ? (
+        <button
+          type="button"
+          className="review-body-toggle"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((current) => !current)}
+        >
+          {expanded ? "접기" : "더보기"}
+        </button>
+      ) : null}
+      {/* 해시태그 칩은 MVP에서 숨김 — 본문 안 #태그 텍스트는 그대로 표시 */}
       <div className="review-actions">
         <button
           aria-label={liked ? "좋아요 취소" : "좋아요"}

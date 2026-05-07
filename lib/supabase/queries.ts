@@ -310,6 +310,7 @@ type ReviewProfileRow = {
   id: string;
   nickname: string;
   main_team_id: string;
+  avatar_image_url?: string | null;
 };
 
 type ReviewAttendanceRow = {
@@ -341,6 +342,14 @@ function extractHashtags(body: string): string[] {
   return result;
 }
 
+function deriveGameResult(homeScore: number | null, awayScore: number | null, supportTeamId: string, homeTeamId: string, awayTeamId: string): "win" | "lose" | "draw" | null {
+  if (homeScore === null || awayScore === null) return null;
+  if (homeScore === awayScore) return "draw";
+  if (supportTeamId === homeTeamId) return homeScore > awayScore ? "win" : "lose";
+  if (supportTeamId === awayTeamId) return awayScore > homeScore ? "win" : "lose";
+  return null;
+}
+
 function toReview(row: ReviewRow, profile: ReviewProfileRow | undefined, attendance: ReviewAttendanceRow | undefined, game: {
   game_date: string;
   home_team_id: string;
@@ -354,25 +363,38 @@ function toReview(row: ReviewRow, profile: ReviewProfileRow | undefined, attenda
     ? `${game.home_score} : ${game.away_score}`
     : "경기전";
   const date = game?.game_date ? game.game_date.replaceAll("-", ".") : "";
+  const supportTeamId = attendance?.support_team_id ?? profile?.main_team_id ?? "lg";
 
   return {
     id: row.id,
     ownerId: row.user_id,
     author: profile?.nickname ?? "승요팬",
-    teamId: attendance?.support_team_id ?? profile?.main_team_id ?? "lg",
+    teamId: supportTeamId,
     timeAgo: getTimeAgo(row.created_at),
     title: "",
     body: row.body,
     gameLabel: date && homeName && awayName ? `${date} · ${homeName} ${score} ${awayName}` : "",
     image: row.photos[0] ?? "/assets/stadium-review-day.png",
+    images: row.photos.length > 0 ? row.photos : ["/assets/stadium-review-day.png"],
     likes: 0,
     comments: commentCount,
     tags: extractHashtags(row.body),
-    attendanceId: row.attendance_id
+    attendanceId: row.attendance_id,
+    createdAt: row.created_at,
+    authorAvatarUrl: profile?.avatar_image_url ?? null,
+    game: game ? {
+      date,
+      homeTeamId: game.home_team_id,
+      awayTeamId: game.away_team_id,
+      homeScore: game.home_score,
+      awayScore: game.away_score,
+      supportTeamId,
+      result: deriveGameResult(game.home_score, game.away_score, supportTeamId, game.home_team_id, game.away_team_id)
+    } : undefined
   };
 }
 
-export async function listReviewsFromDb(params: { onlyMine?: boolean } = {}): Promise<Review[]> {
+export async function listReviewsFromDb(params: { onlyMine?: boolean; cursor?: string; limit?: number } = {}): Promise<Review[]> {
   const ssr = createSupabaseServerClient();
   const { data: authData } = await ssr.auth.getUser();
   const admin = createSupabaseAdminClient();
@@ -381,7 +403,11 @@ export async function listReviewsFromDb(params: { onlyMine?: boolean } = {}): Pr
     .from("reviews")
     .select("id,user_id,attendance_id,body,photos,public_scope,created_at")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(params.limit ?? 20);
+
+  if (params.cursor) {
+    reviewQuery = reviewQuery.lt("created_at", params.cursor);
+  }
 
   if (params.onlyMine) {
     if (!authData.user) {
@@ -404,7 +430,7 @@ export async function listReviewsFromDb(params: { onlyMine?: boolean } = {}): Pr
   const attendanceIds = Array.from(new Set(reviews.map((review) => review.attendance_id)));
 
   const [{ data: profiles, error: profileError }, { data: attendances, error: attendanceError }] = await Promise.all([
-    admin.from("profiles").select("id,nickname,main_team_id").in("id", userIds),
+    admin.from("profiles").select("id,nickname,main_team_id,avatar_image_url").in("id", userIds),
     admin.from("attendances").select("id,support_team_id,game_id").in("id", attendanceIds)
   ]);
 
@@ -465,7 +491,7 @@ export async function getReviewByIdFromDb(id: string): Promise<Review | null> {
   if (!review) return null;
 
   const [{ data: profile }, { data: attendance }, { count: commentCount }] = await Promise.all([
-    admin.from("profiles").select("id,nickname,main_team_id").eq("id", review.user_id).maybeSingle(),
+    admin.from("profiles").select("id,nickname,main_team_id,avatar_image_url").eq("id", review.user_id).maybeSingle(),
     admin.from("attendances").select("id,support_team_id,game_id").eq("id", review.attendance_id).maybeSingle(),
     admin.from("review_comments").select("id", { count: "exact", head: true }).eq("review_id", id)
   ]);
@@ -496,7 +522,7 @@ export async function listCommentsByReviewId(reviewId: string): Promise<ReviewCo
   const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id, nickname, main_team_id")
+    .select("id, nickname, main_team_id, avatar_image_url")
     .in("id", userIds);
   const profilesById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
@@ -508,6 +534,7 @@ export async function listCommentsByReviewId(reviewId: string): Promise<ReviewCo
       userId: row.user_id,
       authorNickname: profile?.nickname ?? "승요팬",
       authorTeamId: profile?.main_team_id ?? "lg",
+      authorAvatarUrl: profile?.avatar_image_url ?? null,
       body: row.body,
       createdAt: row.created_at,
       timeAgo: getTimeAgo(row.created_at)

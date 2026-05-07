@@ -61,6 +61,6 @@ export async function emailAuthAction(formData: FormData) {
 export async function signOutAction() {
   const supabase = createSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect("/landing");
 }
 

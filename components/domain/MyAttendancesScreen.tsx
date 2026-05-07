@@ -44,8 +44,8 @@ export function MyAttendancesScreen({ dbAttendances = [] }: MyAttendancesScreenP
   };
 
   return (
-    <AppShell activeTab="my" title="내 직관 리스트">
-      <a className="back-link" href="/my"><ArrowLeft size={18} /> 마이로 돌아가기</a>
+    <AppShell activeTab="my" title="내 직관 리스트" theme="dark">
+      <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
       <div className="segmented-control">
         {["전체", "인증", "미인증"].map((item) => (
           <button className={filter === item ? "segment segment-active" : "segment"} key={item} type="button" onClick={() => setFilter(item)}>
@@ -59,38 +59,39 @@ export function MyAttendancesScreen({ dbAttendances = [] }: MyAttendancesScreenP
           const away = getTeam(item.awayTeamId);
           const hasReview = reviewByAttendanceId.has(item.id);
           const isReviewable = Boolean(item.result);
-          const resultLabel = item.result === "win" ? "승" : item.result === "lose" ? "패" : item.result === "draw" ? "무" : null;
+          const resultLabel = item.result === "win" ? "승" : item.result === "lose" ? "패" : item.result === "draw" ? "무" : "예정";
+          const resultClass = item.result ?? "scheduled";
           return (
             <article className="attendance-item" key={item.id}>
-              {resultLabel ? (
-                <span className={`attendance-result-badge attendance-result-${item.result}`}>{resultLabel}</span>
-              ) : null}
-              <span>
-                {item.date} ({item.stadium})
-                <em className={item.verified ? "status-verified" : "status-muted"}>{item.verified ? "인증" : "미인증"}</em>
-              </span>
-              <div>
-                <TeamBadge teamId={item.homeTeamId} size="sm" />
-                <strong>{home.shortName}</strong>
-                <b>{item.score}</b>
-                <strong>{away.shortName}</strong>
-                <TeamBadge teamId={item.awayTeamId} size="sm" />
-              </div>
-              {isReviewable ? (
-                <div className="attendance-actions">
-                  {hasReview ? (
-                    <a className="review-action review-action-done" href="/my/reviews">
-                      <CheckCircle2 size={14} />작성 완료
-                    </a>
-                  ) : (
-                    <button className="review-action review-action-write" type="button" onClick={() => openReviewModal(item.id)}>
-                      <PenSquare size={14} />후기 작성
-                    </button>
-                  )}
+              <span className={`attendance-result-badge attendance-result-${resultClass}`}>{resultLabel}</span>
+              <div className="attendance-card-body">
+                <div className="attendance-meta">
+                  <span className="attendance-date">{item.date}</span>
+                  <em className={item.verified ? "status-verified" : "status-muted"}>{item.verified ? "인증" : "미인증"}</em>
                 </div>
-              ) : null}
+                <div className="attendance-match">
+                  <TeamBadge teamId={item.homeTeamId} size="sm" />
+                  <strong>{home.shortName}</strong>
+                  <b>{item.result ? item.score : "경기전"}</b>
+                  <strong>{away.shortName}</strong>
+                  <TeamBadge teamId={item.awayTeamId} size="sm" />
+                </div>
+                {isReviewable ? (
+                  <div className="attendance-action-row">
+                    {hasReview ? (
+                      <a className="review-action review-action-done" href="/my/reviews">
+                        <CheckCircle2 size={14} />작성 완료
+                      </a>
+                    ) : (
+                      <button className="review-action review-action-write" type="button" onClick={() => openReviewModal(item.id)}>
+                        <PenSquare size={14} />후기 작성
+                      </button>
+                    )}
+                  </div>
+                ) : null}
+              </div>
               <button className="inline-delete" type="button" aria-label="삭제" onClick={() => setDeleteTargetId(item.id)}>
-                <Trash2 size={15} />
+                <Trash2 size={18} />
               </button>
             </article>
           );

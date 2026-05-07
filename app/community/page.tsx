@@ -4,7 +4,7 @@ import { listReviewsFromDb } from "@/lib/supabase/queries";
 
 export default async function CommunityPage() {
   noStore();
-  const dbReviews = await listReviewsFromDb().catch(() => []);
+  const dbReviews = await listReviewsFromDb({ limit: 20 }).catch(() => []);
 
   return <CommunityScreen dbReviews={dbReviews} />;
 }

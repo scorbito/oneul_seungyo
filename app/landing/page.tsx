@@ -21,7 +21,7 @@ export default function LandingPage() {
         <h1>내 직관 승률을 기록하고 공유하세요!</h1>
         <p>야구팬을 위한 직관 기록 & 커뮤니티</p>
         <div className="landing-actions">
-          <a href="/">
+          <a href="/login">
             <Button>시작하기</Button>
           </a>
           <a href="/login">

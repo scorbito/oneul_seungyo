@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { UpdateProfileInput } from "@/lib/types/api-contracts";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
 function isSameKoreanDate(left: Date, right: Date) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -75,5 +75,65 @@ export async function updateProfileAction(input: UpdateProfileInput) {
   revalidatePath("/");
   revalidatePath("/my");
   revalidatePath("/my/settings");
+}
+
+/** profile-images 공개 URL에서 storage 내부 경로 추출 */
+function extractAvatarPath(url: string): string | null {
+  const marker = "/storage/v1/object/public/profile-images/";
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return url.slice(idx + marker.length);
+}
+
+/**
+ * 프로필 사진 업데이트.
+ * - newAvatarUrl: 클라이언트에서 storage에 업로드한 새 사진의 public URL
+ * - profiles.avatar_image_url 갱신 후 이전 사진은 storage에서 제거
+ */
+export async function updateAvatarAction(newAvatarUrl: string) {
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: current, error: currentError } = await admin
+    .from("profiles")
+    .select("avatar_image_url")
+    .eq("id", authData.user.id)
+    .single();
+
+  if (currentError) {
+    throw new Error(`프로필을 불러오지 못했습니다: ${currentError.message}`);
+  }
+
+  const previousUrl = current.avatar_image_url ?? null;
+
+  const { error: updateError } = await admin
+    .from("profiles")
+    .update({ avatar_image_url: newAvatarUrl })
+    .eq("id", authData.user.id);
+
+  if (updateError) {
+    throw new Error(`프로필 사진 저장에 실패했습니다: ${updateError.message}`);
+  }
+
+  // 이전 사진 정리 (실패해도 무시)
+  if (previousUrl && previousUrl !== newAvatarUrl) {
+    const path = extractAvatarPath(previousUrl);
+    if (path) {
+      const { error: removeError } = await admin.storage.from("profile-images").remove([path]);
+      if (removeError) {
+        console.warn("[updateAvatarAction] previous avatar cleanup failed:", removeError.message);
+      }
+    }
+  }
+
+  revalidatePath("/");
+  revalidatePath("/my");
+  revalidatePath("/community");
+
+  return { avatarUrl: newAvatarUrl };
 }
 

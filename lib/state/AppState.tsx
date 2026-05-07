@@ -27,7 +27,7 @@ type Toast = {
   message: string;
 };
 
-type ProfileSettings = Pick<UserProfile, "nickname" | "mainTeamId" | "interestTeamIds">;
+type ProfileSettings = Pick<UserProfile, "nickname" | "mainTeamId" | "interestTeamIds" | "avatarUrl">;
 
 type AppState = {
   attendances: AttendanceRecord[];
@@ -106,7 +106,8 @@ function createDbProfile(attendances: AttendanceRecord[], profileSettings: Profi
 const emptyProfileSettings: ProfileSettings = {
   nickname: "",
   mainTeamId: "lg",
-  interestTeamIds: []
+  interestTeamIds: [],
+  avatarUrl: null
 };
 
 type AppStateProviderProps = {
@@ -128,7 +129,8 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
       ? {
           nickname: initialProfile.nickname,
           mainTeamId: initialProfile.mainTeamId,
-          interestTeamIds: initialProfile.interestTeamIds ?? []
+          interestTeamIds: initialProfile.interestTeamIds ?? [],
+          avatarUrl: initialProfile.avatarImageUrl ?? null
         }
       : emptyProfileSettings
   );

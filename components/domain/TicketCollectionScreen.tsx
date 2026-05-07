@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft, MapPin, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { getTeam } from "@/lib/constants/teams";
@@ -16,8 +16,8 @@ export function TicketCollectionScreen({ items }: Props) {
   const [zoomedItem, setZoomedItem] = useState<TicketCollectionItem | null>(null);
 
   return (
-    <AppShell activeTab="my" title="내 티켓 컬렉션">
-      <a className="back-link" href="/my"><ArrowLeft size={18} /> 마이로 돌아가기</a>
+    <AppShell activeTab="my" title="내 티켓 컬렉션" theme="dark">
+      <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
 
       {items.length === 0 ? (
         <p className="empty-inline">아직 인증된 티켓이 없어요. 직관 등록 화면에서 티켓 사진으로 인증해 보세요!</p>
@@ -27,7 +27,8 @@ export function TicketCollectionScreen({ items }: Props) {
             const home = getTeam(item.homeTeamId);
             const away = getTeam(item.awayTeamId);
             const support = getTeam(item.supportTeamId);
-            const resultLabel = item.result === "win" ? "승" : item.result === "lose" ? "패" : item.result === "draw" ? "무" : null;
+            const supportIsHome = item.supportTeamId === item.homeTeamId;
+            const venueLabel = supportIsHome ? "홈경기" : "원정경기";
             const score = item.homeScore !== null && item.awayScore !== null ? `${item.homeScore} : ${item.awayScore}` : null;
             return (
               <button
@@ -39,18 +40,19 @@ export function TicketCollectionScreen({ items }: Props) {
               >
                 <div className="ticket-thumb">
                   <Image alt="티켓" src={item.signedUrl} fill sizes="(max-width: 480px) 50vw, 200px" style={{ objectFit: "cover" }} />
-                  {resultLabel ? <span className={`ticket-result-badge ticket-result-${item.result}`}>{resultLabel}</span> : null}
                 </div>
                 <div className="ticket-meta">
                   <span className="ticket-date">{item.gameDate.replaceAll("-", ".")}</span>
                   <div className="ticket-teams">
                     <TeamBadge teamId={item.homeTeamId} size="sm" />
                     <strong>{home.shortName}</strong>
-                    {score ? <em>{score}</em> : <em>vs</em>}
+                    {score ? <em className="ticket-score">{score}</em> : <em className="ticket-vs">VS</em>}
                     <strong>{away.shortName}</strong>
                     <TeamBadge teamId={item.awayTeamId} size="sm" />
                   </div>
-                  <span className="ticket-stadium">{item.stadium} · {support.shortName} 응원</span>
+                  <span className="ticket-stadium">
+                    <MapPin size={11} />{item.stadium} · {support.shortName} {venueLabel}
+                  </span>
                 </div>
               </button>
             );

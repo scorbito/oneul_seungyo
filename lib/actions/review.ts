@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { listReviewsFromDb } from "@/lib/supabase/queries";
+import type { Review } from "@/lib/types/domain";
 
 export type CreateReviewActionInput = {
   attendanceId: string;
@@ -113,5 +115,85 @@ export async function createReviewAction(input: CreateReviewActionInput) {
   revalidatePath("/community");
   revalidatePath("/my/reviews");
   revalidatePath("/my/attendances");
+}
+
+/** 무한 스크롤용: 주어진 cursor(created_at) 이전 후기를 limit개 반환 */
+export async function loadMoreReviewsAction(cursor: string, limit = 20): Promise<Review[]> {
+  return listReviewsFromDb({ cursor, limit });
+}
+
+export type UpdateReviewActionInput = {
+  reviewId: string;
+  body: string;
+  photos: string[];
+  publicScope: "public" | "friends" | "private";
+};
+
+/** 본인 후기 수정 — 본문/사진/공개범위만 변경. 직관 매핑은 잠금. */
+export async function updateReviewAction(input: UpdateReviewActionInput) {
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const body = input.body.trim();
+  if (body.length < 5) {
+    throw new Error("후기를 5자 이상 입력해주세요.");
+  }
+
+  const admin = createSupabaseAdminClient();
+
+  // 기존 행 + 사진 경로 조회 (소유자 확인 + 삭제될 사진 추출)
+  const { data: existing, error: fetchError } = await admin
+    .from("reviews")
+    .select("photos,user_id")
+    .eq("id", input.reviewId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error(`후기 조회에 실패했습니다: ${fetchError.message}`);
+  }
+  if (!existing) {
+    throw new Error("후기를 찾을 수 없습니다.");
+  }
+  if (existing.user_id !== authData.user.id) {
+    throw new Error("본인 후기만 수정할 수 있습니다.");
+  }
+
+  const nextPhotos = input.photos.length > 0 ? input.photos.slice(0, 3) : ["/assets/stadium-review-day.png"];
+
+  const { error: updateError } = await admin
+    .from("reviews")
+    .update({
+      body,
+      photos: nextPhotos,
+      public_scope: input.publicScope
+    })
+    .eq("id", input.reviewId)
+    .eq("user_id", authData.user.id);
+
+  if (updateError) {
+    throw new Error(`후기 수정에 실패했습니다: ${updateError.message}`);
+  }
+
+  // 더 이상 사용되지 않는 이전 사진은 storage에서 정리
+  const previousPhotos = (existing.photos ?? []) as string[];
+  const stillUsed = new Set(nextPhotos);
+  const toDelete = previousPhotos
+    .filter((url) => !stillUsed.has(url))
+    .map(extractReviewPhotoPath)
+    .filter((p): p is string => Boolean(p));
+  if (toDelete.length > 0) {
+    const { error: storageError } = await admin.storage.from("review-photos").remove(toDelete);
+    if (storageError) {
+      console.warn(`[updateReviewAction] storage cleanup failed for ${input.reviewId}:`, storageError.message);
+    }
+  }
+
+  revalidatePath("/community");
+  revalidatePath("/my");
+  revalidatePath("/my/reviews");
+  revalidatePath(`/reviews/${input.reviewId}`);
 }
 
