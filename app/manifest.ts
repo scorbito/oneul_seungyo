@@ -14,19 +14,13 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       {
         src: "/assets/mascot-default.png",
-        sizes: "192x192",
+        sizes: "500x500",
         type: "image/png",
         purpose: "any"
       },
       {
         src: "/assets/mascot-default.png",
-        sizes: "512x512",
-        type: "image/png",
-        purpose: "any"
-      },
-      {
-        src: "/assets/mascot-default.png",
-        sizes: "1254x1254",
+        sizes: "500x500",
         type: "image/png",
         purpose: "maskable"
       }

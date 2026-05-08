@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, ChevronLeft, ChevronRight, Plus, Share2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bell, ChevronLeft, ChevronRight, Flag, Plus, Share2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
+import { AttendanceResultModal, type AttendanceResultPayload } from "@/components/domain/AttendanceResultModal";
 import { getTeam } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
+import { finalizeAttendanceAction } from "@/lib/actions/attendance";
 import type { Game, TeamStanding } from "@/lib/types/domain";
 
 const WEEK_LABELS_SUN = ["일", "월", "화", "수", "목", "금", "토"];
@@ -16,6 +19,51 @@ const WEEK_LABELS_MON = ["월", "화", "수", "목", "금", "토", "일"];
 function parseDotDate(date: string) {
   const [year, month, day] = date.split(".").map(Number);
   return new Date(year, month - 1, day);
+}
+
+/** att.date(YYYY.MM.DD) + att.time(HH:MM[:SS]) 을 KST 기준 시작 시각으로 변환.
+ *  time이 없으면 18:30 기본값. now >= 시작 시각 이면 true. */
+function hasGameStarted(date: string, time?: string): boolean {
+  const [yy, mm, dd] = date.split(".").map(Number);
+  const [hh, mi] = (time ?? "18:30").split(":").map(Number);
+  const start = new Date(yy, mm - 1, dd, hh || 18, mi || 30);
+  return new Date().getTime() >= start.getTime();
+}
+
+/** 종료된 직관 데이터에서 결과 모달 payload 구성. score는 "home : away" 포맷. */
+function buildResultPayload(att: {
+  id: string;
+  date: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  supportTeamId?: string;
+  score: string;
+  result?: "win" | "lose" | "draw";
+  stadium: string;
+}) {
+  if (!att.result || !att.score.includes(":")) return null;
+  const [homeScoreStr, awayScoreStr] = att.score.split(":").map((s) => s.trim());
+  const homeScore = Number(homeScoreStr);
+  const awayScore = Number(awayScoreStr);
+  if (Number.isNaN(homeScore) || Number.isNaN(awayScore)) return null;
+
+  const supportTeamId = att.supportTeamId ?? att.homeTeamId;
+  const supportIsHome = supportTeamId === att.homeTeamId;
+  const myScore = supportIsHome ? homeScore : awayScore;
+  const opponentScore = supportIsHome ? awayScore : homeScore;
+  const opponentTeamId = supportIsHome ? att.awayTeamId : att.homeTeamId;
+
+  const isoDate = att.date.replaceAll(".", "-");
+  return {
+    attendanceId: att.id,
+    result: att.result,
+    myScore,
+    opponentScore,
+    myTeamId: supportTeamId,
+    opponentTeamId,
+    gameDate: isoDate,
+    stadium: att.stadium
+  };
 }
 
 function getDday(date: string) {
@@ -53,11 +101,16 @@ type HomeScreenProps = {
 };
 
 export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestNoticeAt = null }: HomeScreenProps) {
-  const { attendances, profile } = useAppState();
+  const { attendances, profile, showToast, markAttendanceResult } = useAppState();
+  const router = useRouter();
   const [modal, setModal] = useState<ModalKind>(null);
+  const [reviewTargetId, setReviewTargetId] = useState<string | undefined>(undefined);
   const [nextIndex, setNextIndex] = useState(0);
   const [nextDir, setNextDir] = useState<"next" | "prev">("next");
   const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
+  const [resultPayload, setResultPayload] = useState<AttendanceResultPayload | null>(null);
+  const [finalizingId, setFinalizingId] = useState<string | null>(null);
+  const [, startFinalize] = useTransition();
 
   useEffect(() => {
     if (!latestNoticeAt) {
@@ -192,10 +245,15 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
         const away = getTeam(att.awayTeamId);
         const hasPrev = safeIndex > 0;
         const hasNext = safeIndex < upcomingAttendances.length - 1;
+        const isLive = hasGameStarted(att.date, att.time);
+        const sectionTitle = isLive ? "현재 직관" : "다음 직관";
         return (
-          <section className="hd-card hd-next" aria-label="다음 직관">
+          <section className="hd-card hd-next" aria-label={sectionTitle}>
             <div className="hd-section-header">
-              <h2 className="hd-section-title">다음 직관</h2>
+              <h2 className={`hd-section-title${isLive ? " hd-section-title-live" : ""}`}>
+                {isLive ? <span className="hd-section-live-dot" aria-hidden="true" /> : null}
+                {sectionTitle}
+              </h2>
               <div className="hd-next-nav">
                 <button
                   type="button"
@@ -242,6 +300,59 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
                   <TeamBadge teamId={att.homeTeamId} size="md" />
                 </div>
               </div>
+
+              {hasGameStarted(att.date, att.time) ? (
+                <div className="hd-game-progress-row">
+                  <span className="hd-game-progress-label">
+                    <span className="hd-game-progress-pulse" aria-hidden="true" />
+                    경기가 시작되었어요
+                  </span>
+                  <button
+                    type="button"
+                    className="hd-game-end-btn"
+                    disabled={finalizingId === att.id}
+                    onClick={() => {
+                      if (finalizingId === att.id) return;
+                      setFinalizingId(att.id);
+                      startFinalize(async () => {
+                        try {
+                          const res = await finalizeAttendanceAction(att.id);
+                          if (!res.ok) {
+                            showToast(res.reason);
+                            setFinalizingId(null);
+                            return;
+                          }
+                          // 클라이언트 state 즉시 업데이트 — router.refresh() 대신.
+                          // refresh를 여기서 부르면 Suspense 경계 재발동 → 모달 state 손실 + 카드 깜빡.
+                          markAttendanceResult(att.id, {
+                            result: res.result,
+                            myScore: res.myScore,
+                            opponentScore: res.opponentScore,
+                            supportTeamId: res.myTeamId,
+                            homeTeamId: att.homeTeamId
+                          });
+                          setResultPayload({ attendanceId: att.id, ...res });
+                          setFinalizingId(null);
+                        } catch (err) {
+                          showToast(err instanceof Error ? err.message : "확인 중 오류가 발생했어요.");
+                          setFinalizingId(null);
+                        }
+                      });
+                    }}
+                  >
+                    {finalizingId === att.id ? (
+                      <>
+                        <span className="onboarding-submit-spinner" aria-hidden="true" />
+                        확인 중...
+                      </>
+                    ) : (
+                      <>
+                        <Flag size={14} /> 경기 종료
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : null}
             </div>
           </section>
         );
@@ -288,7 +399,16 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
                 : "- : -";
 
               return (
-                <article className="hd-recent-card" key={att.id}>
+                <button
+                  type="button"
+                  className="hd-recent-card hd-recent-card-clickable"
+                  key={att.id}
+                  onClick={() => {
+                    const payload = buildResultPayload(att);
+                    if (payload) setResultPayload(payload);
+                  }}
+                  aria-label={`${compactDate} ${getTeam(att.homeTeamId).shortName} vs ${getTeam(att.awayTeamId).shortName} ${resultLabel} 다시 보기`}
+                >
                   <p className="hd-recent-date">{compactDate} ({dayLabel})</p>
                   <div className="hd-recent-score">
                     <TeamBadge teamId={att.homeTeamId} size="sm" />
@@ -299,7 +419,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
                     <span className={`hd-result-dot hd-result-${result === "lose" ? "loss" : result}`} />
                     <span className={`hd-result-text hd-text-${result === "lose" ? "loss" : result}`}>{resultLabel}</span>
                   </div>
-                </article>
+                </button>
               );
             })}
           </div>
@@ -362,7 +482,21 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
         </section>
       )}
 
-      <AppModals open={modal} setOpen={setModal} games={modalGames} />
+      <AppModals open={modal} setOpen={setModal} games={modalGames} initialAttendanceId={reviewTargetId} />
+      <AttendanceResultModal
+        payload={resultPayload}
+        onClose={() => {
+          setResultPayload(null);
+          // 모달 닫은 후에 다른 페이지(/my, /my/attendances)도 최신 데이터 반영되도록.
+          router.refresh();
+        }}
+        onWriteReview={(attendanceId) => {
+          // 결과 모달 닫고 → 후기 작성 모달 열기 (해당 직관 미리 선택된 상태)
+          setResultPayload(null);
+          setReviewTargetId(attendanceId);
+          setModal("review");
+        }}
+      />
     </AppShell>
   );
 }

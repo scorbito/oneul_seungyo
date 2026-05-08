@@ -278,3 +278,143 @@ export async function registerAttendanceFromTicket(input: TicketRegisterInput): 
     gameLabel: `${game.game_date} ${game.home_team_id.toUpperCase()} vs ${game.away_team_id.toUpperCase()}`
   };
 }
+
+// ============================================================
+// verifyAttendanceWithTicket
+// 이미 등록된 미인증 직관(수동 등록 등)에 티켓 사진을 추가하여 인증 처리.
+// 기존 attendance 행을 UPDATE — 새 행 생성하지 않음.
+// ============================================================
+
+export type VerifyExistingTicketInput = {
+  attendanceId: string;
+  imageBase64: string;
+  mimeType: string;
+};
+
+export type VerifyExistingTicketResult =
+  | { ok: true; verifiedAt: string; gameLabel: string }
+  | { ok: false; reason: string };
+
+export async function verifyAttendanceWithTicket(
+  input: VerifyExistingTicketInput
+): Promise<VerifyExistingTicketResult> {
+  // 1. 인증
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    return { ok: false, reason: "로그인이 필요합니다." };
+  }
+  const admin = createSupabaseAdminClient();
+  const userId = authData.user.id;
+
+  // 2. attendance 조회 + 소유 확인
+  const { data: attendance, error: attErr } = await admin
+    .from("attendances")
+    .select("id, user_id, game_id, verified")
+    .eq("id", input.attendanceId)
+    .maybeSingle();
+  if (attErr) {
+    return { ok: false, reason: `직관 조회 실패: ${attErr.message}` };
+  }
+  if (!attendance) {
+    return { ok: false, reason: "해당 직관 기록을 찾을 수 없어요." };
+  }
+  if (attendance.user_id !== userId) {
+    return { ok: false, reason: "본인 직관만 인증할 수 있어요." };
+  }
+  if (attendance.verified) {
+    return { ok: false, reason: "이미 인증된 직관이에요." };
+  }
+
+  // 3. 해시 dedup — 같은 티켓이 다른 직관에 이미 사용됐는지
+  const hash = sha256Base64(input.imageBase64);
+  const { data: existingByHash } = await admin
+    .from("attendances")
+    .select("id, user_id")
+    .eq("ticket_image_hash", hash)
+    .maybeSingle();
+  if (existingByHash) {
+    if (existingByHash.user_id === userId) {
+      return { ok: false, reason: "이미 다른 직관에 사용한 티켓이에요." };
+    }
+    return { ok: false, reason: "다른 사용자가 이미 인증한 티켓이에요." };
+  }
+
+  // 4. Vision 파싱
+  const visionResult = await parseTicketWithGemini(input.imageBase64, input.mimeType);
+  if (!visionResult.ok) {
+    return { ok: false, reason: visionResult.reason };
+  }
+
+  // 5. 등록된 attendance.game 정보 가져오기
+  const { data: game, error: gameErr } = await admin
+    .from("games")
+    .select("id, game_date, home_team_id, away_team_id, stadium")
+    .eq("id", attendance.game_id)
+    .maybeSingle();
+  if (gameErr || !game) {
+    return { ok: false, reason: "직관에 연결된 경기 정보를 찾을 수 없어요." };
+  }
+
+  // 6. 🔑 핵심 검증 — 티켓의 경기가 등록된 직관과 일치하는지
+  const dateMatches = visionResult.gameDate === game.game_date;
+  const dbTeams = [game.home_team_id, game.away_team_id];
+  const ticketTeams = [visionResult.homeTeamId, visionResult.awayTeamId];
+  const teamsMatch =
+    dbTeams.every((t) => ticketTeams.includes(t)) &&
+    ticketTeams.every((t) => dbTeams.includes(t));
+
+  if (!dateMatches || !teamsMatch) {
+    return {
+      ok: false,
+      reason: `티켓의 경기(${visionResult.gameDate} ${visionResult.homeTeamId.toUpperCase()} vs ${visionResult.awayTeamId.toUpperCase()})가 등록된 직관과 달라요. 다른 직관에 인증해주세요.`
+    };
+  }
+
+  // 7. Storage 업로드
+  const ext = input.mimeType.split("/")[1] || "jpg";
+  const path = `${userId}/ticket-${Date.now()}/${hash.slice(0, 12)}.${ext}`;
+  const buffer = Buffer.from(input.imageBase64, "base64");
+  const { error: uploadErr } = await admin.storage.from("ticket-images").upload(path, buffer, {
+    contentType: input.mimeType,
+    upsert: false
+  });
+  if (uploadErr) {
+    return { ok: false, reason: `티켓 업로드 실패: ${uploadErr.message}` };
+  }
+
+  // 8. attendance UPDATE
+  const verifiedAt = new Date().toISOString();
+  const { error: updateErr } = await admin
+    .from("attendances")
+    .update({
+      ticket_image_url: path,
+      ticket_image_hash: hash,
+      verified: true,
+      verified_at: verifiedAt,
+      verified_method: "ticket_image_vision",
+      vision_payload: {
+        gameDate: visionResult.gameDate,
+        homeTeamId: visionResult.homeTeamId,
+        awayTeamId: visionResult.awayTeamId,
+        stadium: visionResult.stadium
+      }
+    })
+    .eq("id", input.attendanceId);
+  if (updateErr) {
+    // 업로드 정리
+    await admin.storage.from("ticket-images").remove([path]).catch(() => {});
+    return { ok: false, reason: `인증 저장 실패: ${updateErr.message}` };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/my");
+  revalidatePath("/my/attendances");
+  revalidatePath("/my/tickets");
+
+  return {
+    ok: true,
+    verifiedAt,
+    gameLabel: `${game.game_date} ${game.home_team_id.toUpperCase()} vs ${game.away_team_id.toUpperCase()}`
+  };
+}

@@ -3,12 +3,13 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, PenSquare, Trash2 } from "lucide-react";
+import { CheckCircle2, PenSquare, Ticket, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/common/Button";
 import { ModalShell } from "@/components/common/ModalShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
+import { VerifyTicketModal } from "@/components/domain/VerifyTicketModal";
 import { getTeam } from "@/lib/constants/teams";
 import { deleteAttendanceAction } from "@/lib/actions/attendance";
 import { useAppState, type AttendanceRecord } from "@/lib/state/AppState";
@@ -26,6 +27,7 @@ export function MyAttendancesScreen({ dbAttendances = [] }: MyAttendancesScreenP
   const [modal, setModal] = useState<ModalKind>(null);
   const [reviewTargetId, setReviewTargetId] = useState<string | undefined>();
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [verifyTargetId, setVerifyTargetId] = useState<string | null>(null);
   const deleteTarget = deleteTargetId ? sourceAttendances.find((item) => item.id === deleteTargetId) : null;
   const filtered = sourceAttendances
     .filter((item) => {
@@ -67,7 +69,21 @@ export function MyAttendancesScreen({ dbAttendances = [] }: MyAttendancesScreenP
               <div className="attendance-card-body">
                 <div className="attendance-meta">
                   <span className="attendance-date">{item.date}</span>
-                  <em className={item.verified ? "status-verified" : "status-muted"}>{item.verified ? "인증" : "미인증"}</em>
+                  {item.verified ? (
+                    <em className="status-verified">인증</em>
+                  ) : (
+                    <span className="attendance-unverified-group">
+                      <em className="status-muted">미인증</em>
+                      <button
+                        type="button"
+                        className="verify-action-chip"
+                        onClick={() => setVerifyTargetId(item.id)}
+                        aria-label="티켓으로 인증"
+                      >
+                        <Ticket size={11} strokeWidth={2.4} /> 인증하기
+                      </button>
+                    </span>
+                  )}
                 </div>
                 <div className="attendance-match">
                   <TeamBadge teamId={item.homeTeamId} size="sm" />
@@ -99,6 +115,16 @@ export function MyAttendancesScreen({ dbAttendances = [] }: MyAttendancesScreenP
         {filtered.length === 0 ? <p className="empty-inline">표시할 직관 기록이 없어요.</p> : null}
       </section>
       <AppModals open={modal} setOpen={setModal} initialAttendanceId={reviewTargetId} />
+      <VerifyTicketModal
+        open={Boolean(verifyTargetId)}
+        attendanceId={verifyTargetId}
+        gameLabel={(() => {
+          const target = verifyTargetId ? sourceAttendances.find((a) => a.id === verifyTargetId) : null;
+          if (!target) return undefined;
+          return `${target.date} ${getTeam(target.homeTeamId).shortName} vs ${getTeam(target.awayTeamId).shortName}`;
+        })()}
+        onClose={() => setVerifyTargetId(null)}
+      />
       <ModalShell open={Boolean(deleteTarget)} title="직관 기록 삭제" onClose={() => setDeleteTargetId(null)}>
         <div className="confirm-stack">
           <p>

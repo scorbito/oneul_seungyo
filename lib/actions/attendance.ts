@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { syncGamesForDate } from "@/lib/server/kbo/syncGames";
 
 export type CreateAttendanceActionInput = {
   date: string;
@@ -194,3 +195,144 @@ export async function findCurrentUserAttendanceId(input: {
 
   return attendance?.id ?? null;
 }
+
+// ============================================================
+// finalizeAttendance — 사용자가 "경기 종료" 누르면 결과 확정
+// 1) 이미 game.status='finished'면 DB만으로 즉시 결과 반환 (API 호출 X)
+// 2) 아직 진행중이면 KBO 단일 일자 동기화 후 다시 검사
+// 3) 그래도 안 끝났으면 거부
+// ============================================================
+
+export type FinalizeAttendanceResult =
+  | {
+      ok: true;
+      result: "win" | "lose" | "draw";
+      myScore: number;
+      opponentScore: number;
+      myTeamId: string;
+      opponentTeamId: string;
+      gameDate: string;
+      stadium: string;
+    }
+  | { ok: false; reason: string; status?: "not-started" | "in-progress" | "no-data" };
+
+export async function finalizeAttendanceAction(attendanceId: string): Promise<FinalizeAttendanceResult> {
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    return { ok: false, reason: "로그인이 필요합니다." };
+  }
+  const admin = createSupabaseAdminClient();
+  const userId = authData.user.id;
+
+  // attendance + game 조회
+  const { data: attendance, error: attErr } = await admin
+    .from("attendances")
+    .select("id, user_id, game_id, support_team_id")
+    .eq("id", attendanceId)
+    .maybeSingle();
+  if (attErr) {
+    return { ok: false, reason: `직관 조회 실패: ${attErr.message}` };
+  }
+  if (!attendance) {
+    return { ok: false, reason: "해당 직관 기록을 찾을 수 없어요." };
+  }
+  if (attendance.user_id !== userId) {
+    return { ok: false, reason: "본인 직관만 종료 처리할 수 있어요." };
+  }
+
+  async function loadGame() {
+    const { data, error } = await admin
+      .from("games")
+      .select("id, game_date, game_time, stadium, home_team_id, away_team_id, home_score, away_score, status, last_synced_at")
+      .eq("id", attendance!.game_id)
+      .maybeSingle();
+    if (error) throw new Error(`경기 조회 실패: ${error.message}`);
+    return data;
+  }
+
+  let game = await loadGame();
+  if (!game) {
+    return { ok: false, reason: "경기 정보를 찾을 수 없어요." };
+  }
+
+  // 경기 시작 시간 검증 (KST)
+  const nowKst = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  const gameStartIso = `${game.game_date}T${game.game_time ?? "18:30:00"}+09:00`;
+  const gameStart = new Date(gameStartIso);
+  if (nowKst < gameStart) {
+    return { ok: false, reason: "경기 시작 시간이 아직 안 됐어요.", status: "not-started" };
+  }
+
+  // 1차: DB만으로 판정 가능?
+  const isFinishedInDb =
+    game.status === "finished" && game.home_score != null && game.away_score != null;
+
+  // 2차: 아니면 KBO 즉시 동기화 후 재조회 — 단 60초 throttle
+  if (!isFinishedInDb) {
+    const THROTTLE_MS = 60_000;
+    const lastSyncedAt = game.last_synced_at ? new Date(game.last_synced_at).getTime() : 0;
+    const sinceSync = Date.now() - lastSyncedAt;
+
+    if (sinceSync < THROTTLE_MS) {
+      // 60초 이내 누군가 이미 동기화했음 → API 호출 생략, 현재 DB 상태 그대로 응답
+      return {
+        ok: false,
+        reason: "아직 경기가 끝나지 않았어요. 잠시 후 다시 시도해주세요.",
+        status: "in-progress"
+      };
+    }
+
+    // 동기화 시점 먼저 기록 (다른 동시 요청을 차단) — race condition은 1~2초 짧은 윈도우만 존재
+    await admin
+      .from("games")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("id", game.id);
+
+    try {
+      await syncGamesForDate(new Date(`${game.game_date}T00:00:00+09:00`));
+    } catch (err) {
+      console.warn("[finalizeAttendance] KBO sync failed:", (err as Error).message);
+    }
+
+    game = await loadGame();
+    if (!game) {
+      return { ok: false, reason: "경기 정보를 찾을 수 없어요." };
+    }
+    if (game.status !== "finished" || game.home_score == null || game.away_score == null) {
+      return {
+        ok: false,
+        reason: "아직 경기가 끝나지 않았어요. 잠시 후 다시 시도해주세요.",
+        status: "in-progress"
+      };
+    }
+  }
+
+  // 결과 계산
+  const supportIsHome = attendance.support_team_id === game.home_team_id;
+  const myScore = supportIsHome ? game.home_score! : game.away_score!;
+  const opponentScore = supportIsHome ? game.away_score! : game.home_score!;
+  const myTeamId = attendance.support_team_id;
+  const opponentTeamId = supportIsHome ? game.away_team_id : game.home_team_id;
+
+  let result: "win" | "lose" | "draw";
+  if (myScore > opponentScore) result = "win";
+  else if (myScore < opponentScore) result = "lose";
+  else result = "draw";
+
+  revalidatePath("/");
+  revalidatePath("/my");
+  revalidatePath("/my/attendances");
+
+  return {
+    ok: true,
+    result,
+    myScore,
+    opponentScore,
+    myTeamId,
+    opponentTeamId,
+    gameDate: game.game_date,
+    stadium: game.stadium
+  };
+}
+

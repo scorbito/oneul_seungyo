@@ -41,6 +41,8 @@ type AppState = {
   toast: Toast | null;
   addAttendance: (attendance: Omit<AttendanceRecord, "id">) => void;
   deleteAttendance: (id: string) => void;
+  markAttendanceVerified: (id: string) => void;
+  markAttendanceResult: (id: string, payload: { result: "win" | "lose" | "draw"; myScore: number; opponentScore: number; supportTeamId: string; homeTeamId: string }) => void;
   updateProfile: (profile: Partial<ProfileSettings>) => void;
   addReview: (review: Omit<Review, "id" | "likes" | "comments" | "timeAgo">) => void;
   deleteReview: (id: string) => void;
@@ -188,6 +190,26 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
       deleteAttendance: (id) => {
         setAttendances((current) => current.filter((item) => item.id !== id));
         showToast("직관 기록을 삭제했어요.");
+      },
+      markAttendanceVerified: (id) => {
+        setAttendances((current) =>
+          current.map((item) => (item.id === id ? { ...item, verified: true } : item))
+        );
+      },
+      markAttendanceResult: (id, payload) => {
+        setAttendances((current) =>
+          current.map((item) => {
+            if (item.id !== id) return item;
+            const supportIsHome = payload.supportTeamId === payload.homeTeamId;
+            const homeScore = supportIsHome ? payload.myScore : payload.opponentScore;
+            const awayScore = supportIsHome ? payload.opponentScore : payload.myScore;
+            return {
+              ...item,
+              result: payload.result,
+              score: `${homeScore} : ${awayScore}`
+            };
+          })
+        );
       },
       updateProfile: (nextProfile) => {
         setProfileSettings((current) => ({ ...current, ...nextProfile }));

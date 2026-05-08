@@ -84,6 +84,7 @@ export type Database = {
           away_score: number | null;
           status: Database["public"]["Enums"]["game_status"];
           innings: number | null;
+          last_synced_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -99,6 +100,7 @@ export type Database = {
           away_score?: number | null;
           status?: Database["public"]["Enums"]["game_status"];
           innings?: number | null;
+          last_synced_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
