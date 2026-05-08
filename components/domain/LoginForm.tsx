@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { Mail } from "lucide-react";
 import { emailAuthAction } from "@/lib/actions/auth";
 
@@ -18,6 +19,25 @@ const errorMessages: Record<string, string> = {
 const noticeMessages: Record<string, string> = {
   "check-email": "이메일 인증 링크를 확인한 뒤 다시 로그인해주세요."
 };
+
+function LoginSubmit({ mode }: { mode: "sign-in" | "sign-up" }) {
+  const { pending } = useFormStatus();
+  return (
+    <button className="login-submit" type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <span className="onboarding-submit-spinner" aria-hidden="true" />
+          처리 중...
+        </>
+      ) : (
+        <>
+          <Mail size={16} />
+          {mode === "sign-in" ? "이메일로 로그인" : "이메일로 가입"}
+        </>
+      )}
+    </button>
+  );
+}
 
 export function LoginForm({ error, notice }: LoginFormProps) {
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
@@ -64,10 +84,7 @@ export function LoginForm({ error, notice }: LoginFormProps) {
         <p className={error ? "login-message login-message-error" : "login-message"}>{message}</p>
       ) : null}
 
-      <button className="login-submit" type="submit">
-        <Mail size={16} />
-        {mode === "sign-in" ? "이메일로 로그인" : "이메일로 가입"}
-      </button>
+      <LoginSubmit mode={mode} />
     </form>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { Check, Lock } from "lucide-react";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { teams } from "@/lib/constants/teams";
@@ -14,6 +15,20 @@ const errorMessages: Record<string, string> = {
   nickname: "닉네임은 2자 이상 입력해주세요.",
   team: "응원팀을 선택해주세요."
 };
+
+function SubmitButton({ disabled }: { disabled?: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className="onboarding-submit" disabled={disabled || pending}>
+      {pending ? (
+        <>
+          <span className="onboarding-submit-spinner" aria-hidden="true" />
+          시작하는 중...
+        </>
+      ) : "다음"}
+    </button>
+  );
+}
 
 export function OnboardingForm({ error }: OnboardingFormProps) {
   const [nickname, setNickname] = useState("승요맨");
@@ -70,9 +85,7 @@ export function OnboardingForm({ error }: OnboardingFormProps) {
           <Lock size={12} /> 언제든지 마이페이지에서 변경할 수 있어요.
         </p>
 
-        <button type="submit" className="onboarding-submit" disabled={nickname.trim().length < 2}>
-          다음
-        </button>
+        <SubmitButton disabled={nickname.trim().length < 2} />
       </div>
     </form>
   );

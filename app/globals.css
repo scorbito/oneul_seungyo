@@ -7732,6 +7732,24 @@ button {
   box-shadow: none;
 }
 
+/* 폼 제출 pending 스피너 (OnboardingForm + LoginForm) */
+.onboarding-submit,
+.login-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.onboarding-submit-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: initial-loader-spin 0.7s linear infinite;
+}
+
 @media (max-width: 380px) {
   .onboarding-card { padding: 44px 18px 28px; }
   .onboarding-title { font-size: 22px; }
