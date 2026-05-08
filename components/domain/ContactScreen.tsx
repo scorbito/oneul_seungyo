@@ -2,7 +2,7 @@ import Link from "next/link";
 import { HelpCircle, Mail } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 
-const SUPPORT_EMAIL = "support@oneul-seungyo.com";
+const SUPPORT_EMAIL = "daedanbiz@gmail.com";
 
 export function ContactScreen() {
   const subject = encodeURIComponent("[오늘은 승요] 문의드립니다");

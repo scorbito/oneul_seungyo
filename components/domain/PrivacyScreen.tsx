@@ -94,7 +94,7 @@ export function PrivacyScreen() {
         <section>
           <h2>8. 개인정보 보호책임자</h2>
           <ul>
-            <li>이메일: privacy@oneul-seungyo.com</li>
+            <li>이메일: daedanbiz@gmail.com</li>
             <li>문의: <a href="/my/contact">문의하기</a></li>
           </ul>
         </section>
