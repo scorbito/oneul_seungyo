@@ -101,7 +101,7 @@ export async function createReviewAction(input: CreateReviewActionInput) {
     user_id: authData.user.id,
     attendance_id: attendance.id,
     body,
-    photos: input.photos.length > 0 ? input.photos.slice(0, 3) : ["/assets/stadium-review-day.png"],
+    photos: input.photos.length > 0 ? input.photos.slice(0, 3) : ["/assets/mainherobg.png"],
     public_scope: input.publicScope
   });
 
@@ -161,7 +161,7 @@ export async function updateReviewAction(input: UpdateReviewActionInput) {
     throw new Error("본인 후기만 수정할 수 있습니다.");
   }
 
-  const nextPhotos = input.photos.length > 0 ? input.photos.slice(0, 3) : ["/assets/stadium-review-day.png"];
+  const nextPhotos = input.photos.length > 0 ? input.photos.slice(0, 3) : ["/assets/mainherobg.png"];
 
   const { error: updateError } = await admin
     .from("reviews")

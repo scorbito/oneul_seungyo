@@ -150,7 +150,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
   } | null>(null);
   const [reviewBody, setReviewBody] = useState("");
   const [privacy, setPrivacy] = useState("전체 공개");
-  const [reviewPhotos, setReviewPhotos] = useState<string[]>(["/assets/stadium-review-sunset.png"]);
+  const [reviewPhotos, setReviewPhotos] = useState<string[]>([]);
   const [reviewPhotoFiles, setReviewPhotoFiles] = useState<Array<{ src: string; file: File }>>([]);
   const [selectedReviewAttendanceId, setSelectedReviewAttendanceId] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState(templates[0]);
@@ -355,7 +355,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
       title: "",
       body: trimmedBody,
       gameLabel: `${selectedReviewAttendance.date} · ${getTeam(selectedReviewAttendance.homeTeamId).shortName} ${selectedReviewAttendance.score} ${getTeam(selectedReviewAttendance.awayTeamId).shortName}`,
-      image: reviewPhotos[0] ?? "/assets/stadium-review-day.png",
+      image: reviewPhotos[0] ?? "/assets/mainherobg.png",
       tags: extractHashtags(trimmedBody),
       attendanceId: selectedReviewAttendance.id
     };

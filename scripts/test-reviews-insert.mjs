@@ -39,7 +39,7 @@ if (atts && atts.length > 0) {
     user_id: att.user_id,
     attendance_id: att.id,
     body: "테스트 후기 본문 5자 이상",
-    photos: ["/assets/stadium-review-day.png"],
+    photos: ["/assets/mainherobg.png"],
     public_scope: "public"
   }).select();
   console.log("INSERT result:", { data: insData, error: insErr?.message, code: insErr?.code });
