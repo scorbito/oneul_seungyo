@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { AppStateProvider } from "@/lib/state/AppState";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -13,6 +13,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "오늘은 승요",
   description: "KBO 직관 기록, 승률 통계, 커뮤니티 웹앱"
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#06101e"
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
