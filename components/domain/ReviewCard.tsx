@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Bookmark, Heart, MessageCircle, Send } from "lucide-react";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { getTeam } from "@/lib/constants/teams";
@@ -50,10 +51,10 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
         {actionSlot ? <div className="review-author-action">{actionSlot}</div> : null}
         <TeamBadge teamId={review.teamId} size="sm" />
       </div>
-      <a className="review-image-link" href={`/reviews/${review.id}`}>
+      <Link className="review-image-link" href={`/reviews/${review.id}`} prefetch>
         <Image alt={review.title || "후기 사진"} className="review-image" height={220} src={review.image} width={330} />
         {review.images && review.images.length > 1 ? <span>1/{review.images.length}</span> : null}
-      </a>
+      </Link>
       {review.game ? (() => {
         const home = getTeam(review.game.homeTeamId);
         const away = getTeam(review.game.awayTeamId);
@@ -78,7 +79,7 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
           </div>
         );
       })() : null}
-      {review.title ? <a className="review-title" href={`/reviews/${review.id}`}>{review.title}</a> : null}
+      {review.title ? <Link className="review-title" href={`/reviews/${review.id}`} prefetch>{review.title}</Link> : null}
       <p ref={bodyRef} className={expanded ? "review-body" : "review-body review-body-clamped"}>
         {review.body}
       </p>
