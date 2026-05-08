@@ -12,7 +12,17 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "오늘은 승요",
-  description: "KBO 직관 기록, 승률 통계, 커뮤니티 웹앱"
+  description: "KBO 직관 기록, 승률 통계, 커뮤니티 웹앱",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "오늘은 승요",
+    statusBarStyle: "black-translucent"
+  },
+  icons: {
+    icon: "/assets/mascot-default.png",
+    apple: { url: "/assets/mascot-default.png", sizes: "180x180", type: "image/png" }
+  }
 };
 
 export const viewport: Viewport = {
