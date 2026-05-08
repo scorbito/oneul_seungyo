@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { AppStateProvider } from "@/lib/state/AppState";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getCurrentProfileFromDb,
   getCurrentProfileStatsFromDb,
@@ -17,6 +18,10 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   noStore();
 
+  const ssr = createSupabaseServerClient();
+  const { data: authData } = await ssr.auth.getUser();
+  const isAnonymous = Boolean(authData?.user?.is_anonymous);
+
   const [profile, stats, attendances, reviews] = await Promise.all([
     getCurrentProfileFromDb().catch(() => null),
     getCurrentProfileStatsFromDb().catch(() => null),
@@ -32,6 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           initialStats={stats}
           initialAttendances={attendances}
           initialReviews={reviews}
+          initialIsAnonymous={isAnonymous}
         >
           {children}
         </AppStateProvider>

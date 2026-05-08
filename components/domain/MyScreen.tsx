@@ -23,7 +23,7 @@ const menuItems = [
 ];
 
 export function MyScreen() {
-  const { profile, attendances, reviews, updateProfile, showToast } = useAppState();
+  const { profile, attendances, reviews, isAnonymous, updateProfile, showToast } = useAppState();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [nickname, setNickname] = useState(profile.nickname);
@@ -83,6 +83,11 @@ export function MyScreen() {
         </div>
         <strong className="profile-rate">{profile.winRate}</strong>
         <span className="profile-record">{profile.wins}승 {profile.losses}패 {profile.draws}무</span>
+        {isAnonymous ? (
+          <a className="profile-anon-cta" href="/login">
+            정식 계정으로 전환하면 다른 기기에서도 볼 수 있어요 →
+          </a>
+        ) : null}
         <button type="button" className="profile-edit-btn" onClick={() => setEditing(true)}>프로필 편집</button>
       </Card>
       <Card className="stats-card">

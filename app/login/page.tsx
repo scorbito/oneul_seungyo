@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/domain/LoginForm";
 import { OAuthButtons } from "@/components/domain/OAuthButtons";
@@ -15,20 +16,36 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const supabase = createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
 
-  if (data.user) {
+  // 정식 user는 redirect, 익명 user는 upgrade 모드로 페이지 그대로 표시
+  if (data.user && !data.user.is_anonymous) {
     const profile = await getCurrentProfileFromDb().catch(() => null);
     redirect(profile ? "/" : "/onboarding");
   }
 
+  const upgradeMode = Boolean(data.user?.is_anonymous);
+
   return (
     <main className="app-backdrop">
-      <section className="phone-frame phone-frame-dark login-frame" aria-label="로그인">
+      <section className="phone-frame phone-frame-dark login-frame" aria-label={upgradeMode ? "정식 계정 전환" : "로그인"}>
         <div className="app-scroll">
-          <header className="app-header">
-            <a className="brand" href="/landing">오늘은 승요</a>
+          <header className="app-header login-header">
+            {upgradeMode ? (
+              <a className="login-back" href="/" aria-label="뒤로">
+                <ArrowLeft size={20} />
+              </a>
+            ) : <span />}
+            <a className="brand" href={upgradeMode ? "/" : "/landing"}>오늘은 승요</a>
+            <span />
           </header>
           <div className="login-bg-area" aria-hidden="true" />
           <div className="login-content">
+            {upgradeMode ? (
+              <div className="login-upgrade-banner">
+                <strong>정식 계정으로 전환</strong>
+                <span>지금까지 쌓은 직관·후기·사진은 그대로 유지돼요.</span>
+                <a className="login-upgrade-skip" href="/">지금은 그냥 사용하기 →</a>
+              </div>
+            ) : null}
             <div className="login-mascot" aria-hidden="true">
               <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="50" cy="50" r="44" fill="#0d1a30" stroke="#ff6a2b" strokeWidth="2.5" />
@@ -53,7 +70,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 <text x="50" y="64" textAnchor="middle" fontSize="44" fontWeight="900" fill="#ffffff" fontFamily="Pretendard, sans-serif">S</text>
               </svg>
             </div>
-            <h1 className="login-title">로그인하고<br />내 기록을 시작하세요</h1>
+            <h1 className="login-title">
+              {upgradeMode
+                ? <>계정을 연동하고<br />내 기록을 안전하게 보관하세요</>
+                : <>로그인하고<br />내 기록을 시작하세요</>}
+            </h1>
             <OAuthButtons />
             <LoginForm error={searchParams?.error} notice={searchParams?.notice} />
             <p className="login-footnote">

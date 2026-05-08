@@ -130,7 +130,7 @@ function getAttendanceResult(game: Game, supportTeamId: string): "win" | "lose" 
 }
 
 export function AppModals({ open, setOpen, games = [], initialGameId, initialDate, initialAttendanceId, editReview = null }: AppModalsProps) {
-  const { addAttendance, addReview, attendances, reviews, profile, showToast } = useAppState();
+  const { addAttendance, addReview, attendances, reviews, profile, isAnonymous, showToast } = useAppState();
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [selectedGameId, setSelectedGameId] = useState(games[0]?.id ?? "");
@@ -633,13 +633,27 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
           </label>
           <div className="privacy-row">
             {[
-              { label: "전체 공개", icon: Globe2 },
-              { label: "친구 공개", icon: Users },
-              { label: "나만 보기", icon: Lock }
+              { label: "전체 공개", icon: Globe2, anonAllowed: true },
+              { label: "친구 공개", icon: Users, anonAllowed: false },
+              { label: "나만 보기", icon: Lock, anonAllowed: false }
             ].map((item) => {
               const Icon = item.icon;
+              const disabled = isAnonymous && !item.anonAllowed;
               return (
-                <button className={privacy === item.label ? "privacy-active" : ""} key={item.label} type="button" onClick={() => setPrivacy(item.label)}>
+                <button
+                  className={privacy === item.label ? "privacy-active" : ""}
+                  key={item.label}
+                  type="button"
+                  disabled={disabled}
+                  title={disabled ? "정식 계정 전환 시 사용 가능" : undefined}
+                  onClick={() => {
+                    if (disabled) {
+                      showToast("정식 계정으로 전환하면 사용할 수 있어요.");
+                      return;
+                    }
+                    setPrivacy(item.label);
+                  }}
+                >
                   <Icon size={16} />{item.label}
                 </button>
               );

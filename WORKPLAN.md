@@ -825,52 +825,75 @@ styles/
 
 목표: 가입 마찰을 0으로 줄여 "일단 써보고 마음에 들면 가입" 흐름을 만든다. 첫 진입 시 자동 익명 세션 발급으로 직관 등록·후기 작성을 즉시 가능하게 하고, 친구 관리·다른 기기 동기화가 필요해지는 시점에 자연스럽게 정식 계정으로 업그레이드 유도한다.
 
-원칙:
+원칙 (정책 C — 본인 데이터는 자유 + 일부 기능만 제한):
 
 - Supabase 공식 익명 로그인(`signInAnonymously`) 사용 — 별도 백엔드 0
 - 업그레이드 시 `user.id` 그대로 유지되어 그동안 쌓은 데이터 손실 없음
   - 이메일/비번: `supabase.auth.updateUser({ email, password })`
   - OAuth: `supabase.auth.linkIdentity({ provider: 'google' | 'kakao' })`
+- **본인 데이터(직관/후기/사진/댓글/좋아요)는 모두 서버에 정상 저장** — `user.id` 동일하게 유지되므로 정식 가입 후에도 그대로 사용
 - 익명 user는 디바이스 의존(폰 바꾸면 데이터 못 봄)이라는 한계를 사용자에게 명시
-- 익명 user의 권한은 RLS에서 정식 user보다 좁게 (예: 후기 공개 범위 = `public` 강제, friends/private 비활성)
 - 30일 미사용 익명 세션은 Supabase 자동 삭제 (설정 그대로)
 
-작업 — 인프라:
+기능별 권한 매트릭스:
 
-- [ ] Supabase Dashboard → Authentication → Providers → Anonymous sign-ins 활성화
-- [ ] RLS 정책 점검: `is_anonymous = true` user에 대해 후기 publicScope를 `public`만 허용, 친구 요청/팔로우 등 소셜 기능 차단
+| 기능 | 익명 | 정식 |
+|---|---|---|
+| 직관 등록 (수동/티켓 인증) | ✅ | ✅ |
+| 본인 후기 작성/수정/삭제 | ✅ (단 **public 공개만**) | ✅ |
+| 후기 좋아요 / 저장 / 공유 | ✅ | ✅ |
+| 후기 댓글 작성/삭제 | ✅ | ✅ |
+| 공지/이용안내 보기 | ✅ | ✅ |
+| 프로필 사진 / 닉네임 / 팀 변경 | ✅ | ✅ |
+| **친구 관리(검색/요청/추가)** | ❌ → 전환 모달 | ✅ |
+| **후기 friends/private 공개** | ❌ disabled + 안내 | ✅ |
+| **다른 기기 동기화** | ❌ → 전환 모달 | ✅ |
 
-작업 — 코드:
+작업 — 인프라 (사용자):
 
-- [ ] middleware 또는 root layout에서 비로그인 사용자에게 자동 익명 세션 발급
-  - `/landing` 진입 시 익명 세션이 없으면 `signInAnonymously()` 호출 → 직접 `/`로 진입 가능
-  - 또는 "체험하기" 버튼을 별도로 두고 클릭 시 익명 세션 발급
-- [ ] AppState에 `isAnonymous` 플래그 노출 (`profile.isAnonymous`)
-- [ ] 친구 관리·공유·다른 기기 동기화 등 정식 계정이 필요한 액션에 가드 추가 → "정식 계정으로 전환" 모달
-- [ ] 전환 모달: Google/카카오/이메일 중 선택 → `linkIdentity` 또는 `updateUser` 호출 → 동일 user.id로 업그레이드
-- [ ] 업그레이드 성공 토스트 + 데이터 그대로 유지 안내
+- [x] Supabase Dashboard → Authentication → Providers → Anonymous sign-ins 활성화
+- [x] RLS 정책 SQL 작성 + 적용 ([supabase/anonymous-policies.sql](supabase/anonymous-policies.sql)):
+  - `reviews` INSERT/UPDATE: 익명 user(`auth.jwt()->>'is_anonymous' = 'true'`)는 `public_scope = 'public'`만 허용
+  - `friend_requests` INSERT/UPDATE: 익명 user는 차단
+  - `friends` INSERT/UPDATE: 익명 user는 차단
+  - RESTRICTIVE 정책으로 기존 PERMISSIVE 정책과 AND 조건 결합
+
+작업 — 코드 (Codex):
+
+- [x] `lib/actions/auth.ts`: `signInAnonymouslyAction` server action — `supabase.auth.signInAnonymously()` + admin client로 기본 프로필 자동 생성 (`야구팬{user.id 앞 5자}` / 두산 / public)
+- [x] `lib/actions/auth.ts`: `signInWithOAuthAction` 내부에 익명 분기 추가 — 익명이면 `linkIdentity({ provider, redirectTo: ?upgrade=1 })` 호출
+- [x] `lib/actions/auth.ts`: `linkAnonymousToEmailAction(formData)` — `updateUser({ email, password })` 호출, `emailAuthAction`이 익명 감지 시 자동 위임
+- [x] AppState에 `isAnonymous` 플래그 노출 (RootLayout에서 `auth.getUser().user.is_anonymous` 읽어 prop 전달)
+- [x] 친구 관리 페이지 가드 (`FriendsScreen`): 익명이면 큰 자물쇠 빈 상태 + "정식 계정으로 전환" CTA → `/login`
+- [x] 후기 작성 모달 공개 범위 가드 (`AppModals`): 익명이면 `friends`/`private` 칩 disabled + 토스트 안내
+- [x] 마이 페이지 profile-card에 익명 user 전용 작은 오렌지 outline 칩 ("전환하면 다른 기기에서도 볼 수 있어요 →")
+- [x] OAuth 자동 link: server action에서 `is_anonymous` 체크 후 `linkIdentity` vs `signInWithOAuth` 분기. 별도 모달 불필요
+- [x] OAuth callback route: `?upgrade=1` 받으면 `/?notice=upgraded`로 redirect
 
 작업 — UX 흐름 정리:
 
-- [ ] 랜딩 흐름 재정리: "시작하기"(익명 자동 진입) + "로그인"(정식 계정) 2개 버튼
-- [ ] 마이 페이지 hero에 "정식 계정으로 전환" CTA 표시 (익명 user일 때만)
-- [ ] 후기 공개 범위 선택 시 익명 user는 friends/private 옵션을 disabled + 안내 (정식 가입 시 사용 가능)
+- [x] 랜딩 ([app/landing/page.tsx](app/landing/page.tsx)): "비로그인으로 시작하기" 버튼 + 클릭 시 **확인 모달** (디바이스 의존·기능 제한 안내 + 정식 전환 시 데이터 보존 녹색 박스) → 확인하면 `signInAnonymouslyAction`
+- [x] `/login` 페이지: 익명 user 진입 시 redirect 안 하고 **upgrade 모드** 표시 — 녹색 안내 배너 + "지금은 그냥 사용하기" 링크 + 헤더 좌측 ← 뒤로가기
+- [x] 온보딩 완료 시 `/`로 진입 (익명/정식 동일 흐름)
+- [x] 마이 hero에 익명일 때 전환 CTA 칩
 
 테스트:
 
-- [ ] 첫 방문 → 익명 세션 발급 → 직관 등록 → 데이터 저장 확인
-- [ ] 익명 → 이메일 가입으로 업그레이드 → user.id 유지 + 직관 데이터 그대로
-- [ ] 익명 → Google/카카오 연동으로 업그레이드 → 동일 검증
-- [ ] 다른 브라우저/시크릿창 → 별도 익명 user 발급 (데이터 분리) 확인
-- [ ] 익명 user의 RLS 가드 확인 (friends/private 후기 작성 차단)
-- [ ] `npx tsc --noEmit` 통과
+- [x] 첫 방문 → 시작하기 → 익명 세션 + 프로필 생성 → 직관 등록 → 데이터 저장 확인 (수동)
+- [ ] 익명 → 이메일 가입으로 업그레이드 → user.id 유지 + 직관 데이터 그대로 (수동 검증 필요)
+- [ ] 익명 → Google/카카오 연동으로 업그레이드 → 동일 검증 (수동 검증 필요)
+- [ ] 다른 브라우저/시크릿창 → 별도 익명 user 발급 (데이터 분리) 확인 (수동 검증 필요)
+- [ ] 익명 user의 RLS 가드 확인 (Supabase 콘솔에서 SQL 적용 후 검증):
+  - 후기 friends/private 작성 시도 → 거부
+  - friend_requests INSERT 시도 → 거부
+- [x] `npx tsc --noEmit` 통과
 
 리뷰어 검수:
 
 - [ ] 익명 → 정식 업그레이드 시 데이터 손실 / 중복 / 권한 누수 케이스 점검
-- [ ] 봇/스팸 익명 user 누적 위험 평가 + 정리 정책
+- [ ] 봇/스팸 익명 user 누적 위험 평가 + 30일 자동 정리 검증
 
-진행 상태: Planned (Phase 8.8 종료 후 진행)
+진행 상태: Completed (Supabase Anonymous sign-ins 활성화 + `anonymous-policies.sql` 적용 완료, 익명 로그인 흐름 수동 검증 통과)
 
 ### Phase 9. 반응형/접근성/시각 QA
 
@@ -878,11 +901,12 @@ styles/
 
 작업:
 
-- [ ] 360px, 414px, 768px, 1024px 이상 레이아웃 점검
-- [ ] 색 대비 점검
-- [ ] 버튼/탭/칩 focus state 점검
+- [x] **반응형 break point 적용** — 모바일(≤480px) phone-frame 풀스크린 + safe-area-inset, 태블릿(481~1024px) phone-frame 비율 유지(`aspect-ratio: 414/896`) + 화면 높이 100dvh, 데스크톱(>1024px) 기존 414×896 폰 프레임
+- [ ] 360px, 414px, 768px, 1024px 이상 레이아웃 1:1 점검 (수동 QA — 실제 디바이스/실기 빌드 후)
+- [ ] 색 대비 점검 (WCAG AA — 다크 배경 위 회색 텍스트 일부 alpha 0.45~0.55 점검)
+- [ ] 버튼/탭/칩 focus state 점검 (키보드 탐색)
 - [ ] 이미지 lazy loading 및 alt text 점검
-- [ ] 스크롤 영역과 fixed tab bar 겹침 제거
+- [ ] 스크롤 영역과 fixed tab bar 겹침 제거 (이미 phone-frame-dark에서 padding-bottom 92px 처리됨)
 - [ ] 불필요한 장식/과한 색 사용 줄이기
 - [ ] Next.js 이미지 최적화 적용 여부 점검
 
@@ -890,7 +914,7 @@ styles/
 
 - [ ] `npm run build`
 - [ ] `npm run lint`
-- [ ] 브라우저 수동 QA
+- [ ] 브라우저 수동 QA (DevTools 디바이스 모드 + 실제 폰)
 - [ ] 가능하면 Playwright 또는 브라우저 스크린샷 QA
 
 리뷰어 검수:
@@ -898,7 +922,7 @@ styles/
 - [ ] 리뷰어 에이전트가 전체 화면과 `data/design_brief.md`의 원칙을 대조해 최종 UI 리스크를 검토
 - [ ] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Not Started
+진행 상태: Partial — 반응형 break point만 적용. 접근성/색대비/lint/build/수동 QA는 출시 직전 일괄 진행 예정
 
 ### Phase 9.5. 운영 페이지 (공지·이용안내·문의·약관)
 
@@ -1079,8 +1103,8 @@ styles/
 | Phase 8.6. 후기 댓글 기능 | Completed | Codex | 2026-05-08 |
 | Phase 8.7. 다크 컨셉 전면 리디자인 | Completed | Codex | 2026-05-08 |
 | Phase 8.8. 소셜 로그인(Google + 카카오) + 인증/온보딩 다크 리디자인 | Implemented / Reviewer Pending | Codex | 2026-05-08 |
-| Phase 8.9. 익명 로그인 + 정식 계정 업그레이드 | Planned | Codex | 2026-05-08 |
-| Phase 9. 반응형/접근성/시각 QA | Not Started | TBD | 2026-05-06 |
+| Phase 8.9. 익명 로그인 + 정식 계정 업그레이드 | Completed | Codex | 2026-05-08 |
+| Phase 9. 반응형/접근성/시각 QA | Partial (반응형만) | Codex | 2026-05-08 |
 | Phase 9.5. 운영 페이지 (공지·이용안내·문의·약관) | Planned | Codex | 2026-05-08 |
 | Phase 10. 배포 준비 | Not Started | TBD | 2026-05-06 |
 | Phase 11. 인수 문서/마무리 | Not Started | TBD | 2026-05-06 |
@@ -1162,3 +1186,6 @@ styles/
 - 2026-05-08: **Phase 8.8 소셜 로그인 + 인증/온보딩 다크 리디자인 완료**. Google + 카카오 OAuth 모두 콘솔 설정(사용자) + 코드(`signInWithOAuthAction`, `OAuthButtons`, 기존 `/auth/callback` 재활용) 완료. 카카오는 디벨로퍼스 콘솔 메뉴 개편(2026 초)으로 사이트 도메인/Redirect URI/Client Secret이 모두 **플랫폼 키 → REST API 키** 단일 페이지로 통합되어 가이드도 그에 맞춰 업데이트. 로그인 페이지는 phone-frame 안에서 야구장 야간 배경(상단 mask fade) + 인라인 SVG 야구공+S 로고 + 카카오 노랑/Google 다크 OAuth 버튼 + segmented 탭. 온보딩은 phone-frame 단일 컨테이너로 정리(이중 카드 X), 닉네임/팀 grid 2열 + ✓, 기본 팀 두산. 함께 진행한 Phase 8.7 후속 보완 — 일정 segmented(기본/시리즈/팀 순위) + 시리즈 보기 모드 + 결과 행(스윕/위닝/루징/스윕패), 캘린더 가변 주, 팀 순위 다크, 홈 빈 상태 카드, 프로필 저장 admin client 패턴 통일(RLS 우회) + AppState SSR 동기화 useEffect, 팀 변경 하루 1회 제한 임시 해제.
 - 2026-05-08: **Phase 8.9 익명 로그인 + 정식 계정 업그레이드** 신설. 가입 마찰을 0으로 줄여 "체험 → 가입" 흐름을 만들기 위한 단계. Supabase 공식 익명 로그인(`signInAnonymously`) + `linkIdentity`/`updateUser`로 업그레이드해 user.id를 유지한 채 데이터 손실 없이 정식 계정으로 전환. 익명 user는 디바이스 의존이라는 한계가 있으므로, 친구 관리/공유/다른 기기 동기화가 필요한 시점에 자연스럽게 전환 모달을 띄우는 흐름. 익명 user의 RLS 권한은 정식 user보다 좁게(public 공개만 허용) 잡아 봇/스팸 위험을 완화. Phase 8.8 종료 후 진행.
 - 2026-05-08: **Phase 8.8 소셜 로그인 + 인증/온보딩 다크 리디자인** 신설. 이메일/비번 가입 마찰을 줄이기 위해 Google + 카카오 OAuth를 함께 추가(Supabase Auth Provider 공식 지원 + `app/auth/callback/route.ts`). 카카오는 처음에 보류했으나 Supabase가 카카오 provider를 공식 지원해 Google과 절차가 거의 동일한 점(콘솔 설정 + `provider: 'kakao'` 한 줄)을 확인하고 함께 진행하기로. 카카오는 **개인 앱**으로 진행 — 닉네임/프로필 사진만 동의항목으로 사용해 비즈 앱 신청을 회피(이메일은 Supabase가 임시 이메일을 자동 생성). 동시에 `/landing` `/login` `/onboarding` 세 화면을 Phase 8.7 토큰/패턴과 동일한 다크 컨셉으로 리디자인. 콘솔 설정(Google Cloud + 카카오 디벨로퍼스 + Supabase Dashboard)은 사용자가 직접 처리하고, 코드는 Codex가 담당.
+- 2026-05-08: **Phase 8.9 익명 로그인 완료**. 정책 C(본인 데이터는 자유 + 친구 관리/일부 공개 범위만 제한)로 구현. `signInAnonymouslyAction` + admin 자동 프로필 생성 / `signInWithOAuthAction`이 `is_anonymous` 감지 시 `linkIdentity` 자동 분기 / `linkAnonymousToEmailAction` + `emailAuthAction` 위임으로 user.id 유지하며 정식 전환. 랜딩의 "비로그인으로 시작하기" 클릭 시 디바이스 의존·기능 제한을 알리는 정보 제공형 confirm 모달 + 정식 전환 시 데이터 보존 녹색 안내 박스. `/login` 페이지는 익명 user 진입 시 redirect 안 하고 "정식 계정으로 전환" upgrade 모드(녹색 배너 + 헤더 ← 뒤로 + "지금은 그냥 사용하기" 링크)로 자동 전환. 친구 관리는 익명이면 자물쇠 빈 상태 + 전환 CTA, 후기 작성 공개 범위는 friends/private 칩 disabled. RLS는 `supabase/anonymous-policies.sql`에 RESTRICTIVE 정책으로 작성(reviews는 public만, friend_requests/friends 전면 차단). Supabase Anonymous sign-ins 활성화 + SQL 적용은 사용자 작업.
+- 2026-05-08: **Phase 8.9 인프라 적용 완료**. Supabase Dashboard → Anonymous sign-ins ON + `supabase/anonymous-policies.sql` 적용 완료. 랜딩 → 비로그인 시작 confirm → 익명 세션 + 프로필 자동 생성 → 온보딩 → 홈 흐름 수동 검증 통과. linkIdentity/updateUser 업그레이드 흐름은 코드 적용 완료, 실제 데이터 마이그레이션은 운영 도메인 배포 후 OAuth Redirect 활성화 시 추가 검증 예정.
+- 2026-05-08: **Phase 9 반응형 break point 부분 적용**. `app-backdrop` + `phone-frame`에 미디어쿼리 추가 — 모바일(≤480px)은 phone-frame이 화면 100% 차지 + 둥근모서리/그림자 제거 + `env(safe-area-inset-*)` 처리, 태블릿(481~1024px)은 `aspect-ratio: 414/896`으로 폰 비율 유지하면서 화면 높이 100dvh 활용, 데스크톱(>1024px)은 기존 414×896 폰 프레임. 접근성/색대비/lint/build/수동 QA 등 나머지는 출시 직전 일괄 진행 예정.

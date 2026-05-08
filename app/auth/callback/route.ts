@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const errorDescription = searchParams.get("error_description");
   const next = searchParams.get("next");
+  const isUpgrade = searchParams.get("upgrade") === "1";
 
   if (errorDescription) {
     return NextResponse.redirect(
@@ -29,6 +30,11 @@ export async function GET(request: NextRequest) {
 
   if (next && next.startsWith("/")) {
     return NextResponse.redirect(`${origin}${next}`);
+  }
+
+  // 익명 → 정식 전환 후엔 홈으로 + 성공 토스트
+  if (isUpgrade) {
+    return NextResponse.redirect(`${origin}/?notice=upgraded`);
   }
 
   const profile = await getCurrentProfileFromDb().catch(() => null);

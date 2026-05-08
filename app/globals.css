@@ -38,6 +38,7 @@ button {
 
 .app-backdrop {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -58,6 +59,53 @@ button {
   border: 1px solid #e5e7eb;
   border-radius: 32px;
   box-shadow: var(--shadow);
+}
+
+/* 모바일 풀스크린 — phone-frame이 화면 100% 차지, 가장자리 둥글기/그림자 제거 */
+@media (max-width: 480px) {
+  .app-backdrop {
+    padding: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: #06101e;
+  }
+  .phone-frame {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  /* iOS notch / 안드로이드 system bar 안전영역 */
+  .app-scroll {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+}
+
+/* 태블릿 — phone-frame을 화면 높이에 꽉 맞추고, 폰 비율(414:896) 유지 */
+@media (min-width: 481px) and (max-width: 1024px) {
+  .app-backdrop {
+    padding: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .phone-frame {
+    width: auto;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    aspect-ratio: 414 / 896;
+    border-radius: 0;
+    border-top: 0;
+    border-bottom: 0;
+  }
 }
 
 .app-scroll {
@@ -7731,6 +7779,67 @@ button {
   color: #f7f9fc;
 }
 
+/* upgrade 모드 헤더에 뒤로가기 + 가운데 brand */
+.phone-frame-dark .login-frame .login-header {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.phone-frame-dark .login-frame .login-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--hd-text-secondary);
+  text-decoration: none;
+}
+
+.phone-frame-dark .login-frame .login-back:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--hd-text-primary);
+}
+
+/* 익명 → 정식 전환(upgrade mode) 배너 */
+.login-upgrade-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: rgba(36, 194, 106, 0.1);
+  border: 1px solid rgba(36, 194, 106, 0.4);
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: -4px;
+}
+
+.login-upgrade-banner strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: #4cd185;
+}
+
+.login-upgrade-banner span {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(247, 249, 252, 0.7);
+}
+
+.login-upgrade-banner .login-upgrade-skip {
+  margin-top: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgba(247, 249, 252, 0.55);
+  text-decoration: none;
+}
+
+.login-upgrade-banner .login-upgrade-skip:hover {
+  color: #ffffff;
+}
+
 .login-mascot {
   width: 96px;
   height: 96px;
@@ -8093,4 +8202,272 @@ button {
 
 .phone-frame-dark .ranking-dot-d {
   background: var(--hd-text-muted);
+}
+
+/* ============================================================
+ * Anonymous user — guards & upgrade CTA
+ * ============================================================ */
+
+/* 마이 hero 안 익명 전환 CTA */
+.phone-frame-dark .profile-card .profile-anon-cta {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 106, 43, 0.14);
+  border: 1px solid rgba(255, 106, 43, 0.5);
+  border-radius: 999px;
+  color: var(--hd-accent-orange);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+  letter-spacing: -0.1px;
+  align-self: center;
+}
+
+.phone-frame-dark .profile-card .profile-anon-cta:hover {
+  background: rgba(255, 106, 43, 0.22);
+}
+
+/* 익명 가드 페이지의 전환 CTA 버튼 (친구 관리 등) */
+.phone-frame-dark .upgrade-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  padding: 0 22px;
+  border-radius: 12px;
+  background: var(--hd-accent-orange);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(255, 106, 43, 0.32);
+}
+
+.phone-frame-dark .upgrade-cta:hover {
+  filter: brightness(1.05);
+}
+
+/* 후기 작성 모달 - 공개범위 disabled */
+.phone-frame-dark .review-modal-panel .privacy-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.phone-frame-dark .review-modal-panel .privacy-row button:disabled::after {
+  content: "🔒";
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 9px;
+}
+
+/* 랜딩 익명 안내문 */
+.landing-anon-hint {
+  margin: 14px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.62);
+  text-align: center;
+}
+
+/* 랜딩 - 비로그인 시작 confirm 모달 */
+.landing-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(4, 10, 20, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(6px);
+  animation: landing-fade-in 0.18s ease;
+}
+
+@keyframes landing-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.landing-confirm-panel {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  padding: 28px 22px 22px;
+  background: #0d1a30;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  color: #f7f9fc;
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+}
+
+.landing-confirm-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: rgba(247, 249, 252, 0.6);
+  cursor: pointer;
+}
+
+.landing-confirm-close:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.landing-confirm-panel h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #ffffff;
+}
+
+.landing-confirm-lede {
+  margin: 0 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: rgba(247, 249, 252, 0.7);
+}
+
+.landing-confirm-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.landing-confirm-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.landing-confirm-list li > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.landing-confirm-list strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.landing-confirm-list span {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(247, 249, 252, 0.55);
+  line-height: 1.5;
+}
+
+.landing-confirm-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 106, 43, 0.16);
+  color: #ff6a2b;
+  flex-shrink: 0;
+}
+
+.landing-confirm-note {
+  margin: 0 0 18px;
+  padding: 10px 12px;
+  background: rgba(36, 194, 106, 0.1);
+  border: 1px solid rgba(36, 194, 106, 0.3);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: rgba(247, 249, 252, 0.8);
+  text-align: center;
+}
+
+.landing-confirm-note b {
+  color: #4cd185;
+  font-weight: 800;
+}
+
+.landing-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.landing-confirm-cancel {
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.landing-confirm-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.landing-confirm-start {
+  height: 46px;
+  border: 0;
+  background: #ff6a2b;
+  color: #ffffff;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 8px 22px rgba(255, 106, 43, 0.3);
+}
+
+.landing-confirm-start:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.landing-confirm-cancel:disabled,
+.landing-confirm-start:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.landing-confirm-altlink {
+  display: block;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(247, 249, 252, 0.5);
+  text-decoration: none;
+}
+
+.landing-confirm-altlink:hover {
+  color: #ff6a2b;
 }

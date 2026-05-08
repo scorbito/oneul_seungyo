@@ -37,6 +37,7 @@ type AppState = {
   notificationsEnabled: boolean;
   publicScope: string;
   profile: UserProfile;
+  isAnonymous: boolean;
   toast: Toast | null;
   addAttendance: (attendance: Omit<AttendanceRecord, "id">) => void;
   deleteAttendance: (id: string) => void;
@@ -116,9 +117,10 @@ type AppStateProviderProps = {
   initialStats?: ProfileStats | null;
   initialAttendances?: AttendanceRecord[];
   initialReviews?: Review[];
+  initialIsAnonymous?: boolean;
 };
 
-export function AppStateProvider({ children, initialProfile, initialStats, initialAttendances, initialReviews }: AppStateProviderProps) {
+export function AppStateProvider({ children, initialProfile, initialStats, initialAttendances, initialReviews, initialIsAnonymous = false }: AppStateProviderProps) {
   const isAuthed = Boolean(initialProfile);
   const [attendances, setAttendances] = useState<AttendanceRecord[]>(
     (initialAttendances ?? []).map(normalizeAttendance)
@@ -177,6 +179,7 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
       notificationsEnabled,
       publicScope,
       profile,
+      isAnonymous: initialIsAnonymous,
       toast,
       addAttendance: (attendance) => {
         setAttendances((current) => [{ ...attendance, id: `att-${Date.now()}` }, ...current]);
@@ -223,7 +226,7 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
       },
       showToast
     };
-  }, [attendances, dbStats, isAuthed, likedReviewIds, notificationsEnabled, profileSettings, publicScope, reviews, savedReviewIds, toast]);
+  }, [attendances, dbStats, isAuthed, initialIsAnonymous, likedReviewIds, notificationsEnabled, profileSettings, publicScope, reviews, savedReviewIds, toast]);
 
   return (
     <AppStateContext.Provider value={value}>

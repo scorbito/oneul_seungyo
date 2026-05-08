@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, Check, Inbox, Search, UserPlus } from "lucide-react";
+import { ArrowLeft, Check, Inbox, Lock, Search, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { useAppState } from "@/lib/state/AppState";
@@ -9,7 +9,23 @@ import { useAppState } from "@/lib/state/AppState";
 type FriendRow = { id: string; name: string; teamId: string; desc: string };
 
 export function FriendsScreen() {
-  const { showToast } = useAppState();
+  const { isAnonymous, showToast } = useAppState();
+
+  if (isAnonymous) {
+    return (
+      <AppShell activeTab="my" title="친구 관리" theme="dark">
+        <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
+        <div className="empty-state-large">
+          <div className="empty-state-icon"><Lock size={28} /></div>
+          <p>
+            친구 관리는 정식 계정 전환 후 이용할 수 있어요.<br />
+            카카오·Google·이메일로 전환하면 그동안 쌓은 기록은 그대로 유지됩니다.
+          </p>
+          <a className="upgrade-cta" href="/login">정식 계정으로 전환</a>
+        </div>
+      </AppShell>
+    );
+  }
   const [tab, setTab] = useState("요청");
   const [requests, setRequests] = useState<FriendRow[]>([]);
   const [query, setQuery] = useState("");
