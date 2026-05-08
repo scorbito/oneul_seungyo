@@ -1,10 +1,12 @@
-import { CalendarDays, Home, MessageCircle, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Home, MessageCircle, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 
 type AppShellProps = {
   activeTab?: "home" | "schedule" | "community" | "my";
   title?: string;
   theme?: "default" | "dark";
+  headerAction?: ReactNode;
+  backHref?: string;
   children: ReactNode;
 };
 
@@ -15,15 +17,21 @@ const tabs = [
   { id: "my", label: "마이", icon: UserRound, href: "/my" }
 ] as const;
 
-export function AppShell({ activeTab = "home", title = "오늘은 승요", theme = "default", children }: AppShellProps) {
+export function AppShell({ activeTab = "home", title = "오늘은 승요", theme = "default", headerAction, backHref, children }: AppShellProps) {
   return (
     <main className="app-backdrop">
       <section className={`phone-frame${theme === "dark" ? " phone-frame-dark" : ""}`} aria-label="오늘은 승요 앱 화면">
         <div className="app-scroll">
           <header className="app-header">
+            {backHref ? (
+              <a className="header-back" href={backHref} aria-label="뒤로">
+                <ArrowLeft size={18} />
+              </a>
+            ) : null}
             <a className="brand" href="/">
               {title}
             </a>
+            {headerAction}
           </header>
           <div className="app-content">{children}</div>
         </div>

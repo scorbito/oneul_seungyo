@@ -1,7 +1,7 @@
 import type { Team, TeamStanding } from "@/lib/types/domain";
 import type { GameRecord, ProfileStats, UserProfileRecord } from "@/lib/types/api-contracts";
 import type { AttendanceRecord } from "@/lib/state/AppState";
-import type { Review, ReviewComment } from "@/lib/types/domain";
+import type { Notice, Review, ReviewComment } from "@/lib/types/domain";
 import { getTeam } from "@/lib/constants/teams";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -540,4 +540,46 @@ export async function listCommentsByReviewId(reviewId: string): Promise<ReviewCo
       timeAgo: getTimeAgo(row.created_at)
     };
   });
+}
+
+function toNotice(row: {
+  id: string;
+  title: string;
+  body: string;
+  is_pinned: boolean;
+  published_at: string;
+}): Notice {
+  return {
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    isPinned: row.is_pinned,
+    publishedAt: row.published_at
+  };
+}
+
+export async function listNoticesFromDb(): Promise<Notice[]> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("notices")
+    .select("id, title, body, is_pinned, published_at")
+    .lte("published_at", new Date().toISOString())
+    .order("is_pinned", { ascending: false })
+    .order("published_at", { ascending: false });
+
+  if (error) throw new Error(`공지 조회 실패: ${error.message}`);
+  return (data ?? []).map(toNotice);
+}
+
+export async function getNoticeByIdFromDb(id: string): Promise<Notice | null> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("notices")
+    .select("id, title, body, is_pinned, published_at")
+    .eq("id", id)
+    .lte("published_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (error) throw new Error(`공지 조회 실패: ${error.message}`);
+  return data ? toNotice(data) : null;
 }

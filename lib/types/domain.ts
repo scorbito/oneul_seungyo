@@ -73,6 +73,14 @@ export type Review = {
   };
 };
 
+export type Notice = {
+  id: string;
+  title: string;
+  body: string;
+  isPinned: boolean;
+  publishedAt: string;
+};
+
 export type ReviewComment = {
   id: string;
   reviewId: string;

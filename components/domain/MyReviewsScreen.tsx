@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { ReviewCard } from "@/components/domain/ReviewCard";
 import { useAppState } from "@/lib/state/AppState";
@@ -16,8 +15,7 @@ export function MyReviewsScreen({ dbReviews = [] }: MyReviewsScreenProps) {
   const myReviews = sourceReviews;
 
   return (
-    <AppShell activeTab="my" title="내 후기 모음" theme="dark">
-      <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
+    <AppShell activeTab="my" title="내 후기 모음" theme="dark" backHref="/my">
       <div className="review-feed">
         {myReviews.map((review) => (
           <ReviewCard

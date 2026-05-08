@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, MapPin, X } from "lucide-react";
+import { MapPin, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { getTeam } from "@/lib/constants/teams";
@@ -16,9 +16,7 @@ export function TicketCollectionScreen({ items }: Props) {
   const [zoomedItem, setZoomedItem] = useState<TicketCollectionItem | null>(null);
 
   return (
-    <AppShell activeTab="my" title="내 티켓 컬렉션" theme="dark">
-      <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
-
+    <AppShell activeTab="my" title="내 티켓 컬렉션" theme="dark" backHref="/my">
       {items.length === 0 ? (
         <p className="empty-inline">아직 인증된 티켓이 없어요. 직관 등록 화면에서 티켓 사진으로 인증해 보세요!</p>
       ) : (

@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bookmark, ChevronLeft, ChevronRight, Heart, MoreHorizontal, PenSquare, Send, Trash2 } from "lucide-react";
+import { Bookmark, ChevronLeft, ChevronRight, Heart, MoreHorizontal, PenSquare, Send, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/common/Button";
 import { ModalShell } from "@/components/common/ModalShell";
@@ -51,12 +51,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
 
   if (!review) {
     return (
-      <AppShell activeTab="community" title="후기 상세" theme="dark">
-        <div className="detail-topbar">
-          <a href="/community" aria-label="뒤로가기"><ArrowLeft size={20} /></a>
-          <span>후기 상세</span>
-          <span />
-        </div>
+      <AppShell activeTab="community" title="후기 상세" theme="dark" backHref="/community">
         <section className="not-found-panel">
           <h1>후기를 찾을 수 없어요</h1>
           <p>커뮤니티 피드에서 다시 후기를 선택해주세요.</p>
@@ -132,9 +127,8 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   };
 
   return (
-    <AppShell activeTab="community" title="후기 상세" theme="dark">
+    <AppShell activeTab="community" title="후기 상세" theme="dark" backHref="/community">
       <div className="detail-topbar">
-        <a href="/community" aria-label="뒤로가기"><ArrowLeft size={20} /></a>
         <div className="detail-topbar-author">
           {review.authorAvatarUrl ? (
             <span className="detail-topbar-avatar">

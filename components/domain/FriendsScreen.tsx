@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, Check, Inbox, Lock, Search, UserPlus } from "lucide-react";
+import { Check, Inbox, Lock, Search, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { useAppState } from "@/lib/state/AppState";
@@ -10,11 +10,19 @@ type FriendRow = { id: string; name: string; teamId: string; desc: string };
 
 export function FriendsScreen() {
   const { isAnonymous, showToast } = useAppState();
+  const [tab, setTab] = useState("요청");
+  const [requests, setRequests] = useState<FriendRow[]>([]);
+  const [query, setQuery] = useState("");
+  const [requestedIds, setRequestedIds] = useState<string[]>([]);
+
+  const trimmedQuery = query.trim();
+  const searchResults = useMemo<FriendRow[]>(() => {
+    return [];
+  }, []);
 
   if (isAnonymous) {
     return (
-      <AppShell activeTab="my" title="친구 관리" theme="dark">
-        <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
+      <AppShell activeTab="my" title="친구 관리" theme="dark" backHref="/my">
         <div className="empty-state-large">
           <div className="empty-state-icon"><Lock size={28} /></div>
           <p>
@@ -26,15 +34,6 @@ export function FriendsScreen() {
       </AppShell>
     );
   }
-  const [tab, setTab] = useState("요청");
-  const [requests, setRequests] = useState<FriendRow[]>([]);
-  const [query, setQuery] = useState("");
-  const [requestedIds, setRequestedIds] = useState<string[]>([]);
-
-  const trimmedQuery = query.trim();
-  const searchResults = useMemo<FriendRow[]>(() => {
-    return [];
-  }, [trimmedQuery]);
 
   const act = (id: string, message: string) => {
     setRequests((current) => current.filter((item) => item.id !== id));
@@ -47,8 +46,7 @@ export function FriendsScreen() {
   };
 
   return (
-    <AppShell activeTab="my" title="친구 관리" theme="dark">
-      <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
+    <AppShell activeTab="my" title="친구 관리" theme="dark" backHref="/my">
       <div className="friend-search">
         <Search size={16} />
         <input

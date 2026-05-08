@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { getTeam } from "@/lib/constants/teams";
@@ -15,11 +14,7 @@ export function RankingsScreen({ standings = [] }: RankingsScreenProps) {
   const { profile } = useAppState();
 
   return (
-    <AppShell activeTab="schedule" title="팀순위" theme="dark">
-      <a className="back-link" href="/schedule">
-        <ArrowLeft size={18} /> 일정으로 돌아가기
-      </a>
-
+    <AppShell activeTab="schedule" title="팀순위" theme="dark" backHref="/schedule">
       <div className="rankings-title">
         <h1>{new Date().getFullYear()} KBO 정규시즌</h1>
       </div>

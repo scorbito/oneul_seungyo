@@ -930,62 +930,64 @@ styles/
 
 원칙:
 
-- 진입은 **마이 → 설정** 메뉴에 추가 (별도 탭 만들지 않음)
+- 진입은 **마이 → 설정** 메뉴에 통합 (공지만 마이 헤더 우측 🔔 아이콘으로 1단계 노출)
 - 공지는 운영자가 자주 바꾸므로 DB 기반, 나머지는 정적 페이지
 - 문의하기는 MVP에선 mailto 링크로 시작 (운영 부담 0)
 - 약관/개인정보처리방침은 변호사 검토 후 게시, 초안은 표준 템플릿 사용
 
 작업 — 공지 (`/my/notices`):
 
-- [ ] DB: `notices` 테이블 신설 — id, title, body(markdown), is_pinned, published_at, created_at, updated_at
-- [ ] RLS: 모두 read 가능, write는 service role(운영자)만
-- [ ] `lib/supabase/queries.ts`: `listNotices()` (최신순 + 고정글 우선), `getNoticeById(id)`
-- [ ] `/my/notices` 리스트 페이지: 다크 카드 + 고정 핀 아이콘 + 작성일
-- [ ] `/my/notices/[id]` 상세 페이지: 마크다운 렌더 (react-markdown 또는 단순 변환)
-- [ ] 새 공지 시 마이 페이지 메뉴에 빨간 점(unread badge) — localStorage로 마지막 본 공지 id 추적
-- [ ] 운영자 입력 도구: Supabase Studio에서 직접 row 추가하는 방식으로 시작 (전용 어드민 화면은 Phase 11 이후)
+- [x] DB: `notices` 테이블 신설 — id, title, body, is_pinned, published_at, created_at, updated_at — `supabase/notices.sql`
+- [x] RLS: 모두 read 가능(published_at <= now()), write는 service role(운영자)만 — INSERT/UPDATE/DELETE 정책 미생성으로 차단
+- [x] `lib/supabase/queries.ts`: `listNoticesFromDb()` (고정글 우선 + 최신순), `getNoticeByIdFromDb(id)`
+- [x] `/my/notices` 리스트 페이지: 다크 카드 + 고정 핀 배지 + 작성일 + 본문 발췌
+- [x] `/my/notices/[id]` 상세 페이지: 단순 줄바꿈 변환 (마크다운 라이브러리 미도입 — MVP에선 plain text + 줄바꿈으로 충분)
+- [x] 새 공지 시 마이 헤더 공지 아이콘에 빨간 점(unread badge) — localStorage `notices.lastSeenAt` 비교
+- [x] 운영자 입력 도구: Supabase Studio에서 직접 row 추가 (어드민 화면은 Phase 11 이후)
 
 작업 — 이용안내 (`/my/help`):
 
-- [ ] 정적 페이지 — 직관 등록/티켓 인증/후기 작성/친구 관리/공유 등 핵심 흐름 캡처 + 짧은 설명
-- [ ] FAQ 섹션 (아코디언): "티켓 인증이 안 돼요", "다른 기기에서도 보고 싶어요", "응원팀을 잘못 등록했어요" 등
-- [ ] 마지막에 "더 궁금한 게 있으면 문의하기" 링크 → `/my/contact`
+- [x] 정적 페이지 — 직관 등록/티켓 인증/후기 작성/친구 관리/공유 5가지 핵심 흐름 + 짧은 설명
+- [x] FAQ 아코디언 6문항 — 티켓 인증, 다른 기기, 응원팀 변경, 공개 범위, 직관 삭제, 친구 요청
+- [x] 하단에 「더 궁금한 게 있으면 문의하기」 링크 → `/my/contact`
 
 작업 — 문의하기 (`/my/contact`):
 
-- [ ] MVP: mailto 링크 (`mailto:support@<domain>?subject=...&body=...`)로 메일 클라이언트 열기 — 코드 5분
-- [ ] 폼 옵션 (선택): 제목/본문/연락처 input → server action이 운영자 메일/Slack/구글 시트로 전송
-  - 메일: Resend 또는 Supabase Edge Function + SMTP
-  - Slack: incoming webhook (가장 단순)
-  - 구글 시트: Apps Script webhook
-- [ ] 자주 묻는 질문 링크(`/my/help`)로 먼저 안내해 문의 부하 줄임
+- [x] MVP: mailto 링크 (`mailto:support@oneul-seungyo.com?subject=...&body=...`) — 양식 템플릿(기기/닉네임/상황/기대동작) 자동 채움
+- [x] 자주 묻는 질문 링크(`/my/help`)로 먼저 안내
+- [ ] 폼 옵션 (Phase 11 이후): Resend / Slack webhook / 구글 시트
 
 작업 — 약관/개인정보처리방침:
 
-- [ ] `/legal/terms` (이용약관) — 표준 템플릿 + 우리 서비스 특이사항(직관 데이터, 이미지 저장, 친구 기능)
-- [ ] `/legal/privacy` (개인정보처리방침) — 수집 항목(이메일/닉네임/직관 사진/티켓 사진/위치는 미수집), 보관 기간, 제3자 제공(없음), Supabase Storage·KBO API·Gemini Vision 처리 위탁 명시
-- [ ] 로그인/온보딩에서 동의 체크박스 + 푸터 링크
-- [ ] 변호사 또는 법률 자문 검토 (출시 전 필수)
+- [x] `/legal/terms` (이용약관) — 10개조 표준 템플릿 + 우리 서비스 특이사항(직관 데이터, 이미지 저장, 친구 기능, 비로그인 회원 정의)
+- [x] `/legal/privacy` (개인정보처리방침) — 수집 항목, 이용 목적, Supabase·Gemini·Vercel 처리 위탁, 보유 기간, 제3자 제공, 회원 권리, 보호 조치, 책임자 안내
+- [x] 시행일 명시 (2026-05-08)
+- [ ] 로그인/온보딩에서 동의 체크박스 + 푸터 링크 (Phase 10 배포 전 추가)
+- [ ] 변호사 또는 법률 자문 검토 (출시 전 필수 — 현재는 초안)
 
-작업 — 진입 동선:
+작업 — 진입 동선 + 설정 정리:
 
-- [ ] 설정 페이지 메뉴 추가: 공지(unread 배지) / 이용안내 / 문의하기 / 이용약관 / 개인정보처리방침
-- [ ] 마이 hero 또는 어딘가에 새 공지 토스트/배너 (옵션)
+- [x] 마이 헤더 우측 🔔 공지 아이콘 추가 (AppShell `headerAction` prop 신설) + unread 빨간 점
+- [x] 설정 페이지 재구성: 알림 / 후기 공개 범위 → 이용안내 / 문의하기 → 이용약관 / 개인정보처리방침 → 로그아웃
+- [x] mock 메뉴 제거 (`내 팀 변경`, `개인정보 설정` mock) — 팀 변경은 마이 → 프로필 편집에서, 개인정보는 이용약관/개인정보처리방침으로 이동
+- [x] 후기 공개 범위 토글 → 모달로 3개 옵션(전체/친구/나만) 명시 + DB 저장 (`updateProfileAction({ defaultPublicScope })`)
+- [x] 익명 user는 후기 공개 범위 변경 disabled (정책 C: 익명은 public 만)
 
 테스트:
 
-- [ ] 공지 등록(Studio) → 리스트/상세 표시 + unread 배지 동작
-- [ ] 이용안내 페이지 + FAQ 아코디언 동작
-- [ ] mailto 링크가 실제로 메일 클라이언트 여는지 (모바일/데스크톱)
-- [ ] 약관/개인정보 페이지 노출 + 로그인 시 동의 체크박스 검증
-- [ ] `npx tsc --noEmit` + `npm run build` 통과
+- [x] `npx tsc --noEmit` 통과
+- [x] `npm run lint` 에러 0 (기존 경고 3건만 잔존)
+- [ ] Supabase에 `notices.sql` 적용 → Studio에서 샘플 공지 확인
+- [ ] 공지 리스트/상세 + unread 배지 dev 서버에서 실측
+- [ ] mailto 링크 실제 메일 앱 열림 확인
+- [ ] 약관/개인정보 페이지 다크 토큰 일관성 확인
 
 리뷰어 검수:
 
-- [ ] 약관/개인정보 문구 법무 검토
-- [ ] notices RLS 정책에 사용자가 임의 INSERT 못 하는지
+- [ ] 약관/개인정보 문구 법무 검토 (Phase 10 배포 전)
+- [ ] notices RLS 정책에 사용자가 임의 INSERT 못 하는지 — INSERT 정책 미생성이므로 anon/authenticated 둘 다 차단됨, service role 만 통과
 
-진행 상태: Planned
+진행 상태: Implemented (사용자 SQL 적용 + dev 실측 후 Completed)
 
 ### Phase 10. 배포 준비
 
@@ -1105,7 +1107,7 @@ styles/
 | Phase 8.8. 소셜 로그인(Google + 카카오) + 인증/온보딩 다크 리디자인 | Implemented / Reviewer Pending | Codex | 2026-05-08 |
 | Phase 8.9. 익명 로그인 + 정식 계정 업그레이드 | Completed | Codex | 2026-05-08 |
 | Phase 9. 반응형/접근성/시각 QA | Partial (반응형만) | Codex | 2026-05-08 |
-| Phase 9.5. 운영 페이지 (공지·이용안내·문의·약관) | Planned | Codex | 2026-05-08 |
+| Phase 9.5. 운영 페이지 (공지·이용안내·문의·약관) | Implemented (SQL 적용 대기) | Codex | 2026-05-08 |
 | Phase 10. 배포 준비 | Not Started | TBD | 2026-05-06 |
 | Phase 11. 인수 문서/마무리 | Not Started | TBD | 2026-05-06 |
 
@@ -1188,4 +1190,5 @@ styles/
 - 2026-05-08: **Phase 8.8 소셜 로그인 + 인증/온보딩 다크 리디자인** 신설. 이메일/비번 가입 마찰을 줄이기 위해 Google + 카카오 OAuth를 함께 추가(Supabase Auth Provider 공식 지원 + `app/auth/callback/route.ts`). 카카오는 처음에 보류했으나 Supabase가 카카오 provider를 공식 지원해 Google과 절차가 거의 동일한 점(콘솔 설정 + `provider: 'kakao'` 한 줄)을 확인하고 함께 진행하기로. 카카오는 **개인 앱**으로 진행 — 닉네임/프로필 사진만 동의항목으로 사용해 비즈 앱 신청을 회피(이메일은 Supabase가 임시 이메일을 자동 생성). 동시에 `/landing` `/login` `/onboarding` 세 화면을 Phase 8.7 토큰/패턴과 동일한 다크 컨셉으로 리디자인. 콘솔 설정(Google Cloud + 카카오 디벨로퍼스 + Supabase Dashboard)은 사용자가 직접 처리하고, 코드는 Codex가 담당.
 - 2026-05-08: **Phase 8.9 익명 로그인 완료**. 정책 C(본인 데이터는 자유 + 친구 관리/일부 공개 범위만 제한)로 구현. `signInAnonymouslyAction` + admin 자동 프로필 생성 / `signInWithOAuthAction`이 `is_anonymous` 감지 시 `linkIdentity` 자동 분기 / `linkAnonymousToEmailAction` + `emailAuthAction` 위임으로 user.id 유지하며 정식 전환. 랜딩의 "비로그인으로 시작하기" 클릭 시 디바이스 의존·기능 제한을 알리는 정보 제공형 confirm 모달 + 정식 전환 시 데이터 보존 녹색 안내 박스. `/login` 페이지는 익명 user 진입 시 redirect 안 하고 "정식 계정으로 전환" upgrade 모드(녹색 배너 + 헤더 ← 뒤로 + "지금은 그냥 사용하기" 링크)로 자동 전환. 친구 관리는 익명이면 자물쇠 빈 상태 + 전환 CTA, 후기 작성 공개 범위는 friends/private 칩 disabled. RLS는 `supabase/anonymous-policies.sql`에 RESTRICTIVE 정책으로 작성(reviews는 public만, friend_requests/friends 전면 차단). Supabase Anonymous sign-ins 활성화 + SQL 적용은 사용자 작업.
 - 2026-05-08: **Phase 8.9 인프라 적용 완료**. Supabase Dashboard → Anonymous sign-ins ON + `supabase/anonymous-policies.sql` 적용 완료. 랜딩 → 비로그인 시작 confirm → 익명 세션 + 프로필 자동 생성 → 온보딩 → 홈 흐름 수동 검증 통과. linkIdentity/updateUser 업그레이드 흐름은 코드 적용 완료, 실제 데이터 마이그레이션은 운영 도메인 배포 후 OAuth Redirect 활성화 시 추가 검증 예정.
+- 2026-05-08: **Phase 9.5 운영 페이지 구현 완료(Implemented)**. IA 결정 — 공지만 마이 헤더 우측 🔔 아이콘으로 1단계 노출(unread 배지), 이용안내·문의·약관·개인정보는 마이 → 설정 메뉴 통합. 공지: `supabase/notices.sql`(테이블 + read RLS, write 미생성으로 service role 만 작성 가능) + `listNoticesFromDb`/`getNoticeByIdFromDb` + `/my/notices` 리스트/상세 + `notices.lastSeenAt` localStorage 기반 unread 배지. AppShell에 `headerAction` prop 신설(다른 페이지에서도 재사용 가능). 이용안내: 5가지 핵심 기능 카드 + FAQ 6문항 아코디언 + 문의 CTA. 문의: mailto 링크 + 양식 템플릿(기기/닉네임/상황/기대동작 자동 채움) + FAQ 우선 안내. 약관: 10개조 표준 템플릿 + 비로그인 회원 정의 추가. 개인정보처리방침: 수집 항목·이용 목적·처리 위탁(Supabase/Gemini/Vercel)·보유 기간·회원 권리·보호 조치 명시. 약관/개인정보의 한국어 큰따옴표는 React unescaped entities 회피 + 법률 문서 표준에 맞춰 「 」(겹낫표)로 표기. 설정 페이지 재구성 — mock 메뉴(`내 팀 변경`, `개인정보 설정`) 제거, 공개 범위 토글 → 모달로 3개 옵션 명시 + DB 저장 + 익명 disabled. ui-card margin-top 다크 테마 0 처리(마이 페이지 헤더-프로필 간격이 다른 페이지보다 14px 넓던 문제 해결). 사용자 작업 — Supabase에 `notices.sql` 적용 + dev 서버에서 실측.
 - 2026-05-08: **Phase 9 반응형 break point 부분 적용**. `app-backdrop` + `phone-frame`에 미디어쿼리 추가 — 모바일(≤480px)은 phone-frame이 화면 100% 차지 + 둥근모서리/그림자 제거 + `env(safe-area-inset-*)` 처리, 태블릿(481~1024px)은 `aspect-ratio: 414/896`으로 폰 비율 유지하면서 화면 높이 100dvh 활용, 데스크톱(>1024px)은 기존 414×896 폰 프레임. 접근성/색대비/lint/build/수동 QA 등 나머지는 출시 직전 일괄 진행 예정.

@@ -2,7 +2,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { redirect } from "next/navigation";
 import { HomeScreen } from "@/components/domain/HomeScreen";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { listGamesFromDb, listStandingsFromDb } from "@/lib/supabase/queries";
+import { listGamesFromDb, listNoticesFromDb, listStandingsFromDb } from "@/lib/supabase/queries";
 import type { Game } from "@/lib/types/domain";
 
 const fmt = (d: Date) =>
@@ -43,12 +43,14 @@ export default async function HomePage() {
   const modalRangeStart = new Date(today.getFullYear(), 2, 1); // 3월 1일
   const modalRangeEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14);
 
-  const [standings, recentGames] = await Promise.all([
+  const [standings, recentGames, notices] = await Promise.all([
     listStandingsFromDb(today.getFullYear()).catch(() => []),
     listGamesFromDb({ from: fmt(modalRangeStart), to: fmt(modalRangeEnd) })
       .then((items) => items.map(toDomainGame))
-      .catch(() => [])
+      .catch(() => []),
+    listNoticesFromDb().catch(() => [])
   ]);
+  const latestNoticeAt = notices[0]?.publishedAt ?? null;
 
   // 이번주 게임은 recentGames에서 필터
   const weekGames = recentGames.filter((g) => {
@@ -64,6 +66,7 @@ export default async function HomePage() {
       weekGames={weekGames}
       weekStart={fmt(monday)}
       modalGames={recentGames}
+      latestNoticeAt={latestNoticeAt}
     />
   );
 }

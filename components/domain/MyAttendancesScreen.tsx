@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, PenSquare, Trash2 } from "lucide-react";
+import { CheckCircle2, PenSquare, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/common/Button";
 import { ModalShell } from "@/components/common/ModalShell";
@@ -44,8 +44,7 @@ export function MyAttendancesScreen({ dbAttendances = [] }: MyAttendancesScreenP
   };
 
   return (
-    <AppShell activeTab="my" title="내 직관 리스트" theme="dark">
-      <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
+    <AppShell activeTab="my" title="내 직관 리스트" theme="dark" backHref="/my">
       <div className="segmented-control">
         {["전체", "인증", "미인증"].map((item) => (
           <button className={filter === item ? "segment segment-active" : "segment"} key={item} type="button" onClick={() => setFilter(item)}>

@@ -1,20 +1,55 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, Bell, ChevronRight, LogOut, Palette, Shield, UserRound } from "lucide-react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Bell, ChevronRight, FileText, HelpCircle, LogOut, Mail, Shield, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/common/Button";
 import { ModalShell } from "@/components/common/ModalShell";
 import { signOutAction } from "@/lib/actions/auth";
+import { updateProfileAction } from "@/lib/actions/profile";
 import { useAppState } from "@/lib/state/AppState";
 
+const SCOPE_OPTIONS = [
+  { value: "전체 공개", db: "public", desc: "모든 사용자에게 보여요" },
+  { value: "친구 공개", db: "friends", desc: "친구에게만 보여요" },
+  { value: "나만 보기", db: "private", desc: "본인만 볼 수 있어요" }
+] as const;
+
+type ScopeUi = (typeof SCOPE_OPTIONS)[number]["value"];
+type ScopeDb = (typeof SCOPE_OPTIONS)[number]["db"];
+
+function uiToDb(ui: string): ScopeDb {
+  return SCOPE_OPTIONS.find((opt) => opt.value === ui)?.db ?? "public";
+}
+
 export default function SettingsPage() {
-  const { notificationsEnabled, setNotificationsEnabled, publicScope, setPublicScope, showToast } = useAppState();
+  const { notificationsEnabled, setNotificationsEnabled, publicScope, setPublicScope, isAnonymous, showToast } = useAppState();
+  const router = useRouter();
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [scopeOpen, setScopeOpen] = useState(false);
+  const [savingScope, startSaveScope] = useTransition();
+
+  const handleScopeSelect = (next: ScopeUi) => {
+    if (next === publicScope) {
+      setScopeOpen(false);
+      return;
+    }
+    startSaveScope(async () => {
+      try {
+        await updateProfileAction({ defaultPublicScope: uiToDb(next) });
+        setPublicScope(next);
+        setScopeOpen(false);
+        showToast("공개 범위 기본값을 변경했어요.");
+        router.refresh();
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "변경에 실패했어요.");
+      }
+    });
+  };
 
   return (
-    <AppShell activeTab="my" title="설정" theme="dark">
-      <a className="back-link" href="/my"><ArrowLeft size={18} /> 돌아가기</a>
+    <AppShell activeTab="my" title="설정" theme="dark" backHref="/my">
       <section className="menu-list settings-list">
         <button className="settings-row" type="button" onClick={() => setNotificationsEnabled(!notificationsEnabled)}>
           <Bell size={18} />
@@ -22,28 +57,68 @@ export default function SettingsPage() {
           <span className="settings-value">{notificationsEnabled ? "켜짐" : "꺼짐"}</span>
           <ChevronRight size={18} />
         </button>
-        <button className="settings-row" type="button" onClick={() => showToast("팀 변경은 다음 단계에서 저장 API와 연결해요.")}>
-          <Palette size={18} />
-          <strong>내 팀 변경</strong>
-          <span className="settings-value">한화 이글스</span>
-          <ChevronRight size={18} />
-        </button>
-        <button className="settings-row" type="button" onClick={() => showToast("개인정보 설정 mock 확인 완료")}>
-          <UserRound size={18} />
-          <strong>개인정보 설정</strong>
-          <span className="settings-value" />
-          <ChevronRight size={18} />
-        </button>
-        <button className="settings-row" type="button" onClick={() => setPublicScope(publicScope === "전체 공개" ? "나만 보기" : "전체 공개")}>
+        <button className="settings-row" type="button" onClick={() => setScopeOpen(true)} disabled={isAnonymous}>
           <Shield size={18} />
-          <strong>공개 범위</strong>
-          <span className="settings-value">{publicScope}</span>
+          <strong>후기 공개 범위 기본값</strong>
+          <span className="settings-value">{isAnonymous ? "전체 공개" : publicScope}</span>
           <ChevronRight size={18} />
         </button>
       </section>
+
+      <section className="menu-list settings-list settings-list-secondary">
+        <a className="settings-row" href="/my/help">
+          <HelpCircle size={18} />
+          <strong>이용안내 / 자주 묻는 질문</strong>
+          <span className="settings-value" />
+          <ChevronRight size={18} />
+        </a>
+        <a className="settings-row" href="/my/contact">
+          <Mail size={18} />
+          <strong>문의하기</strong>
+          <span className="settings-value" />
+          <ChevronRight size={18} />
+        </a>
+      </section>
+
+      <section className="menu-list settings-list settings-list-secondary">
+        <a className="settings-row" href="/legal/terms">
+          <FileText size={18} />
+          <strong>이용약관</strong>
+          <span className="settings-value" />
+          <ChevronRight size={18} />
+        </a>
+        <a className="settings-row" href="/legal/privacy">
+          <ShieldCheck size={18} />
+          <strong>개인정보처리방침</strong>
+          <span className="settings-value" />
+          <ChevronRight size={18} />
+        </a>
+      </section>
+
       <button className="logout-button" type="button" onClick={() => setLogoutConfirmOpen(true)}>
         <LogOut size={17} /> 로그아웃
       </button>
+
+      <ModalShell open={scopeOpen} title="후기 공개 범위 기본값" onClose={() => setScopeOpen(false)} panelClassName="dark-confirm-panel">
+        <div className="confirm-stack scope-options">
+          <p className="confirm-hint">후기를 새로 작성할 때 기본으로 선택될 공개 범위예요. 작성할 때 매번 바꿀 수도 있어요.</p>
+          {SCOPE_OPTIONS.map((opt) => {
+            const active = opt.value === publicScope;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                className={`scope-option${active ? " scope-option-active" : ""}`}
+                onClick={() => handleScopeSelect(opt.value)}
+                disabled={savingScope}
+              >
+                <strong>{opt.value}</strong>
+                <span>{opt.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+      </ModalShell>
 
       <ModalShell open={logoutConfirmOpen} title="로그아웃" onClose={() => setLogoutConfirmOpen(false)} panelClassName="dark-confirm-panel">
         <form action={signOutAction}>

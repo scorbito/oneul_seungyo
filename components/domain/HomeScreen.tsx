@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Share2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, ChevronLeft, ChevronRight, Plus, Share2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
@@ -48,13 +48,28 @@ type HomeScreenProps = {
   weekGames?: Game[];
   weekStart?: string;
   modalGames?: Game[];
+  latestNoticeAt?: string | null;
 };
 
-export function HomeScreen({ weekGames = [], weekStart, modalGames = [] }: HomeScreenProps) {
+export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestNoticeAt = null }: HomeScreenProps) {
   const { attendances, profile } = useAppState();
   const [modal, setModal] = useState<ModalKind>(null);
   const [nextIndex, setNextIndex] = useState(0);
   const [nextDir, setNextDir] = useState<"next" | "prev">("next");
+  const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
+
+  useEffect(() => {
+    if (!latestNoticeAt) {
+      setHasUnreadNotice(false);
+      return;
+    }
+    try {
+      const lastSeen = window.localStorage.getItem("notices.lastSeenAt");
+      setHasUnreadNotice(!lastSeen || latestNoticeAt > lastSeen);
+    } catch {
+      setHasUnreadNotice(true);
+    }
+  }, [latestNoticeAt]);
 
   const myTeam = getTeam(profile.mainTeamId);
 
@@ -110,7 +125,16 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [] }: HomeS
   const draws = attendances.filter((a) => a.result === "draw").length;
 
   return (
-    <AppShell activeTab="home" theme="dark">
+    <AppShell
+      activeTab="home"
+      theme="dark"
+      headerAction={
+        <a className="header-action" href="/my/notices" aria-label="공지사항">
+          <Bell size={17} />
+          {hasUnreadNotice ? <span className="header-action-badge" aria-hidden="true" /> : null}
+        </a>
+      }
+    >
       {/* HERO */}
       <section className="hd-card hd-hero" aria-label="내 직관 승률">
         <div className="hd-hero-bg" aria-hidden="true" />
