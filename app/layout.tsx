@@ -60,6 +60,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preload" as="image" href="/assets/stadium-hero-vertical.png" fetchPriority="high" />
       </head>
       <body>
+        <div className="initial-loader" aria-hidden="true">
+          <div className="initial-loader-spinner" />
+          <span className="initial-loader-text">오늘은 승요</span>
+          <span className="initial-loader-sub">시작 중...</span>
+        </div>
+        <script
+          // DOM 준비되는 순간 loader 숨김. JS 실행 전엔 CSS fallback이 1.5초 후 자동 숨김.
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var d=document.documentElement;function r(){d.setAttribute('data-loaded','true');}if(document.readyState==='complete'||document.readyState==='interactive'){requestAnimationFrame(r);}else{document.addEventListener('DOMContentLoaded',r);}})();`
+          }}
+        />
         <AppStateProvider
           initialProfile={profile}
           initialStats={stats}

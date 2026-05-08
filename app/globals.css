@@ -9203,3 +9203,70 @@ a {
   flex-direction: column;
   gap: 16px;
 }
+
+/* ============================================================
+ * Initial loader — 첫 페이지 진입 시 (HTML 다운로드 ~ JS 하이드레이션 사이)
+ * 다크 풀스크린 + 마스코트 색 스피너 + 브랜드 텍스트
+ * 700ms 후 자동 페이드아웃 (그때쯤 React 콘텐츠가 위에 그려짐)
+ * ============================================================ */
+.initial-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #06101e;
+  color: #f7f9fc;
+  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* DOM 준비 신호가 오면 즉시 페이드아웃 (보통 100~300ms 안에 발동) */
+html[data-loaded="true"] .initial-loader {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* fallback — JS가 실행되지 않거나 느려도 1.5초 후엔 무조건 숨김 */
+.initial-loader {
+  animation: initial-loader-fallback-fade 0.3s ease 1.5s forwards;
+}
+
+.initial-loader-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(255, 106, 43, 0.22);
+  border-top-color: #ff6a2b;
+  border-radius: 50%;
+  animation: initial-loader-spin 0.7s linear infinite;
+}
+
+.initial-loader-text {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.initial-loader-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(247, 249, 252, 0.55);
+}
+
+@keyframes initial-loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes initial-loader-fallback-fade {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
