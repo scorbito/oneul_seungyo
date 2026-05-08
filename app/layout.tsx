@@ -10,18 +10,69 @@ import {
 } from "@/lib/supabase/queries";
 import "./globals.css";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oneul-seungyo.vercel.app";
+const SITE_TITLE = "오늘은 승요";
+const SITE_DESCRIPTION = "KBO 직관 승률을 기록하고 친구와 후기를 공유하세요. 두산·LG·기아·삼성 등 10팀 일정 자동 연동, 티켓 사진으로 직관 자동 인증.";
+
 export const metadata: Metadata = {
-  title: "오늘은 승요",
-  description: "KBO 직관 기록, 승률 통계, 커뮤니티 웹앱",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_TITLE} - KBO 직관 기록 앱`,
+    template: `%s | ${SITE_TITLE}`
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "오늘은 승요",
+    "KBO 직관",
+    "야구 직관 기록",
+    "야구 직관 앱",
+    "KBO 승률",
+    "프로야구 후기",
+    "티켓 인증",
+    "야구팬 커뮤니티"
+  ],
+  authors: [{ name: "오늘은 승요" }],
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "오늘은 승요",
+    title: SITE_TITLE,
     statusBarStyle: "black-translucent"
   },
   icons: {
     icon: "/assets/mascot-default.png",
     apple: { url: "/assets/mascot-default.png", sizes: "180x180", type: "image/png" }
+  },
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: SITE_URL,
+    siteName: SITE_TITLE,
+    title: `${SITE_TITLE} - KBO 직관 기록 앱`,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: "/assets/mainherobg.png",
+        width: 1448,
+        height: 1086,
+        alt: "오늘은 승요 - 직관 승률을 기록하는 야구팬 앱"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_TITLE} - KBO 직관 기록 앱`,
+    description: SITE_DESCRIPTION,
+    images: ["/assets/mainherobg.png"]
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1
+    }
   }
 };
 
