@@ -25,30 +25,49 @@ export function LoginForm({ error, notice }: LoginFormProps) {
   const message = error ? errorMessages[error] ?? error : notice ? noticeMessages[notice] ?? notice : "";
 
   return (
-    <form action={emailAuthAction} className="email-login-form">
+    <form action={emailAuthAction} className="login-form">
       <input name="mode" type="hidden" value={mode} />
+
       <div className="login-mode-tabs">
-        <button className={mode === "sign-in" ? "login-mode-active" : ""} type="button" onClick={() => setMode("sign-in")}>
+        <button
+          className={mode === "sign-in" ? "login-mode-tab login-mode-tab-active" : "login-mode-tab"}
+          type="button"
+          onClick={() => setMode("sign-in")}
+        >
           로그인
         </button>
-        <button className={mode === "sign-up" ? "login-mode-active" : ""} type="button" onClick={() => setMode("sign-up")}>
+        <button
+          className={mode === "sign-up" ? "login-mode-tab login-mode-tab-active" : "login-mode-tab"}
+          type="button"
+          onClick={() => setMode("sign-up")}
+        >
           가입
         </button>
       </div>
-      <label>
+
+      <label className="login-field">
         <span>이메일</span>
         <input autoComplete="email" name="email" placeholder="you@example.com" type="email" />
       </label>
-      <label>
+
+      <label className="login-field">
         <span>비밀번호</span>
-        <input autoComplete={mode === "sign-in" ? "current-password" : "new-password"} name="password" placeholder="6자 이상" type="password" />
+        <input
+          autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+          name="password"
+          placeholder="6자 이상"
+          type="password"
+        />
       </label>
-      {message ? <p className={error ? "auth-message auth-message-error" : "auth-message"}>{message}</p> : null}
-      <button className="login-button email" type="submit">
+
+      {message ? (
+        <p className={error ? "login-message login-message-error" : "login-message"}>{message}</p>
+      ) : null}
+
+      <button className="login-submit" type="submit">
         <Mail size={16} />
         {mode === "sign-in" ? "이메일로 로그인" : "이메일로 가입"}
       </button>
     </form>
   );
 }
-

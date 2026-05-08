@@ -147,6 +147,19 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [] }: HomeS
       </section>
 
       {/* NEXT GAME */}
+      {upcomingAttendances.length === 0 ? (
+        <section className="hd-card hd-empty-card" aria-label="다음 직관">
+          <div className="hd-section-header">
+            <h2 className="hd-section-title">다음 직관</h2>
+          </div>
+          <div className="hd-empty-body">
+            <p>예정된 직관이 아직 없어요.</p>
+            <button type="button" className="hd-empty-cta" onClick={() => setModal("attendance")}>
+              <Plus size={16} strokeWidth={3} /> 직관 등록
+            </button>
+          </div>
+        </section>
+      ) : null}
       {upcomingAttendances.length > 0 && (() => {
         const safeIndex = Math.min(nextIndex, upcomingAttendances.length - 1);
         const att = upcomingAttendances[safeIndex];
@@ -210,6 +223,19 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [] }: HomeS
       })()}
 
       {/* RECENT GAMES */}
+      {recentAttendances.length === 0 ? (
+        <section className="hd-card hd-empty-card" aria-label="최근 직관 경기">
+          <div className="hd-section-header">
+            <h2 className="hd-section-title">최근 직관 경기</h2>
+          </div>
+          <div className="hd-empty-body">
+            <p>아직 다녀온 직관이 없어요.</p>
+            <button type="button" className="hd-empty-cta" onClick={() => setModal("attendance")}>
+              <Plus size={16} strokeWidth={3} /> 직관 등록
+            </button>
+          </div>
+        </section>
+      ) : null}
       {recentAttendances.length > 0 && (
         <section className="hd-card" aria-label="최근 직관 경기">
           <div className="hd-section-header">

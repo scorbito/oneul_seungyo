@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/domain/LoginForm";
+import { OAuthButtons } from "@/components/domain/OAuthButtons";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentProfileFromDb } from "@/lib/supabase/queries";
 
@@ -21,14 +21,46 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-card">
-        <Image alt="마스코트" height={128} src="/assets/mascot-default.png" width={128} />
-        <h1>로그인하고<br />내 기록을 시작하세요</h1>
-        <button className="login-button kakao" disabled>카카오로 계속하기</button>
-        <button className="login-button google" disabled>Google로 계속하기</button>
-        <LoginForm error={searchParams?.error} notice={searchParams?.notice} />
-        <p>로그인하면 서비스 이용약관 및 개인정보처리방침에 동의하게 됩니다.</p>
+    <main className="app-backdrop">
+      <section className="phone-frame phone-frame-dark login-frame" aria-label="로그인">
+        <div className="app-scroll">
+          <header className="app-header">
+            <a className="brand" href="/landing">오늘은 승요</a>
+          </header>
+          <div className="login-bg-area" aria-hidden="true" />
+          <div className="login-content">
+            <div className="login-mascot" aria-hidden="true">
+              <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="44" fill="#0d1a30" stroke="#ff6a2b" strokeWidth="2.5" />
+                <path d="M 18 26 Q 30 50 18 74" fill="none" stroke="#e63946" strokeWidth="1.2" />
+                <g stroke="#e63946" strokeWidth="1.4" strokeLinecap="round">
+                  <line x1="14" y1="33" x2="20.5" y2="35.5" />
+                  <line x1="13" y1="40" x2="19.5" y2="41.5" />
+                  <line x1="12.5" y1="48" x2="19" y2="48.5" />
+                  <line x1="12.5" y1="56" x2="19" y2="55.5" />
+                  <line x1="13" y1="64" x2="19.5" y2="62.5" />
+                  <line x1="14" y1="71" x2="20.5" y2="68.5" />
+                </g>
+                <path d="M 82 26 Q 70 50 82 74" fill="none" stroke="#e63946" strokeWidth="1.2" />
+                <g stroke="#e63946" strokeWidth="1.4" strokeLinecap="round">
+                  <line x1="86" y1="33" x2="79.5" y2="35.5" />
+                  <line x1="87" y1="40" x2="80.5" y2="41.5" />
+                  <line x1="87.5" y1="48" x2="81" y2="48.5" />
+                  <line x1="87.5" y1="56" x2="81" y2="55.5" />
+                  <line x1="87" y1="64" x2="80.5" y2="62.5" />
+                  <line x1="86" y1="71" x2="79.5" y2="68.5" />
+                </g>
+                <text x="50" y="64" textAnchor="middle" fontSize="44" fontWeight="900" fill="#ffffff" fontFamily="Pretendard, sans-serif">S</text>
+              </svg>
+            </div>
+            <h1 className="login-title">로그인하고<br />내 기록을 시작하세요</h1>
+            <OAuthButtons />
+            <LoginForm error={searchParams?.error} notice={searchParams?.notice} />
+            <p className="login-footnote">
+              로그인하면 서비스 이용약관 및 개인정보처리방침에<br />동의하신 것 됩니다.
+            </p>
+          </div>
+        </div>
       </section>
     </main>
   );

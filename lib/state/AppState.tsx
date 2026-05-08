@@ -134,6 +134,17 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
         }
       : emptyProfileSettings
   );
+
+  // SSR로 받은 initialProfile이 변경되면 (router.refresh 등) client state도 동기화
+  useEffect(() => {
+    if (!initialProfile) return;
+    setProfileSettings({
+      nickname: initialProfile.nickname,
+      mainTeamId: initialProfile.mainTeamId,
+      interestTeamIds: initialProfile.interestTeamIds ?? [],
+      avatarUrl: initialProfile.avatarImageUrl ?? null
+    });
+  }, [initialProfile?.nickname, initialProfile?.mainTeamId, initialProfile?.avatarImageUrl]);
   const [dbStats] = useState<ProfileStats | null>(initialStats ?? null);
   const [likedReviewIds, setLikedReviewIds] = useState<string[]>([]);
   const [savedReviewIds, setSavedReviewIds] = useState<string[]>([]);

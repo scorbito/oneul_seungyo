@@ -17,8 +17,13 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
   }
 
   return (
-    <main className="onboarding-page">
-      <OnboardingForm error={searchParams?.error} />
+    <main className="app-backdrop">
+      <section className="phone-frame phone-frame-dark onboarding-frame" aria-label="온보딩">
+        <div className="app-scroll">
+          <div className="onboarding-bg-area" aria-hidden="true" />
+          <OnboardingForm error={searchParams?.error} />
+        </div>
+      </section>
     </main>
   );
 }

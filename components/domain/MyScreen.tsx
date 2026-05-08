@@ -11,7 +11,7 @@ import { ModalShell } from "@/components/common/ModalShell";
 import { Button } from "@/components/common/Button";
 import { getTeam, teams } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
-import { updateAvatarAction } from "@/lib/actions/profile";
+import { updateAvatarAction, updateProfileAction } from "@/lib/actions/profile";
 import { uploadUserFile } from "@/lib/supabase/storage-client";
 
 const menuItems = [
@@ -30,6 +30,7 @@ export function MyScreen() {
   const [selectedTeamId, setSelectedTeamId] = useState(profile.mainTeamId);
   const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(profile.avatarUrl);
   const [uploading, startUpload] = useTransition();
+  const [savingProfile, startSaveProfile] = useTransition();
   const profileTeam = getTeam(profile.mainTeamId);
 
   useEffect(() => {
@@ -161,11 +162,20 @@ export function MyScreen() {
             </div>
             <p className="field-hint">실서비스에서는 팀 변경을 하루 1회로 제한할 예정이에요. 지금은 테스트라 자유롭게 바꿀 수 있습니다.</p>
           </div>
-          <Button onClick={() => {
-            updateProfile({ nickname: nickname.trim() || profile.nickname, mainTeamId: selectedTeamId });
-            setEditing(false);
+          <Button disabled={savingProfile} onClick={() => {
+            const nextNickname = nickname.trim() || profile.nickname;
+            startSaveProfile(async () => {
+              try {
+                await updateProfileAction({ nickname: nextNickname, mainTeamId: selectedTeamId });
+                updateProfile({ nickname: nextNickname, mainTeamId: selectedTeamId });
+                setEditing(false);
+                router.refresh();
+              } catch (err) {
+                showToast(err instanceof Error ? err.message : "프로필 저장에 실패했어요.");
+              }
+            });
           }}>
-            저장하기
+            {savingProfile ? "저장 중" : "저장하기"}
           </Button>
         </div>
       </ModalShell>

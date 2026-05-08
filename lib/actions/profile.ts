@@ -19,14 +19,15 @@ function isSameKoreanDate(left: Date, right: Date) {
 }
 
 export async function updateProfileAction(input: UpdateProfileInput) {
-  const supabase = createSupabaseServerClient();
-  const { data: authData, error: authError } = await supabase.auth.getUser();
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
 
   if (authError || !authData.user) {
     throw new Error("로그인이 필요합니다.");
   }
 
-  const { data: current, error: currentError } = await supabase
+  const admin = createSupabaseAdminClient();
+  const { data: current, error: currentError } = await admin
     .from("profiles")
     .select("main_team_id,main_team_changed_at")
     .eq("id", authData.user.id)
@@ -56,14 +57,16 @@ export async function updateProfileAction(input: UpdateProfileInput) {
   if (input.defaultPublicScope !== undefined) next.default_public_scope = input.defaultPublicScope;
 
   if (input.mainTeamId !== undefined && input.mainTeamId !== current.main_team_id) {
-    if (current.main_team_changed_at && isSameKoreanDate(new Date(current.main_team_changed_at), new Date())) {
-      throw new Error("내 팀은 하루에 한 번만 변경할 수 있습니다.");
-    }
+    // MVP/테스트 단계: 하루 1회 제한 일시 해제 (실서비스 출시 전 다시 활성화)
     next.main_team_id = input.mainTeamId;
     next.main_team_changed_at = new Date().toISOString();
   }
 
-  const { error } = await supabase
+  if (Object.keys(next).length === 0) {
+    return; // 변경사항 없음
+  }
+
+  const { error } = await admin
     .from("profiles")
     .update(next)
     .eq("id", authData.user.id);
@@ -73,8 +76,11 @@ export async function updateProfileAction(input: UpdateProfileInput) {
   }
 
   revalidatePath("/");
+  revalidatePath("/schedule");
   revalidatePath("/my");
   revalidatePath("/my/settings");
+  revalidatePath("/community");
+  revalidatePath("/rankings");
 }
 
 /** profile-images 공개 URL에서 storage 내부 경로 추출 */

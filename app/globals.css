@@ -3847,6 +3847,44 @@ button {
   cursor: not-allowed;
 }
 
+/* Empty state cards (다음 직관/최근 직관 비어있을 때) */
+.phone-frame-dark .hd-empty-card .hd-empty-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 8px 8px;
+}
+
+.phone-frame-dark .hd-empty-card .hd-empty-body p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hd-text-muted);
+  text-align: center;
+}
+
+.phone-frame-dark .hd-empty-card .hd-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 106, 43, 0.55);
+  background: var(--hd-accent-orange-soft);
+  color: var(--hd-accent-orange);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.phone-frame-dark .hd-empty-card .hd-empty-cta:hover {
+  background: rgba(255, 106, 43, 0.22);
+}
+
 /* Slide animation when changing next attendance */
 .phone-frame-dark .hd-next-content {
   overflow: hidden;
@@ -5516,6 +5554,208 @@ button {
 
 .phone-frame-dark .back-link:hover { color: var(--hd-text-primary); }
 
+/* Schedule view switch — 기본/시리즈/팀 순위 */
+.phone-frame-dark .sched-view-switch {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+}
+
+.phone-frame-dark .sched-view-tab {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--hd-text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+}
+
+.phone-frame-dark .sched-view-tab:hover {
+  color: var(--hd-text-primary);
+}
+
+.phone-frame-dark .sched-view-tab-active {
+  background: var(--hd-accent-orange-soft);
+  border-color: rgba(255, 106, 43, 0.6);
+  color: var(--hd-accent-orange);
+}
+
+/* Series mode — week rows + series bars */
+.phone-frame-dark .sched-series-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-frame-dark .sched-week {
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-frame-dark .sched-week-cells {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.phone-frame-dark .sched-week:first-child .sched-week-cells {
+  border-top: 0;
+}
+
+.phone-frame-dark .sched-cell-compact {
+  min-height: 32px;
+  padding: 5px 0 0;
+  gap: 0;
+}
+
+.phone-frame-dark .sched-cell-compact .sched-date {
+  font-size: 12px;
+}
+
+.phone-frame-dark .sched-series-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px 4px 4px;
+  min-height: 24px;
+}
+
+.phone-frame-dark .sched-series-bar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--series-color) 88%, #000) 0%, color-mix(in srgb, var(--series-color) 65%, #000) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.phone-frame-dark .sched-series-bar small {
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.8;
+  text-transform: none;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.25);
+  letter-spacing: 0;
+}
+
+.phone-frame-dark .sched-series-bar strong {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* 시리즈가 주를 넘어 이어지는 경우 양 끝 처리 */
+.phone-frame-dark .sched-series-cont-start {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: -2px;
+}
+
+.phone-frame-dark .sched-series-cont-end {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-right: -2px;
+}
+
+/* 원정은 살짝 톤 다르게 (대각 줄무늬) */
+.phone-frame-dark .sched-series-away::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg, transparent 0 6px, rgba(0, 0, 0, 0.18) 6px 7px);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.phone-frame-dark .sched-series-away {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Series result row — 시리즈 막대 아래, 같은 grid-column으로 정렬 */
+.phone-frame-dark .sched-series-result-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  padding: 0 4px 6px;
+  min-height: 18px;
+}
+
+.phone-frame-dark .sched-series-result {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid transparent;
+}
+
+.phone-frame-dark .sched-series-result-sweep_w {
+  background: rgba(31, 154, 85, 0.22);
+  border-color: rgba(31, 154, 85, 0.55);
+  color: #4cd185;
+}
+
+.phone-frame-dark .sched-series-result-winning {
+  background: rgba(31, 154, 85, 0.14);
+  border-color: rgba(31, 154, 85, 0.4);
+  color: #3ec97a;
+}
+
+.phone-frame-dark .sched-series-result-split {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(247, 250, 255, 0.7);
+}
+
+.phone-frame-dark .sched-series-result-losing {
+  background: rgba(184, 50, 60, 0.14);
+  border-color: rgba(184, 50, 60, 0.45);
+  color: #e8616b;
+}
+
+.phone-frame-dark .sched-series-result-sweep_l {
+  background: rgba(184, 50, 60, 0.22);
+  border-color: rgba(184, 50, 60, 0.6);
+  color: #ff6b75;
+}
+
+.phone-frame-dark .sched-series-result-ongoing {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(247, 250, 255, 0.55);
+}
+
 /* Segmented filter */
 .phone-frame-dark .segmented-control {
   display: grid;
@@ -5757,6 +5997,7 @@ button {
 .phone-frame-dark .detail-topbar + *,
 .phone-frame-dark .community-head + *,
 .phone-frame-dark .friend-search + *,
+.phone-frame-dark .sched-view-switch + *,
 .phone-frame-dark .segmented-control + *:not(.segmented-control) {
   margin-top: -12px;
 }
@@ -7227,4 +7468,629 @@ button {
   opacity: 0.6;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+/* ============================================================
+ * Onboarding — phone-frame 자체가 단일 콘텐츠 컨테이너
+ * ============================================================ */
+.phone-frame-dark.onboarding-frame .app-scroll {
+  position: relative;
+  padding: 0;
+}
+
+/* 상단에 야구장 배경 한 겹 — 콘텐츠와 자연스럽게 fade */
+.onboarding-bg-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 280px;
+  background-image: url("/assets/onboarding_bg.png");
+  background-position: center top;
+  background-size: cover;
+  background-repeat: no-repeat;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+  pointer-events: none;
+}
+
+/* 폼 자체는 카드처럼 보이지 않게 — phone-frame이 컨테이너 */
+.onboarding-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.onboarding-card .onboarding-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 36px 20px 24px;
+  color: #f7f9fc;
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+}
+
+.onboarding-title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: -0.4px;
+  line-height: 1.3;
+  color: #ffffff;
+}
+
+.onboarding-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.onboarding-field-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(247, 249, 252, 0.78);
+}
+
+.onboarding-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+}
+
+.onboarding-input-wrap:focus-within {
+  border-color: rgba(255, 106, 43, 0.55);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.onboarding-input-wrap input {
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.onboarding-input-wrap em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(247, 249, 252, 0.48);
+}
+
+.onboarding-error {
+  margin: -8px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 90, 100, 0.12);
+  border: 1px solid rgba(255, 90, 100, 0.4);
+  color: #ff5a64;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.onboarding-help {
+  margin: -2px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(247, 249, 252, 0.55);
+  line-height: 1.55;
+}
+
+.onboarding-team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px;
+}
+
+.onboarding-team-choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.onboarding-team-choice:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.onboarding-team-choice .team-badge {
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
+}
+
+.onboarding-team-choice strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.onboarding-team-choice-active {
+  border-color: #ff6a2b;
+  background: rgba(255, 106, 43, 0.08);
+  box-shadow: 0 0 14px rgba(255, 106, 43, 0.28);
+}
+
+.onboarding-team-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ff6a2b;
+  color: #ffffff;
+}
+
+.onboarding-footnote {
+  margin: 6px 0 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(247, 249, 252, 0.48);
+}
+
+.onboarding-submit {
+  margin-top: 10px;
+  width: 100%;
+  height: 54px;
+  border: 0;
+  border-radius: 14px;
+  background: #ff6a2b;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(255, 106, 43, 0.32);
+  letter-spacing: -0.2px;
+}
+
+.onboarding-submit:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.onboarding-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 380px) {
+  .onboarding-card { padding: 44px 18px 28px; }
+  .onboarding-title { font-size: 22px; }
+  .onboarding-team-choice { padding: 10px 12px; gap: 10px; grid-template-columns: 32px 1fr auto; }
+  .onboarding-team-choice .team-badge { width: 32px; height: 32px; font-size: 14px; }
+  .onboarding-team-choice strong { font-size: 14px; }
+}
+
+/* ============================================================
+ * Login page — dark theme (phone-frame 안)
+ * ============================================================ */
+.phone-frame-dark.login-frame .app-scroll {
+  position: relative;
+  padding: 0;
+}
+
+.phone-frame-dark.login-frame .app-header {
+  position: relative;
+  z-index: 2;
+}
+
+/* 상단 야구장 배경 (헤더 아래 약 220px) — 콘텐츠와 자연 fade */
+.login-bg-area {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  right: 0;
+  height: 220px;
+  background-image: url("/assets/onboarding_bg.png");
+  background-position: center top;
+  background-size: cover;
+  background-repeat: no-repeat;
+  z-index: 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 50%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 50%, transparent 100%);
+  pointer-events: none;
+}
+
+.login-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 32px 22px 28px;
+  color: #f7f9fc;
+}
+
+.login-mascot {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto;
+  filter: drop-shadow(0 0 18px rgba(255, 106, 43, 0.55));
+}
+
+.login-mascot svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.login-title {
+  margin: 6px 0 14px;
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: -0.3px;
+  line-height: 1.35;
+  color: #ffffff;
+}
+
+/* OAuth buttons */
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.oauth-button {
+  position: relative;
+  width: 100%;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.oauth-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.oauth-button .oauth-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oauth-kakao {
+  background: #fee500;
+  color: #181600;
+}
+
+.oauth-kakao:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.oauth-google {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.oauth-google:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Email login form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.login-mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin-bottom: 4px;
+}
+
+.login-mode-tabs .login-mode-tab {
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(247, 249, 252, 0.45);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.login-mode-tabs .login-mode-tab:hover {
+  color: rgba(247, 249, 252, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.login-mode-tabs .login-mode-tab-active {
+  background: transparent;
+  border-color: #ff6a2b;
+  color: #ff6a2b;
+  box-shadow: 0 0 16px rgba(255, 106, 43, 0.45);
+}
+
+.login-mode-tabs .login-mode-tab-active:hover {
+  background: rgba(255, 106, 43, 0.06);
+  color: #ff6a2b;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-field > span {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(247, 249, 252, 0.7);
+}
+
+.login-field input {
+  height: 46px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.login-field input::placeholder {
+  color: rgba(247, 249, 252, 0.32);
+}
+
+.login-field input:focus {
+  outline: none;
+  border-color: rgba(255, 106, 43, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.login-message {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(36, 194, 106, 0.12);
+  border: 1px solid rgba(36, 194, 106, 0.4);
+  color: #24c26a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.login-message-error {
+  background: rgba(255, 90, 100, 0.12);
+  border-color: rgba(255, 90, 100, 0.4);
+  color: #ff5a64;
+}
+
+.login-submit {
+  margin-top: 4px;
+  width: 100%;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 12px;
+  background: #ff6a2b;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(255, 106, 43, 0.3);
+  font-family: inherit;
+}
+
+.login-submit:hover {
+  filter: brightness(1.05);
+}
+
+.login-footnote {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: rgba(247, 249, 252, 0.45);
+}
+
+/* ============================================================
+ * Rankings page — dark theme
+ * ============================================================ */
+.phone-frame-dark .rankings-card {
+  background: var(--hd-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 16px 14px 12px;
+}
+
+.phone-frame-dark .rankings-title {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.phone-frame-dark .rankings-title h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--hd-text-primary);
+  letter-spacing: -0.4px;
+}
+
+/* Ranking table */
+.phone-frame-dark .ranking-table {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.phone-frame-dark .ranking-table-head {
+  display: grid;
+  grid-template-columns: 32px 1fr 50px 38px 70px 64px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px;
+  background: transparent;
+  border-bottom: 1px solid var(--hd-border-soft);
+  color: var(--hd-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.phone-frame-dark .ranking-table-head > span {
+  text-align: center;
+}
+
+.phone-frame-dark .ranking-table-body {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-frame-dark .ranking-row {
+  display: grid;
+  grid-template-columns: 32px 1fr 50px 38px 70px 64px;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 0;
+  background: transparent;
+  color: var(--hd-text-primary);
+}
+
+.phone-frame-dark .ranking-row:last-child {
+  border-bottom: 0;
+}
+
+.phone-frame-dark .ranking-row-highlighted {
+  background: rgba(255, 106, 43, 0.08);
+  border: 1px solid rgba(255, 106, 43, 0.55);
+  border-radius: 8px;
+  margin: 4px 0;
+  box-shadow: 0 0 14px rgba(255, 106, 43, 0.2);
+}
+
+.phone-frame-dark .ranking-rank {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--hd-text-secondary);
+}
+
+.phone-frame-dark .ranking-row-highlighted .ranking-rank {
+  color: var(--hd-accent-orange);
+}
+
+.phone-frame-dark .ranking-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 4px;
+  min-width: 0;
+}
+
+.phone-frame-dark .ranking-team .team-badge {
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.phone-frame-dark .ranking-team strong {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--hd-text-primary);
+  white-space: nowrap;
+}
+
+.phone-frame-dark .ranking-rate,
+.phone-frame-dark .ranking-gap,
+.phone-frame-dark .ranking-record {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--hd-text-primary);
+  letter-spacing: -0.2px;
+}
+
+.phone-frame-dark .ranking-gap {
+  color: var(--hd-text-secondary);
+}
+
+.phone-frame-dark .ranking-form {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.phone-frame-dark .ranking-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.phone-frame-dark .ranking-dot-w {
+  background: #1f9a55;
+}
+
+.phone-frame-dark .ranking-dot-l {
+  background: #b8323c;
+}
+
+.phone-frame-dark .ranking-dot-d {
+  background: var(--hd-text-muted);
 }

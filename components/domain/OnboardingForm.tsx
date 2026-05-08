@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
-import { Check } from "lucide-react";
-import { Button } from "@/components/common/Button";
+import { Check, Lock } from "lucide-react";
+import { TeamBadge } from "@/components/common/TeamBadge";
 import { teams } from "@/lib/constants/teams";
 import { completeOnboardingAction } from "@/lib/actions/onboarding";
 
@@ -18,41 +17,63 @@ const errorMessages: Record<string, string> = {
 
 export function OnboardingForm({ error }: OnboardingFormProps) {
   const [nickname, setNickname] = useState("승요맨");
-  const [mainTeamId, setMainTeamId] = useState("hanwha");
+  const [mainTeamId, setMainTeamId] = useState("doosan");
 
   return (
     <form action={completeOnboardingAction} className="onboarding-card">
-      <input name="mainTeamId" type="hidden" value={mainTeamId} />
-      <h1>내 직관 프로필을<br />설정해주세요</h1>
-      <label className="nickname-field">
-        <span>닉네임</span>
-        <input
-          aria-label="닉네임"
-          maxLength={10}
-          name="nickname"
-          value={nickname}
-          onChange={(event) => setNickname(event.target.value)}
-        />
-        <em>{nickname.length}/10</em>
-      </label>
-      {error ? <p className="auth-message auth-message-error">{errorMessages[error] ?? error}</p> : null}
-      <p>응원하는 팀을 선택하면 일정, 순위, 직관 기록이 모두 우리 팀 중심으로 보여요.</p>
-      <div className="team-grid">
-        {teams.map((team) => {
-          const selected = team.id === mainTeamId;
-          return (
-            <button className={`team-choice ${selected ? "team-choice-selected" : ""}`} key={team.id} type="button" onClick={() => setMainTeamId(team.id)}>
-              <span style={{ background: team.color }}>
-                {team.initial}
-              </span>
-              <strong>{team.shortName}</strong>
-              {selected ? <Check size={14} /> : null}
-            </button>
-          );
-        })}
+      <div className="onboarding-card-inner">
+        <input name="mainTeamId" type="hidden" value={mainTeamId} />
+
+        <h1 className="onboarding-title">내 직관 프로필을<br />설정해주세요</h1>
+
+        <label className="onboarding-field">
+          <span className="onboarding-field-label">닉네임</span>
+          <div className="onboarding-input-wrap">
+            <input
+              aria-label="닉네임"
+              maxLength={10}
+              name="nickname"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+            />
+            <em>{nickname.length}/10</em>
+          </div>
+        </label>
+
+        {error ? <p className="onboarding-error">{errorMessages[error] ?? error}</p> : null}
+
+        <p className="onboarding-help">
+          응원하는 팀을 선택하면 일정, 순위, 직관 기록이<br />모두 우리 팀 중심으로 보여요.
+        </p>
+
+        <div className="onboarding-team-grid">
+          {teams.map((team) => {
+            const selected = team.id === mainTeamId;
+            return (
+              <button
+                className={`onboarding-team-choice ${selected ? "onboarding-team-choice-active" : ""}`}
+                key={team.id}
+                type="button"
+                onClick={() => setMainTeamId(team.id)}
+              >
+                <TeamBadge teamId={team.id} size="md" />
+                <strong>{team.shortName}</strong>
+                {selected ? (
+                  <span className="onboarding-team-check"><Check size={14} strokeWidth={3} /></span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="onboarding-footnote">
+          <Lock size={12} /> 언제든지 마이페이지에서 변경할 수 있어요.
+        </p>
+
+        <button type="submit" className="onboarding-submit" disabled={nickname.trim().length < 2}>
+          다음
+        </button>
       </div>
-      <Image alt="응원하는 마스코트" className="onboarding-mascot" height={120} src="/assets/mascot-cheer.png" width={120} />
-      <Button>다음</Button>
     </form>
   );
 }
