@@ -1,4 +1,5 @@
 import { ArrowLeft, CalendarDays, Home, MessageCircle, UserRound } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 type AppShellProps = {
@@ -24,13 +25,13 @@ export function AppShell({ activeTab = "home", title = "오늘은 승요", theme
         <div className="app-scroll">
           <header className="app-header">
             {backHref ? (
-              <a className="header-back" href={backHref} aria-label="뒤로">
+              <Link className="header-back" href={backHref} aria-label="뒤로" prefetch>
                 <ArrowLeft size={18} />
-              </a>
+              </Link>
             ) : null}
-            <a className="brand" href="/">
+            <Link className="brand" href="/" prefetch>
               {title}
-            </a>
+            </Link>
             {headerAction}
           </header>
           <div className="app-content">{children}</div>
@@ -40,10 +41,10 @@ export function AppShell({ activeTab = "home", title = "오늘은 승요", theme
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
-              <a className={`tab-item ${isActive ? "tab-item-active" : ""}`} href={tab.href} key={tab.id}>
+              <Link className={`tab-item ${isActive ? "tab-item-active" : ""}`} href={tab.href} key={tab.id} prefetch>
                 <Icon size={19} strokeWidth={isActive ? 2.8 : 2} />
                 <span>{tab.label}</span>
-              </a>
+              </Link>
             );
           })}
         </nav>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties } from "react";
+import Link from "next/link";
 import { Check, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
@@ -283,7 +284,7 @@ export function ScheduleScreen({ games = [] }: ScheduleScreenProps) {
         >
           시리즈 보기
         </button>
-        <a className="sched-view-tab" href="/rankings">팀 순위</a>
+        <Link className="sched-view-tab" href="/rankings" prefetch>팀 순위</Link>
       </div>
 
       <section className="sched-card">

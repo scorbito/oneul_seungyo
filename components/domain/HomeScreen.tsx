@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Bell, ChevronLeft, ChevronRight, Plus, Share2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
@@ -129,10 +130,10 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
       activeTab="home"
       theme="dark"
       headerAction={
-        <a className="header-action" href="/my/notices" aria-label="공지사항">
+        <Link className="header-action" href="/my/notices" aria-label="공지사항" prefetch>
           <Bell size={17} />
           {hasUnreadNotice ? <span className="header-action-badge" aria-hidden="true" /> : null}
-        </a>
+        </Link>
       }
     >
       {/* HERO */}
@@ -270,7 +271,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
                 <span className="hd-text-loss">{last5Losses}패</span>
               </p>
             </div>
-            <a href="/my/attendances" className="hd-text-link">더보기 <ChevronRight size={14} /></a>
+            <Link href="/my/attendances" className="hd-text-link" prefetch>더보기 <ChevronRight size={14} /></Link>
           </div>
 
           <div className="hd-recent-list">
@@ -310,7 +311,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
         <section className="hd-card" aria-label="우리팀 일정">
           <div className="hd-section-header">
             <h2 className="hd-section-title">우리팀 일정</h2>
-            <a href="/schedule" className="hd-text-link">전체 일정 <ChevronRight size={14} /></a>
+            <Link href="/schedule" className="hd-text-link" prefetch>전체 일정 <ChevronRight size={14} /></Link>
           </div>
 
           <div className="hd-week-list">

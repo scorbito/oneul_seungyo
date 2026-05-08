@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { Pin, Bell } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import type { Notice } from "@/lib/types/domain";
@@ -47,7 +48,7 @@ export function NoticesListScreen({ notices }: Props) {
       ) : (
         <section className="notice-list">
           {notices.map((notice) => (
-            <a key={notice.id} className="notice-card" href={`/my/notices/${notice.id}`}>
+            <Link key={notice.id} className="notice-card" href={`/my/notices/${notice.id}`} prefetch>
               <div className="notice-card-head">
                 {notice.isPinned ? (
                   <span className="notice-pin" aria-label="고정 공지"><Pin size={11} strokeWidth={2.4} />고정</span>
@@ -56,7 +57,7 @@ export function NoticesListScreen({ notices }: Props) {
               </div>
               <strong className="notice-title">{notice.title}</strong>
               <p className="notice-summary">{summarize(notice.body)}</p>
-            </a>
+            </Link>
           ))}
         </section>
       )}

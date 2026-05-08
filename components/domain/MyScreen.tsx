@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { CalendarDays, Camera, Check, ChevronRight, ListChecks, MessageSquareText, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
@@ -84,9 +85,9 @@ export function MyScreen() {
         <strong className="profile-rate">{profile.winRate}</strong>
         <span className="profile-record">{profile.wins}승 {profile.losses}패 {profile.draws}무</span>
         {isAnonymous ? (
-          <a className="profile-anon-cta" href="/login">
+          <Link className="profile-anon-cta" href="/login" prefetch>
             정식 계정으로 전환하면 다른 기기에서도 볼 수 있어요 →
-          </a>
+          </Link>
         ) : null}
         <button type="button" className="profile-edit-btn" onClick={() => setEditing(true)}>프로필 편집</button>
       </Card>
@@ -117,12 +118,12 @@ export function MyScreen() {
           else if (item.label === "내 후기 모음") count = reviews.length;
 
           return (
-            <a href={item.href} key={item.label}>
+            <Link href={item.href} key={item.label} prefetch>
               <Icon size={18} />
               <strong>{item.label}</strong>
               {count !== null ? <span className="menu-count">({count})</span> : <span className="menu-count" />}
               <ChevronRight size={18} />
-            </a>
+            </Link>
           );
         })}
       </section>

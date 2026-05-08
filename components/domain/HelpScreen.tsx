@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ChevronDown, Mail, CalendarDays, Camera, MessageSquareText, Share2, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -107,10 +108,10 @@ export function HelpScreen() {
         </div>
       </section>
 
-      <a className="help-contact-cta" href="/my/contact">
+      <Link className="help-contact-cta" href="/my/contact" prefetch>
         <Mail size={16} />
         <span>더 궁금한 게 있으면 문의하기</span>
-      </a>
+      </Link>
     </AppShell>
   );
 }

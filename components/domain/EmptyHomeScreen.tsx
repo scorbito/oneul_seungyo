@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -30,9 +31,9 @@ export function EmptyHomeScreen() {
           <Plus size={18} />
           직관 등록
         </Button>
-        <a className="empty-link" href="/">
+        <Link className="empty-link" href="/" prefetch>
           샘플 홈 둘러보기
-        </a>
+        </Link>
       </section>
       <AppModals open={modal} setOpen={setModal} />
     </AppShell>

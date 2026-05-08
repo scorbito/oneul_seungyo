@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { LoginForm } from "@/components/domain/LoginForm";
 import { OAuthButtons } from "@/components/domain/OAuthButtons";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -30,11 +31,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="app-scroll">
           <header className="app-header login-header">
             {upgradeMode ? (
-              <a className="login-back" href="/" aria-label="뒤로">
+              <Link className="login-back" href="/" aria-label="뒤로" prefetch>
                 <ArrowLeft size={20} />
-              </a>
+              </Link>
             ) : <span />}
-            <a className="brand" href={upgradeMode ? "/" : "/landing"}>오늘은 승요</a>
+            <Link className="brand" href={upgradeMode ? "/" : "/landing"} prefetch>오늘은 승요</Link>
             <span />
           </header>
           <div className="login-bg-area" aria-hidden="true" />
@@ -43,7 +44,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <div className="login-upgrade-banner">
                 <strong>정식 계정으로 전환</strong>
                 <span>지금까지 쌓은 직관·후기·사진은 그대로 유지돼요.</span>
-                <a className="login-upgrade-skip" href="/">지금은 그냥 사용하기 →</a>
+                <Link className="login-upgrade-skip" href="/" prefetch>지금은 그냥 사용하기 →</Link>
               </div>
             ) : null}
             <div className="login-mascot" aria-hidden="true">

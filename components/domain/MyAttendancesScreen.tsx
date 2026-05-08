@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { CheckCircle2, PenSquare, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/common/Button";
@@ -78,9 +79,9 @@ export function MyAttendancesScreen({ dbAttendances = [] }: MyAttendancesScreenP
                 {isReviewable ? (
                   <div className="attendance-action-row">
                     {hasReview ? (
-                      <a className="review-action review-action-done" href="/my/reviews">
+                      <Link className="review-action review-action-done" href="/my/reviews" prefetch>
                         <CheckCircle2 size={14} />작성 완료
-                      </a>
+                      </Link>
                     ) : (
                       <button className="review-action review-action-write" type="button" onClick={() => openReviewModal(item.id)}>
                         <PenSquare size={14} />후기 작성

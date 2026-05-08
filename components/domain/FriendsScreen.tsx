@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Check, Inbox, Lock, Search, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
@@ -29,7 +30,7 @@ export function FriendsScreen() {
             친구 관리는 정식 계정 전환 후 이용할 수 있어요.<br />
             카카오·Google·이메일로 전환하면 그동안 쌓은 기록은 그대로 유지됩니다.
           </p>
-          <a className="upgrade-cta" href="/login">정식 계정으로 전환</a>
+          <Link className="upgrade-cta" href="/login" prefetch>정식 계정으로 전환</Link>
         </div>
       </AppShell>
     );

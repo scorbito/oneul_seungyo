@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Bell, ChevronRight, FileText, HelpCircle, LogOut, Mail, Shield, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/common/Button";
@@ -66,33 +67,33 @@ export default function SettingsPage() {
       </section>
 
       <section className="menu-list settings-list settings-list-secondary">
-        <a className="settings-row" href="/my/help">
+        <Link className="settings-row" href="/my/help" prefetch>
           <HelpCircle size={18} />
           <strong>이용안내 / 자주 묻는 질문</strong>
           <span className="settings-value" />
           <ChevronRight size={18} />
-        </a>
-        <a className="settings-row" href="/my/contact">
+        </Link>
+        <Link className="settings-row" href="/my/contact" prefetch>
           <Mail size={18} />
           <strong>문의하기</strong>
           <span className="settings-value" />
           <ChevronRight size={18} />
-        </a>
+        </Link>
       </section>
 
       <section className="menu-list settings-list settings-list-secondary">
-        <a className="settings-row" href="/legal/terms">
+        <Link className="settings-row" href="/legal/terms" prefetch>
           <FileText size={18} />
           <strong>이용약관</strong>
           <span className="settings-value" />
           <ChevronRight size={18} />
-        </a>
-        <a className="settings-row" href="/legal/privacy">
+        </Link>
+        <Link className="settings-row" href="/legal/privacy" prefetch>
           <ShieldCheck size={18} />
           <strong>개인정보처리방침</strong>
           <span className="settings-value" />
           <ChevronRight size={18} />
-        </a>
+        </Link>
       </section>
 
       <button className="logout-button" type="button" onClick={() => setLogoutConfirmOpen(true)}>

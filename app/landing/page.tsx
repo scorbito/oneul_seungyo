@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Lock, Smartphone, Trophy, X } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { signInAnonymouslyAction } from "@/lib/actions/auth";
@@ -33,9 +34,9 @@ export default function LandingPage() {
         <p>야구팬을 위한 직관 기록 & 커뮤니티</p>
         <div className="landing-actions">
           <Button onClick={() => setConfirmOpen(true)}>비로그인으로 시작하기</Button>
-          <a href="/login">
+          <Link href="/login" prefetch>
             <Button variant="ghost">로그인하기</Button>
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -97,9 +98,9 @@ export default function LandingPage() {
               </button>
             </div>
 
-            <a className="landing-confirm-altlink" href="/login">
+            <Link className="landing-confirm-altlink" href="/login" prefetch>
               또는 카카오·Google·이메일로 정식 가입 →
-            </a>
+            </Link>
           </div>
         </div>
       ) : null}

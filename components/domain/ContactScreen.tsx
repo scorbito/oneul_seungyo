@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { HelpCircle, Mail } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -17,10 +18,10 @@ export function ContactScreen() {
         <Mail size={32} className="contact-icon" />
         <h2>문의 전, 자주 묻는 질문부터 확인해 보세요</h2>
         <p>비슷한 문제가 이미 안내되어 있을 수 있어요. 그래도 해결되지 않으면 언제든 메일로 알려주세요.</p>
-        <a className="contact-faq-link" href="/my/help">
+        <Link className="contact-faq-link" href="/my/help" prefetch>
           <HelpCircle size={15} />
           <span>이용안내 / 자주 묻는 질문 보기</span>
-        </a>
+        </Link>
       </section>
 
       <section className="contact-section">
