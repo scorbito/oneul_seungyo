@@ -23,10 +23,12 @@ function toDomainGame(game: Awaited<ReturnType<typeof listGamesFromDb>>[number])
 
 export default async function SchedulePage() {
   noStore();
-  // 현재 월 기준 +/- 1개월 범위로 조회 (사용자가 달력 좌우 한 칸 이동까지 커버)
+  // KBO 정규시즌 전체 + 시범경기/포스트시즌까지 커버 (2~12월)
+  // 사용자가 캘린더 좌우로 자유롭게 이동해도 모든 일정 표시되도록.
   const today = new Date();
-  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+  const year = today.getFullYear();
+  const start = new Date(year, 1, 1);   // 2월 1일 (시범경기 포함)
+  const end = new Date(year, 11, 31);   // 12월 31일 (포스트시즌 포함)
   const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
   const games = await listGamesFromDb({ from: fmt(start), to: fmt(end) })

@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { syncGamesInRange } from "@/lib/server/kbo/syncGames";
 
+// Vercel 함수 시간 제한을 60초로 (기본 10초). 30일 × 200ms = 6초라 여유 충분.
+export const maxDuration = 60;
+
 function isAuthorized(request: NextRequest): boolean {
   const auth = request.headers.get("authorization");
   const secret = process.env.CRON_SECRET;
@@ -16,7 +19,7 @@ function kstNow(): Date {
 /**
  * KBO 일정/스코어 동기화 cron.
  * - scope=today (default): 어제 ~ 오늘 (자정 직후 어제 라이브 finalize 보장)
- * - scope=week: 어제 ~ +6일
+ * - scope=week: 어제 ~ +30일 (먼 미래 일정도 자동 백필 — 이름은 호환성 위해 유지)
  * - scope=range&from=YYYY-MM-DD&to=YYYY-MM-DD: 명시 범위
  */
 export async function GET(request: NextRequest) {
@@ -44,7 +47,8 @@ export async function GET(request: NextRequest) {
     from.setDate(today.getDate() - 1);
     to = new Date(today);
     if (scope === "week") {
-      to.setDate(today.getDate() + 6);
+      // 어제 ~ +30일. KBO가 미래 일정을 추가 공개해도 한 달 안에 자동 흡수.
+      to.setDate(today.getDate() + 30);
     }
   }
 

@@ -4004,15 +4004,18 @@ button {
   width: 22px;
   height: 22px;
   font-size: 11px;
+  flex-shrink: 0;
 }
 
 .phone-frame-dark .hd-score-text {
   font-size: 13px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.04em;
   color: var(--hd-text-primary);
   flex: 1;
   text-align: center;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .phone-frame-dark .hd-result-line {
