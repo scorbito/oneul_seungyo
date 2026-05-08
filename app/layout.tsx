@@ -46,8 +46,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     listReviewsFromDb({ onlyMine: true }).catch(() => [])
   ]);
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
   return (
     <html lang="ko">
+      <head>
+        {supabaseUrl ? (
+          <>
+            <link rel="preconnect" href={supabaseUrl} crossOrigin="anonymous" />
+            <link rel="dns-prefetch" href={supabaseUrl} />
+          </>
+        ) : null}
+        <link rel="preload" as="image" href="/assets/stadium-hero-vertical.png" fetchPriority="high" />
+      </head>
       <body>
         <AppStateProvider
           initialProfile={profile}

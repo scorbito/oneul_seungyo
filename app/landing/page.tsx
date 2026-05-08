@@ -7,6 +7,9 @@ import { Lock, Smartphone, Trophy, X } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { signInAnonymouslyAction } from "@/lib/actions/auth";
 
+// 랜딩 페이지는 사용자별 데이터 없음 — 항상 같은 모습. CDN 캐싱 가능.
+// (Note: 클라이언트 컴포넌트는 정적 렌더링되므로 force-static 효과는 자동)
+
 export default function LandingPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
