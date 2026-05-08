@@ -180,7 +180,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
           <div className="hd-empty-body">
             <p>예정된 직관이 아직 없어요.</p>
             <button type="button" className="hd-empty-cta" onClick={() => setModal("attendance")}>
-              <Plus size={16} strokeWidth={3} /> 직관 등록
+              <Plus size={16} strokeWidth={3} /> 예정 직관 등록
             </button>
           </div>
         </section>
@@ -256,7 +256,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
           <div className="hd-empty-body">
             <p>아직 다녀온 직관이 없어요.</p>
             <button type="button" className="hd-empty-cta" onClick={() => setModal("attendance")}>
-              <Plus size={16} strokeWidth={3} /> 직관 등록
+              <Plus size={16} strokeWidth={3} /> 이전 직관 등록
             </button>
           </div>
         </section>
