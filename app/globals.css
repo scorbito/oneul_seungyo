@@ -9130,3 +9130,76 @@ a {
 }
 
 /* 프리페치된 페이지로 즉시 전환되도록 router 동작 보강 — Link prefetch 가 자동 처리 */
+
+/* ============================================================
+ * Skeleton — loading.tsx 에서 사용하는 placeholder
+ * ============================================================ */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.phone-frame:not(.phone-frame-dark) .skeleton {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.phone-frame:not(.phone-frame-dark) .skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.05) 50%,
+    transparent 100%
+  );
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--hd-bg-card);
+  border: 1px solid var(--hd-border-soft);
+  border-radius: 14px;
+}
+
+.phone-frame:not(.phone-frame-dark) .skeleton-row {
+  background: #fff;
+  border-color: #edf0f4;
+}
+
+/* 스켈레톤 페이지 컨테이너 — page.tsx 와 동일한 padding */
+.skeleton-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
