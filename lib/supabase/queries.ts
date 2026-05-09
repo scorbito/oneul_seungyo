@@ -23,3 +23,10 @@ export {
   getNoticeByIdFromDb,
   listNoticesFromDb
 } from "@/lib/supabase/query-parts/notices";
+
+export {
+  listAcceptedFriendsFromDb,
+  listIncomingFriendRequestsFromDb,
+  type FriendListItem,
+  type IncomingFriendRequest
+} from "@/lib/supabase/query-parts/friends";

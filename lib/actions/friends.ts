@@ -9,6 +9,66 @@ function sortFriendPair(userAId: string, userBId: string) {
     : { user_a_id: userBId, user_b_id: userAId };
 }
 
+export type FriendCandidate = {
+  userId: string;
+  nickname: string;
+  mainTeamId: string;
+  avatarUrl: string | null;
+  relationship: "none" | "friend" | "requested" | "incoming";
+};
+
+export async function searchProfilesByNicknameAction(rawQuery: string): Promise<FriendCandidate[]> {
+  const query = rawQuery.trim();
+  if (query.length < 1) return [];
+
+  const supabase = createSupabaseServerClient();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData?.user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+  const me = authData.user.id;
+
+  const { data: profiles, error } = await supabase
+    .from("profiles")
+    .select("id, nickname, main_team_id, avatar_image_url")
+    .ilike("nickname", `%${query}%`)
+    .neq("id", me)
+    .limit(20);
+
+  if (error || !profiles || profiles.length === 0) return [];
+
+  const ids = profiles.map((p) => p.id);
+
+  // 친구 양측 조회 (or + nested in 보다 두 번 query 가 안전)
+  const [friendsA, friendsB, outgoing, incoming] = await Promise.all([
+    supabase.from("friends").select("user_b_id").eq("user_a_id", me).in("user_b_id", ids),
+    supabase.from("friends").select("user_a_id").eq("user_b_id", me).in("user_a_id", ids),
+    supabase.from("friend_requests").select("to_user_id").eq("from_user_id", me).eq("status", "pending").in("to_user_id", ids),
+    supabase.from("friend_requests").select("from_user_id").eq("to_user_id", me).eq("status", "pending").in("from_user_id", ids)
+  ]);
+
+  const friendIds = new Set<string>([
+    ...(friendsA.data ?? []).map((r) => r.user_b_id),
+    ...(friendsB.data ?? []).map((r) => r.user_a_id)
+  ]);
+  const outgoingIds = new Set<string>((outgoing.data ?? []).map((r) => r.to_user_id));
+  const incomingIds = new Set<string>((incoming.data ?? []).map((r) => r.from_user_id));
+
+  return profiles.map((p) => {
+    let relationship: FriendCandidate["relationship"] = "none";
+    if (friendIds.has(p.id)) relationship = "friend";
+    else if (outgoingIds.has(p.id)) relationship = "requested";
+    else if (incomingIds.has(p.id)) relationship = "incoming";
+    return {
+      userId: p.id,
+      nickname: p.nickname,
+      mainTeamId: p.main_team_id,
+      avatarUrl: p.avatar_image_url ?? null,
+      relationship
+    };
+  });
+}
+
 export async function sendFriendRequestAction(toUserId: string) {
   const supabase = createSupabaseServerClient();
   const { data: authData, error: authError } = await supabase.auth.getUser();

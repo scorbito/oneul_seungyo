@@ -1,25 +1,70 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { Check, Inbox, Lock, Search, UserPlus } from "lucide-react";
+import { Check, Inbox, Lock, Search, UserPlus, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { useAppState } from "@/lib/state/AppState";
+import {
+  respondFriendRequestAction,
+  searchProfilesByNicknameAction,
+  sendFriendRequestAction,
+  type FriendCandidate
+} from "@/lib/actions/friends";
+import type { FriendListItem, IncomingFriendRequest } from "@/lib/supabase/queries";
 
-type FriendRow = { id: string; name: string; teamId: string; desc: string };
+type FriendsScreenProps = {
+  initialIncomingRequests: IncomingFriendRequest[];
+  initialFriends: FriendListItem[];
+};
 
-export function FriendsScreen() {
+type Tab = "친구" | "요청" | "추천";
+
+export function FriendsScreen({ initialIncomingRequests, initialFriends }: FriendsScreenProps) {
   const { isAnonymous, showToast } = useAppState();
-  const [tab, setTab] = useState("요청");
-  const [requests, setRequests] = useState<FriendRow[]>([]);
+  const [tab, setTab] = useState<Tab>("친구");
   const [query, setQuery] = useState("");
-  const [requestedIds, setRequestedIds] = useState<string[]>([]);
+  const [searchResults, setSearchResults] = useState<FriendCandidate[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [incomingRequests, setIncomingRequests] = useState(initialIncomingRequests);
+  const [friends, setFriends] = useState(initialFriends);
+  const [isPending, startTransition] = useTransition();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const debounceRef = useRef<number | null>(null);
 
-  const trimmedQuery = query.trim();
-  const searchResults = useMemo<FriendRow[]>(() => {
-    return [];
-  }, []);
+  // 검색어 입력 → 300ms 디바운스 후 server action 호출
+  useEffect(() => {
+    if (isAnonymous) return;
+    const trimmed = query.trim();
+    if (debounceRef.current) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (!trimmed) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const results = await searchProfilesByNicknameAction(trimmed);
+        setSearchResults(results);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "검색에 실패했어요.");
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => {
+      if (debounceRef.current) {
+        window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    };
+  }, [query, isAnonymous, showToast]);
 
   if (isAnonymous) {
     return (
@@ -36,15 +81,61 @@ export function FriendsScreen() {
     );
   }
 
-  const act = (id: string, message: string) => {
-    setRequests((current) => current.filter((item) => item.id !== id));
-    showToast(message);
+  const handleSendRequest = (candidate: FriendCandidate) => {
+    setBusyId(candidate.userId);
+    startTransition(async () => {
+      try {
+        await sendFriendRequestAction(candidate.userId);
+        // 검색 결과에서 해당 항목의 relationship 을 requested 로 업데이트
+        setSearchResults((current) =>
+          current.map((item) =>
+            item.userId === candidate.userId ? { ...item, relationship: "requested" } : item
+          )
+        );
+        showToast(`${candidate.nickname}님에게 친구 요청을 보냈어요.`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "친구 요청에 실패했어요.");
+      } finally {
+        setBusyId(null);
+      }
+    });
   };
 
-  const sendFriendRequest = (id: string) => {
-    setRequestedIds((current) => (current.includes(id) ? current : [...current, id]));
-    showToast("친구 요청을 보냈어요.");
+  const handleRespond = (request: IncomingFriendRequest, status: "accepted" | "rejected") => {
+    setBusyId(request.requestId);
+    startTransition(async () => {
+      try {
+        await respondFriendRequestAction(request.requestId, status);
+        setIncomingRequests((current) => current.filter((r) => r.requestId !== request.requestId));
+        if (status === "accepted") {
+          setFriends((current) =>
+            current.some((f) => f.userId === request.fromUser.userId) ? current : [request.fromUser, ...current]
+          );
+          showToast(`${request.fromUser.nickname}님과 친구가 됐어요.`);
+        } else {
+          showToast("친구 요청을 거절했어요.");
+        }
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "요청 처리에 실패했어요.");
+      } finally {
+        setBusyId(null);
+      }
+    });
   };
+
+  const renderAvatar = (item: FriendListItem | FriendCandidate) => {
+    if (item.avatarUrl) {
+      return (
+        <span className="friend-avatar">
+          <Image alt="" src={item.avatarUrl} fill sizes="42px" style={{ objectFit: "cover" }} />
+        </span>
+      );
+    }
+    return <TeamBadge teamId={item.mainTeamId} size="md" />;
+  };
+
+  const trimmedQuery = query.trim();
+  const showingSearch = trimmedQuery.length > 0;
 
   return (
     <AppShell activeTab="my" title="친구 관리" theme="dark" backHref="/my">
@@ -58,61 +149,122 @@ export function FriendsScreen() {
           aria-label="친구 닉네임 검색"
         />
       </div>
-      {trimmedQuery ? (
+      {showingSearch ? (
         <section className="friend-list">
-          <h3 className="friend-section-title">검색 결과 ({searchResults.length})</h3>
-          {searchResults.map((user) => {
-            const requested = requestedIds.includes(user.id);
+          <h3 className="friend-section-title">
+            검색 결과 {searching ? "..." : `(${searchResults.length})`}
+          </h3>
+          {searchResults.map((candidate) => {
+            const isBusy = busyId === candidate.userId && isPending;
             return (
-              <article className="friend-row" key={user.id}>
-                <TeamBadge teamId={user.teamId} size="md" />
+              <article className="friend-row" key={candidate.userId}>
+                {renderAvatar(candidate)}
                 <div>
-                  <strong>{user.name}</strong>
-                  <span>{user.desc}</span>
+                  <strong>{candidate.nickname}</strong>
                 </div>
-                {requested ? (
+                {candidate.relationship === "friend" ? (
+                  <button type="button" className="friend-action-done" disabled>
+                    <Check size={14} /> 친구
+                  </button>
+                ) : candidate.relationship === "requested" ? (
                   <button type="button" className="friend-action-done" disabled>
                     <Check size={14} /> 신청됨
                   </button>
+                ) : candidate.relationship === "incoming" ? (
+                  <button type="button" className="friend-action-done" disabled>
+                    요청 받음
+                  </button>
                 ) : (
-                  <button type="button" onClick={() => sendFriendRequest(user.id)}>
-                    <UserPlus size={14} /> 신청하기
+                  <button type="button" disabled={isBusy} onClick={() => handleSendRequest(candidate)}>
+                    <UserPlus size={14} /> {isBusy ? "..." : "신청하기"}
                   </button>
                 )}
               </article>
             );
           })}
-          {searchResults.length === 0 ? <p className="empty-inline">일치하는 사용자가 없어요.</p> : null}
+          {!searching && searchResults.length === 0 ? (
+            <p className="empty-inline">일치하는 사용자가 없어요.</p>
+          ) : null}
         </section>
       ) : (
         <>
           <div className="segmented-control">
-            {["친구", "요청", "추천"].map((item) => (
-              <button className={tab === item ? "segment segment-active" : "segment"} key={item} type="button" onClick={() => setTab(item)}>{item}</button>
+            {(["친구", "요청", "추천"] as Tab[]).map((item) => (
+              <button
+                className={tab === item ? "segment segment-active" : "segment"}
+                key={item}
+                type="button"
+                onClick={() => setTab(item)}
+              >
+                {item}
+                {item === "요청" && incomingRequests.length > 0 ? (
+                  <span className="segment-badge">{incomingRequests.length}</span>
+                ) : null}
+              </button>
             ))}
           </div>
           <section className="friend-list">
-            {requests.map((friend) => (
-              <article className="friend-row" key={friend.id}>
-                <TeamBadge teamId={friend.teamId} size="md" />
-                <div>
-                  <strong>{friend.name}</strong>
-                  <span>{friend.desc}</span>
+            {tab === "친구" ? (
+              friends.length === 0 ? (
+                <div className="empty-state-large">
+                  <div className="empty-state-icon"><UserPlus size={32} strokeWidth={1.8} /></div>
+                  <p>아직 친구가 없어요.<br />닉네임으로 친구를 찾아 신청해보세요.</p>
                 </div>
-                {tab === "요청" ? (
-                  <>
-                    <button type="button" onClick={() => act(friend.id, "친구 요청을 수락했어요.")}>수락</button>
-                    <button type="button" onClick={() => act(friend.id, "친구 요청을 거절했어요.")}>거절</button>
-                  </>
-                ) : (
-                  <button type="button" onClick={() => act(friend.id, "친구를 추가했어요.")}><UserPlus size={14} /> 추가</button>
-                )}
-              </article>
-            ))}
-            {requests.length === 0 ? (
+              ) : (
+                friends.map((friend) => (
+                  <article className="friend-row" key={friend.userId}>
+                    {renderAvatar(friend)}
+                    <div>
+                      <strong>{friend.nickname}</strong>
+                    </div>
+                    <button type="button" className="friend-action-done" disabled>
+                      <Check size={14} /> 친구
+                    </button>
+                  </article>
+                ))
+              )
+            ) : null}
+
+            {tab === "요청" ? (
+              incomingRequests.length === 0 ? (
+                <div className="empty-state-large">
+                  <div className="empty-state-icon"><Inbox size={32} strokeWidth={1.8} /></div>
+                  <p>처리할 친구 요청이 없어요.</p>
+                </div>
+              ) : (
+                incomingRequests.map((request) => {
+                  const isBusy = busyId === request.requestId && isPending;
+                  return (
+                    <article className="friend-row" key={request.requestId}>
+                      {renderAvatar(request.fromUser)}
+                      <div>
+                        <strong>{request.fromUser.nickname}</strong>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => handleRespond(request, "accepted")}
+                      >
+                        <Check size={14} /> 수락
+                      </button>
+                      <button
+                        type="button"
+                        className="friend-action-done"
+                        disabled={isBusy}
+                        onClick={() => handleRespond(request, "rejected")}
+                      >
+                        <X size={14} /> 거절
+                      </button>
+                    </article>
+                  );
+                })
+              )
+            ) : null}
+
+            {tab === "추천" ? (
               <div className="empty-state-large">
-                <div className="empty-state-icon"><Inbox size={32} strokeWidth={1.8} /></div>
-                <p>처리할 항목이 없어요.</p>
+                <div className="empty-state-icon"><UserPlus size={32} strokeWidth={1.8} /></div>
+                <p>추천 기능은 곧 추가될 예정이에요.<br />지금은 닉네임 검색으로 친구를 찾아보세요.</p>
               </div>
             ) : null}
           </section>
