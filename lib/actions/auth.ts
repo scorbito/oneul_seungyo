@@ -7,6 +7,22 @@ import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/sup
 type AuthMode = "sign-in" | "sign-up";
 type OAuthProvider = "google" | "kakao";
 
+function getRequestOrigin() {
+  const headerList = headers();
+  const origin = headerList.get("origin");
+  if (origin) return origin;
+
+  const host = headerList.get("x-forwarded-host") ?? headerList.get("host");
+  if (host) {
+    const protocol = host.startsWith("localhost") || host.startsWith("127.0.0.1")
+      ? "http"
+      : headerList.get("x-forwarded-proto") ?? "https";
+    return `${protocol}://${host}`;
+  }
+
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+}
+
 async function hasProfile(userId: string) {
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
@@ -110,11 +126,7 @@ export async function signInAnonymouslyAction() {
  *  익명 user인 경우 자동으로 linkIdentity 흐름 사용 → user.id 유지하며 정식 전환. */
 export async function signInWithOAuthAction(provider: OAuthProvider) {
   const supabase = createSupabaseServerClient();
-  const headerList = headers();
-  const origin = headerList.get("origin")
-    ?? (headerList.get("host") ? `https://${headerList.get("host")}` : null)
-    ?? process.env.NEXT_PUBLIC_SITE_URL
-    ?? "http://localhost:3000";
+  const origin = getRequestOrigin();
 
   // 현재 익명 세션이 있으면 link 흐름, 아니면 일반 sign in
   const { data: authData } = await supabase.auth.getUser();
@@ -177,4 +189,3 @@ export async function linkAnonymousToEmailAction(formData: FormData) {
   // 익명 → 정식 전환 후엔 그대로 사용 가능 (메일 인증은 추후 회복용)
   redirect(await hasProfile(authData.user.id) ? "/?notice=upgraded" : "/onboarding");
 }
-

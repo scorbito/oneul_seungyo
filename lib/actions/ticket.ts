@@ -298,6 +298,7 @@ export type VerifyExistingTicketResult =
 export async function verifyAttendanceWithTicket(
   input: VerifyExistingTicketInput
 ): Promise<VerifyExistingTicketResult> {
+  try {
   // 1. 인증
   const ssr = createSupabaseServerClient();
   const { data: authData, error: authError } = await ssr.auth.getUser();
@@ -417,4 +418,11 @@ export async function verifyAttendanceWithTicket(
     verifiedAt,
     gameLabel: `${game.game_date} ${game.home_team_id.toUpperCase()} vs ${game.away_team_id.toUpperCase()}`
   };
+  } catch (error) {
+    console.error("verifyAttendanceWithTicket failed:", error);
+    return {
+      ok: false,
+      reason: error instanceof Error ? error.message : "티켓 인증 중 알 수 없는 오류가 발생했어요."
+    };
+  }
 }

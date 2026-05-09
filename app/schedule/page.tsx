@@ -1,7 +1,8 @@
-import { unstable_noStore as noStore } from "next/cache";
 import { ScheduleScreen } from "@/components/domain/ScheduleScreen";
 import { listGamesFromDb } from "@/lib/supabase/queries";
 import type { Game } from "@/lib/types/domain";
+
+export const revalidate = 300;
 
 function toDotDate(date: string) {
   return date.replaceAll("-", ".");
@@ -22,7 +23,6 @@ function toDomainGame(game: Awaited<ReturnType<typeof listGamesFromDb>>[number])
 }
 
 export default async function SchedulePage() {
-  noStore();
   // KBO 정규시즌 전체 + 시범경기/포스트시즌까지 커버 (2~12월)
   // 사용자가 캘린더 좌우로 자유롭게 이동해도 모든 일정 표시되도록.
   const today = new Date();

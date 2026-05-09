@@ -68,6 +68,7 @@ export type Review = {
     awayTeamId: string;
     homeScore: number | null;
     awayScore: number | null;
+    stadium?: string;
     supportTeamId: string;
     result: "win" | "lose" | "draw" | null;
   };

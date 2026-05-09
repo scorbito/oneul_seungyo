@@ -17,12 +17,40 @@ type Props = {
   onSuccess?: () => void;
 };
 
-async function fileToBase64(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
+async function fileToBase64(file: File): Promise<{ imageBase64: string; mimeType: string }> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("이미지를 읽지 못했어요."));
+    reader.readAsDataURL(file);
+  });
+
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = document.createElement("img");
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("이미지를 불러오지 못했어요."));
+    img.src = dataUrl;
+  });
+
+  const maxSide = 1600;
+  const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("이미지 변환을 준비하지 못했어요.");
+  ctx.drawImage(image, 0, 0, width, height);
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+  if (!blob) throw new Error("이미지 변환에 실패했어요.");
+
+  const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
   let binary = "";
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
+  return { imageBase64: btoa(binary), mimeType: "image/jpeg" };
 }
 
 export function VerifyTicketModal({ open, attendanceId, gameLabel, onClose, onSuccess }: Props) {
@@ -62,8 +90,7 @@ export function VerifyTicketModal({ open, attendanceId, gameLabel, onClose, onSu
     if (!file || !attendanceId) return;
     setSubmitting(true);
     try {
-      const imageBase64 = await fileToBase64(file);
-      const mimeType = file.type || "image/jpeg";
+      const { imageBase64, mimeType } = await fileToBase64(file);
       const result = await verifyAttendanceWithTicket({
         attendanceId,
         imageBase64,

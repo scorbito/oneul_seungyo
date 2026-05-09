@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type PointerEvent } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Bookmark, ChevronLeft, ChevronRight, Heart, MoreHorizontal, PenSquare, Send, Trash2 } from "lucide-react";
@@ -33,6 +33,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   const [appModalOpen, setAppModalOpen] = useState<ModalKind>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const carouselDragStartRef = useRef<{ x: number; y: number } | null>(null);
   const review = dbReview ?? reviews.find((item) => item.id === id);
 
   const isReviewOwner = Boolean(currentUserId && review?.ownerId && currentUserId === review.ownerId);
@@ -63,6 +64,14 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
 
   const liked = likedReviewIds.includes(review.id);
   const saved = savedReviewIds.includes(review.id);
+  const detailDate = review.game?.date ?? review.gameLabel.split(" · ")[0] ?? "";
+  const detailStadium = review.game?.stadium ?? "";
+  const detailTeam = review.game?.supportTeamId ? getTeam(review.game.supportTeamId).shortName : "";
+  const detailVenueSide = review.game?.supportTeamId && review.game?.homeTeamId
+    ? review.game.supportTeamId === review.game.homeTeamId ? "홈경기" : "원정경기"
+    : "";
+  const detailGameType = detailTeam && detailVenueSide ? `${detailTeam} ${detailVenueSide}` : "";
+  const detailMeta = `${[detailDate, detailGameType].filter(Boolean).join(" ")}${detailStadium ? `(${detailStadium})` : ""}`;
 
   const submitComment = () => {
     const body = input.trim();
@@ -129,52 +138,46 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   return (
     <AppShell activeTab="community" title="후기 상세" theme="dark" backHref="/community">
       <div className="detail-topbar">
-        <div className="detail-topbar-author">
-          {review.authorAvatarUrl ? (
-            <span className="detail-topbar-avatar">
-              <Image alt="" src={review.authorAvatarUrl} fill sizes="26px" style={{ objectFit: "cover" }} />
-            </span>
-          ) : (
-            <span className="detail-topbar-avatar detail-topbar-avatar-initial">
-              {(review.author || "?").slice(0, 1)}
-            </span>
-          )}
-          <strong>{review.author}</strong>
-        </div>
+        <span className="detail-topbar-date">
+          {review.game?.supportTeamId ? <TeamBadge teamId={review.game.supportTeamId} size="sm" /> : null}
+          <span>{detailMeta}</span>
+        </span>
         {isReviewOwner ? (
-          <div className="detail-more">
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="더보기"
-              aria-haspopup="menu"
-              aria-expanded={moreOpen}
-              onClick={() => setMoreOpen((open) => !open)}
-            >
-              <MoreHorizontal size={20} />
-            </button>
-            {moreOpen ? (
-              <div className="detail-more-menu" role="menu">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => { setMoreOpen(false); setAppModalOpen("review"); }}
-                >
-                  <PenSquare size={14} /> 수정
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="detail-more-danger"
-                  onClick={() => { setMoreOpen(false); setDeleteConfirmOpen(true); }}
-                >
-                  <Trash2 size={14} /> 삭제
-                </button>
-              </div>
-            ) : null}
+          <div className="detail-topbar-right">
+            <div className="detail-more">
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="더보기"
+                aria-haspopup="menu"
+                aria-expanded={moreOpen}
+                onClick={() => setMoreOpen((open) => !open)}
+              >
+                <MoreHorizontal size={20} />
+              </button>
+              {moreOpen ? (
+                <div className="detail-more-menu" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => { setMoreOpen(false); setAppModalOpen("review"); }}
+                  >
+                    <PenSquare size={14} /> 수정
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="detail-more-danger"
+                    onClick={() => { setMoreOpen(false); setDeleteConfirmOpen(true); }}
+                  >
+                    <Trash2 size={14} /> 삭제
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : (
-          <span />
+          <div className="detail-topbar-right" />
         )}
       </div>
       <article className="review-detail">
@@ -183,9 +186,49 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
           const safeIdx = Math.min(imageIndex, imgs.length - 1);
           const hasPrev = safeIdx > 0;
           const hasNext = safeIdx < imgs.length - 1;
+          const goPrev = () => setImageIndex((i) => Math.max(0, i - 1));
+          const goNext = () => setImageIndex((i) => Math.min(imgs.length - 1, i + 1));
+          const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+            if (imgs.length <= 1) return;
+            if ((event.target as HTMLElement | null)?.closest("button")) return;
+            carouselDragStartRef.current = { x: event.clientX, y: event.clientY };
+          };
+          const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
+            const start = carouselDragStartRef.current;
+            carouselDragStartRef.current = null;
+            if (!start || imgs.length <= 1) return;
+
+            const diffX = event.clientX - start.x;
+            const diffY = event.clientY - start.y;
+            const absX = Math.abs(diffX);
+            const absY = Math.abs(diffY);
+
+            if (absX < 45 || absX < absY * 1.2) return;
+            if (diffX < 0) {
+              goNext();
+            } else {
+              goPrev();
+            }
+          };
+
           return (
-            <div className="review-detail-carousel">
-              <Image alt={review.title || "후기 사진"} className="review-detail-image" height={260} priority src={imgs[safeIdx]} width={360} />
+            <div
+              className="review-detail-carousel"
+              onPointerCancel={() => { carouselDragStartRef.current = null; }}
+              onPointerDown={handlePointerDown}
+              onPointerLeave={() => { carouselDragStartRef.current = null; }}
+              onPointerUp={handlePointerUp}
+            >
+              <Image
+                alt={review.title || "후기 사진"}
+                className="review-detail-image"
+                draggable={false}
+                height={260}
+                key={imgs[safeIdx]}
+                priority
+                src={imgs[safeIdx]}
+                width={360}
+              />
               {imgs.length > 1 ? (
                 <>
                   <button
@@ -193,7 +236,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
                     aria-label="이전 사진"
                     className="review-detail-arrow review-detail-arrow-left"
                     disabled={!hasPrev}
-                    onClick={() => setImageIndex((i) => Math.max(0, i - 1))}
+                    onClick={goPrev}
                   >
                     <ChevronLeft size={18} />
                   </button>
@@ -202,7 +245,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
                     aria-label="다음 사진"
                     className="review-detail-arrow review-detail-arrow-right"
                     disabled={!hasNext}
-                    onClick={() => setImageIndex((i) => Math.min(imgs.length - 1, i + 1))}
+                    onClick={goNext}
                   >
                     <ChevronRight size={18} />
                   </button>
@@ -227,7 +270,6 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
           const resultLabel = result === "win" ? "승" : result === "lose" ? "패" : result === "draw" ? "무" : null;
           return (
             <div className="review-game-meta">
-              <span className="review-game-meta-date">{review.game.date}</span>
               <div className="review-game-meta-match">
                 <TeamBadge teamId={review.game.homeTeamId} size="sm" />
                 <strong>{home.shortName}</strong>
@@ -241,6 +283,18 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
             </div>
           );
         })() : null}
+        <div className="review-detail-author">
+          {review.authorAvatarUrl ? (
+            <span className="review-detail-author-avatar">
+              <Image alt="" src={review.authorAvatarUrl} fill sizes="34px" style={{ objectFit: "cover" }} />
+            </span>
+          ) : (
+            <span className="review-detail-author-avatar review-detail-author-avatar-initial">
+              {(review.author || "?").slice(0, 1)}
+            </span>
+          )}
+          <strong>{review.author}</strong>
+        </div>
         {review.title ? <h1>{review.title}</h1> : null}
         <p>{review.body}</p>
         {/* 해시태그 칩은 MVP에서 숨김 */}

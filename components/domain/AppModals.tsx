@@ -1,16 +1,16 @@
-"use client";
+﻿"use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Globe2, Link2, Lock, Plus, Share2, Sparkles, Users } from "lucide-react";
-import { Button } from "@/components/common/Button";
-import { ModalShell } from "@/components/common/ModalShell";
-import { TeamBadge } from "@/components/common/TeamBadge";
-import { getTeam, teams } from "@/lib/constants/teams";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { getTeam } from "@/lib/constants/teams";
 import { createAttendanceAction, findCurrentUserAttendanceId } from "@/lib/actions/attendance";
 import { createReviewAction, updateReviewAction } from "@/lib/actions/review";
 import { previewTicket, registerAttendanceFromTicket } from "@/lib/actions/ticket";
+import { AttendanceModal } from "@/components/domain/modals/AttendanceModal";
+import { ReviewModal } from "@/components/domain/modals/ReviewModal";
+import { ShareCardModal } from "@/components/domain/modals/ShareCardModal";
+import { extractHashtags, getAttendanceResult, publicScopeMap, type PrivacyLabel } from "@/components/domain/modals/modalHelpers";
+import { useDragScroll } from "@/components/domain/modals/useDragScroll";
 import { useAppState } from "@/lib/state/AppState";
 import { uploadUserFile } from "@/lib/supabase/storage-client";
 import type { Game, Review } from "@/lib/types/domain";
@@ -28,107 +28,6 @@ type AppModalsProps = {
   editReview?: Review | null;
 };
 
-const templates = [
-  { id: "red", label: "불꽃 레드", src: "/assets/share-bg-navy-red.png" },
-  { id: "field", label: "그라운드", src: "/assets/share-bg-field.png" },
-  { id: "white", label: "미니멀", src: "/assets/share-bg-white.png" }
-];
-
-const publicScopeMap = {
-  "전체 공개": "public",
-  "친구 공개": "friends",
-  "나만 보기": "private"
-} as const;
-
-function useDragScroll<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null);
-  const stateRef = useRef({ down: false, startX: 0, startScroll: 0, dragged: false, pointerId: 0 });
-
-  const onPointerDown = (event: React.PointerEvent<T>) => {
-    if (event.pointerType === "touch") return;
-    const el = ref.current;
-    if (!el) return;
-    stateRef.current = {
-      down: true,
-      startX: event.clientX,
-      startScroll: el.scrollLeft,
-      dragged: false,
-      pointerId: event.pointerId
-    };
-  };
-  const onPointerMove = (event: React.PointerEvent<T>) => {
-    const state = stateRef.current;
-    const el = ref.current;
-    if (!state.down || !el) return;
-    const dx = event.clientX - state.startX;
-    if (!state.dragged && Math.abs(dx) > 4) {
-      state.dragged = true;
-      el.style.cursor = "grabbing";
-      try {
-        el.setPointerCapture(state.pointerId);
-      } catch {}
-    }
-    if (state.dragged) {
-      el.scrollLeft = state.startScroll - dx;
-    }
-  };
-  const endDrag = () => {
-    const state = stateRef.current;
-    const el = ref.current;
-    if (el && state.dragged) {
-      el.style.cursor = "";
-      try {
-        el.releasePointerCapture(state.pointerId);
-      } catch {}
-    }
-    state.down = false;
-  };
-  const onClickCapture = (event: React.MouseEvent<T>) => {
-    if (stateRef.current.dragged) {
-      event.preventDefault();
-      event.stopPropagation();
-      stateRef.current.dragged = false;
-    }
-  };
-
-  return { ref, onPointerDown, onPointerMove, onPointerUp: endDrag, onPointerLeave: endDrag, onPointerCancel: endDrag, onClickCapture };
-}
-
-/** 본문에서 #태그 추출 (한글/영문/숫자/_, 최대 20개, 중복 제거) */
-function extractHashtags(body: string): string[] {
-  const matches = body.match(/#[가-힣ㄱ-ㆎa-zA-Z0-9_]+/g) ?? [];
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const tag of matches) {
-    if (!seen.has(tag)) {
-      seen.add(tag);
-      result.push(tag);
-      if (result.length >= 20) break;
-    }
-  }
-  return result;
-}
-
-function getAttendanceResult(game: Game, supportTeamId: string): "win" | "lose" | "draw" | undefined {
-  if (game.status !== "finished" || game.homeScore === undefined || game.awayScore === undefined) {
-    return undefined;
-  }
-
-  if (game.homeScore === game.awayScore) {
-    return "draw";
-  }
-
-  if (supportTeamId === game.homeTeamId) {
-    return game.homeScore > game.awayScore ? "win" : "lose";
-  }
-
-  if (supportTeamId === game.awayTeamId) {
-    return game.awayScore > game.homeScore ? "win" : "lose";
-  }
-
-  return undefined;
-}
-
 export function AppModals({ open, setOpen, games = [], initialGameId, initialDate, initialAttendanceId, editReview = null }: AppModalsProps) {
   const { addAttendance, addReview, attendances, reviews, profile, isAnonymous, showToast } = useAppState();
   const router = useRouter();
@@ -137,7 +36,6 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
   const [supportTeamId, setSupportTeamId] = useState("lg");
   const [attendanceMemo, setAttendanceMemo] = useState("");
   const [ticketFileName, setTicketFileName] = useState("");
-  const [ticketFile, setTicketFile] = useState<File | null>(null);
   const [processingTicket, setProcessingTicket] = useState(false);
   // Vision으로 미리 분석된 티켓 정보. 등록 시 hash dedup + ticket 인증 흐름에 사용.
   const [ticketPreview, setTicketPreview] = useState<{
@@ -149,14 +47,10 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
     awayTeamId: string;
   } | null>(null);
   const [reviewBody, setReviewBody] = useState("");
-  const [privacy, setPrivacy] = useState("전체 공개");
+  const [privacy, setPrivacy] = useState<PrivacyLabel>("전체 공개");
   const [reviewPhotos, setReviewPhotos] = useState<string[]>([]);
   const [reviewPhotoFiles, setReviewPhotoFiles] = useState<Array<{ src: string; file: File }>>([]);
   const [selectedReviewAttendanceId, setSelectedReviewAttendanceId] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState(templates[0]);
-  const [shareStatus, setShareStatus] = useState("");
-  const [isSharing, setIsSharing] = useState(false);
-  const shareCardRef = useRef<HTMLDivElement | null>(null);
   const [savingAttendance, setSavingAttendance] = useState(false);
   const [savingReview, setSavingReview] = useState(false);
   const attendanceDrag = useDragScroll<HTMLDivElement>();
@@ -208,7 +102,51 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
     if (matchedGame) {
       setSelectedGameId(matchedGame.id);
     }
-  }, [profile.mainTeamId]);
+  }, [games, profile.mainTeamId]);
+
+  const handleTicketFileChange = async (file: File | null) => {
+    if (!file) return;
+    setTicketFileName(file.name);
+    setTicketPreview(null);
+    setProcessingTicket(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const imageBase64 = btoa(binary);
+      const mimeType = file.type || "image/jpeg";
+
+      const result = await previewTicket({ imageBase64, mimeType });
+      if (!result.ok) {
+        showToast(result.reason);
+        setTicketFileName("");
+        return;
+      }
+
+      setSelectedDate(result.gameDate);
+      setSelectedGameId(result.gameId);
+      if (result.suggestedSupportTeamId) {
+        setSupportTeamId(result.suggestedSupportTeamId);
+      } else {
+        setSupportTeamId(result.homeTeamId);
+        showToast("응원팀을 직접 선택해 주세요.");
+      }
+      setTicketPreview({
+        imageBase64,
+        mimeType,
+        hash: result.hash,
+        gameId: result.gameId,
+        homeTeamId: result.homeTeamId,
+        awayTeamId: result.awayTeamId
+      });
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "티켓 인식 실패");
+      setTicketFileName("");
+    } finally {
+      setProcessingTicket(false);
+    }
+  };
 
   useEffect(() => {
     if (open !== "attendance") {
@@ -237,7 +175,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
       const myTeamIsAway = first.awayTeamId === profile.mainTeamId;
       setSupportTeamId(myTeamIsHome || myTeamIsAway ? profile.mainTeamId : first.homeTeamId);
     }
-  }, [gamesOnSelectedDate, open, selectedGameId]);
+  }, [gamesOnSelectedDate, open, profile.mainTeamId, selectedGameId]);
 
   useEffect(() => {
     if (open !== "review" || reviewableAttendances.length === 0) {
@@ -334,7 +272,6 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
     setSavingAttendance(false);
     setAttendanceMemo("");
     setTicketFileName("");
-    setTicketFile(null);
     setTicketPreview(null);
     setOpen(null);
     router.refresh();
@@ -420,393 +357,48 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
 
   return (
     <>
-      <ModalShell open={open === "attendance"} title="직관 등록" onClose={onClose} panelClassName="attendance-modal-panel">
-        <div className="form-stack">
-          <label className="upload-box">
-            <Camera size={24} />
-            <strong>
-              {processingTicket
-                ? "티켓 인식 중..."
-                : ticketPreview
-                  ? "티켓 인식 완료 — 아래에서 확인 후 등록"
-                  : (ticketFileName || "티켓 사진으로 빠른 등록")}
-            </strong>
-            <span>티켓 사진을 올리면 경기와 응원팀이 자동으로 채워져요.<br />확인 후 등록 버튼을 누르세요.</span>
-            <input
-              type="file"
-              accept="image/*"
-              disabled={processingTicket}
-              onChange={async (event) => {
-                const file = event.target.files?.[0] ?? null;
-                event.target.value = "";
-                if (!file) return;
-                setTicketFile(file);
-                setTicketFileName(file.name);
-                setTicketPreview(null);
-                setProcessingTicket(true);
-                try {
-                  const arrayBuffer = await file.arrayBuffer();
-                  const bytes = new Uint8Array(arrayBuffer);
-                  let binary = "";
-                  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-                  const imageBase64 = btoa(binary);
-                  const mimeType = file.type || "image/jpeg";
+      <AttendanceModal
+        open={open === "attendance"}
+        onClose={onClose}
+        processingTicket={processingTicket}
+        ticketPreview={ticketPreview}
+        ticketFileName={ticketFileName}
+        selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
+        gamesOnSelectedDate={gamesOnSelectedDate}
+        selectedGameId={selectedGameId}
+        supportTeamId={supportTeamId}
+        setSupportTeamId={setSupportTeamId}
+        attendanceMemo={attendanceMemo}
+        setAttendanceMemo={setAttendanceMemo}
+        savingAttendance={savingAttendance}
+        onTicketFileChange={handleTicketFileChange}
+        onSelectGameAndTeam={selectGameAndTeam}
+        onSubmit={submitAttendance}
+      />
 
-                  const result = await previewTicket({ imageBase64, mimeType });
-                  if (!result.ok) {
-                    showToast(result.reason);
-                    setTicketFile(null);
-                    setTicketFileName("");
-                    return;
-                  }
+      <ReviewModal
+        open={open === "review"}
+        onClose={onClose}
+        editReview={editReview}
+        reviewPhotos={reviewPhotos}
+        setReviewPhotos={setReviewPhotos}
+        setReviewPhotoFiles={setReviewPhotoFiles}
+        selectedReviewAttendance={selectedReviewAttendance}
+        reviewableAttendances={reviewableAttendances}
+        onSelectReviewAttendance={selectReviewAttendance}
+        attendanceDrag={attendanceDrag}
+        reviewBody={reviewBody}
+        setReviewBody={setReviewBody}
+        privacy={privacy}
+        setPrivacy={setPrivacy}
+        isAnonymous={isAnonymous}
+        showToast={showToast}
+        savingReview={savingReview}
+        onSubmit={submitReview}
+      />
 
-                  // 폼 자동 채우기
-                  setSelectedDate(result.gameDate);
-                  setSelectedGameId(result.gameId);
-                  if (result.suggestedSupportTeamId) {
-                    setSupportTeamId(result.suggestedSupportTeamId);
-                  } else {
-                    // mainTeamId가 경기에 없으면 일단 홈팀을 기본 선택, 사용자가 응원팀 드롭다운에서 변경
-                    setSupportTeamId(result.homeTeamId);
-                    showToast("응원팀을 직접 선택해 주세요.");
-                  }
-                  setTicketPreview({
-                    imageBase64,
-                    mimeType,
-                    hash: result.hash,
-                    gameId: result.gameId,
-                    homeTeamId: result.homeTeamId,
-                    awayTeamId: result.awayTeamId
-                  });
-                } catch (err) {
-                  showToast(err instanceof Error ? err.message : "티켓 인식 실패");
-                  setTicketFile(null);
-                  setTicketFileName("");
-                } finally {
-                  setProcessingTicket(false);
-                }
-              }}
-            />
-          </label>
-          <label className="field-row">
-            <span>1. 직관 날짜 선택</span>
-            <input className="plain-input" type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
-          </label>
-          <div className="field-group">
-            <span>2. 경기와 응원팀 선택</span>
-            {gamesOnSelectedDate.length === 0 && <p style={{ color: "#7b8290", fontSize: 13 }}>이 날짜에 등록 가능한 경기가 없어요.</p>}
-            {gamesOnSelectedDate.map((game) => {
-              const home = getTeam(game.homeTeamId);
-              const away = getTeam(game.awayTeamId);
-              const homeSelected = game.id === selectedGameId && supportTeamId === game.homeTeamId;
-              const awaySelected = game.id === selectedGameId && supportTeamId === game.awayTeamId;
-
-              const isFinished = game.status === "finished" && game.homeScore !== undefined && game.awayScore !== undefined;
-              const scoreLabel = isFinished ? `${game.homeScore} : ${game.awayScore}` : "vs";
-              return (
-                <div className={game.id === selectedGameId ? "radio-game radio-game-active" : "radio-game"} key={game.id}>
-                  <button
-                    className={homeSelected ? "team-choice team-choice-active" : "team-choice"}
-                    type="button"
-                    aria-label={`${home.shortName} 응원으로 ${home.shortName} 대 ${away.shortName} 경기 선택`}
-                    onClick={() => selectGameAndTeam(game.id, game.homeTeamId)}
-                  >
-                    <i />
-                    <TeamBadge teamId={game.homeTeamId} size="sm" />
-                    <strong>{home.shortName}</strong>
-                  </button>
-                  <em>{scoreLabel}</em>
-                  <button
-                    className={awaySelected ? "team-choice team-choice-active" : "team-choice"}
-                    type="button"
-                    aria-label={`${away.shortName} 응원으로 ${home.shortName} 대 ${away.shortName} 경기 선택`}
-                    onClick={() => selectGameAndTeam(game.id, game.awayTeamId)}
-                  >
-                    <strong>{away.shortName}</strong>
-                    <TeamBadge teamId={game.awayTeamId} size="sm" />
-                    <i />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-          <label className="field-row">
-            <span>3. 응원 팀 확인</span>
-            <select className="plain-input" value={supportTeamId} onChange={(event) => setSupportTeamId(event.target.value)}>
-              {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-            </select>
-          </label>
-          <label className="textarea-field">
-            <span>4. 메모 (선택)</span>
-            <textarea value={attendanceMemo} placeholder="직관에 대한 간단한 메모를 남겨보세요." onChange={(event) => setAttendanceMemo(event.target.value)} />
-          </label>
-          <Button disabled={savingAttendance} onClick={submitAttendance}>{savingAttendance ? "저장 중" : "등록하기"}</Button>
-        </div>
-      </ModalShell>
-
-      <ModalShell open={open === "review"} title={editReview ? "후기 수정" : "후기 작성"} onClose={onClose} panelClassName="review-modal-panel">
-        <div className="form-stack">
-          <div className="photo-strip">
-            {reviewPhotos.map((photo) => (
-              <button
-                className="photo-preview-button"
-                key={photo}
-                type="button"
-                onClick={() => {
-                  setReviewPhotos((current) => current.filter((item) => item !== photo));
-                  setReviewPhotoFiles((current) => current.filter((item) => item.src !== photo));
-                }}
-              >
-                <Image alt="후기 사진" height={126} src={photo} unoptimized={photo.startsWith("blob:")} width={92} />
-              </button>
-            ))}
-            {reviewPhotos.length < 3 ? (
-              <label className="photo-add-button">
-                <Plus size={24} />추가
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(event) => {
-                    const files = Array.from(event.target.files ?? []).slice(0, 3 - reviewPhotos.length);
-                    if (files.length === 0) {
-                      return;
-                    }
-                    const previews = files.map((file) => ({ src: URL.createObjectURL(file), file }));
-                    setReviewPhotoFiles((current) => [...current, ...previews].slice(0, 3));
-                    setReviewPhotos((current) => [
-                      ...current,
-                      ...previews.map((item) => item.src)
-                    ].slice(0, 3));
-                    event.target.value = "";
-                  }}
-                />
-              </label>
-            ) : null}
-          </div>
-          {editReview && selectedReviewAttendance ? (
-            <div className="review-attendance-picker">
-              <span>직관 경기 (수정 불가)</span>
-              <div className="review-attendance-locked">
-                <span className="review-attendance-date">{selectedReviewAttendance.date}</span>
-                <div className="review-attendance-teams">
-                  <span>
-                    <TeamBadge teamId={selectedReviewAttendance.homeTeamId} size="sm" />
-                    <b>{getTeam(selectedReviewAttendance.homeTeamId).shortName}</b>
-                  </span>
-                  <span>
-                    <TeamBadge teamId={selectedReviewAttendance.awayTeamId} size="sm" />
-                    <b>{getTeam(selectedReviewAttendance.awayTeamId).shortName}</b>
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="review-attendance-picker">
-              <span>1. 직관 경기 선택</span>
-              <div className="review-attendance-list" ref={attendanceDrag.ref} onPointerDown={attendanceDrag.onPointerDown} onPointerMove={attendanceDrag.onPointerMove} onPointerUp={attendanceDrag.onPointerUp} onPointerLeave={attendanceDrag.onPointerLeave} onPointerCancel={attendanceDrag.onPointerCancel} onClickCapture={attendanceDrag.onClickCapture}>
-                {reviewableAttendances.map((attendance) => (
-                  <button
-                    className={selectedReviewAttendance?.id === attendance.id ? "review-attendance-option review-attendance-option-active" : "review-attendance-option"}
-                    key={attendance.id}
-                    type="button"
-                    onClick={() => selectReviewAttendance(attendance)}
-                  >
-                    <span className="review-attendance-date">{attendance.date}</span>
-                    <div className="review-attendance-teams">
-                      <span>
-                        <TeamBadge teamId={attendance.homeTeamId} size="sm" />
-                        <b>{getTeam(attendance.homeTeamId).shortName}</b>
-                      </span>
-                      <span>
-                        <TeamBadge teamId={attendance.awayTeamId} size="sm" />
-                        <b>{getTeam(attendance.awayTeamId).shortName}</b>
-                      </span>
-                    </div>
-                  </button>
-                ))}
-                {reviewableAttendances.length === 0 ? <p>후기를 작성할 수 있는 종료된 직관 경기가 없어요.</p> : null}
-              </div>
-            </div>
-          )}
-          <label className="textarea-field review-body-field">
-            <span className="review-body-label">{editReview ? "후기 내용" : "2. 후기 내용"}</span>
-            <textarea value={reviewBody} placeholder="오늘 경기 어땠나요? 생생한 후기를 남겨주세요!" onChange={(event) => setReviewBody(event.target.value)} />
-          </label>
-          <div className="privacy-row">
-            {[
-              { label: "전체 공개", icon: Globe2, anonAllowed: true },
-              { label: "친구 공개", icon: Users, anonAllowed: false },
-              { label: "나만 보기", icon: Lock, anonAllowed: false }
-            ].map((item) => {
-              const Icon = item.icon;
-              const disabled = isAnonymous && !item.anonAllowed;
-              return (
-                <button
-                  className={privacy === item.label ? "privacy-active" : ""}
-                  key={item.label}
-                  type="button"
-                  disabled={disabled}
-                  title={disabled ? "정식 계정 전환 시 사용 가능" : undefined}
-                  onClick={() => {
-                    if (disabled) {
-                      showToast("정식 계정으로 전환하면 사용할 수 있어요.");
-                      return;
-                    }
-                    setPrivacy(item.label);
-                  }}
-                >
-                  <Icon size={16} />{item.label}
-                </button>
-              );
-            })}
-          </div>
-          <Button disabled={savingReview} onClick={submitReview}>
-            {editReview ? (savingReview ? "수정 중" : "수정하기") : (savingReview ? "저장 중" : "등록하기")}
-          </Button>
-        </div>
-      </ModalShell>
-
-      <ModalShell open={open === "share"} title="공유하기" onClose={onClose} panelClassName="share-modal-panel">
-        <div className="share-modal-content">
-          <div className="share-card-preview" ref={shareCardRef}>
-            {/* html2canvas 호환을 위해 일반 <img> 사용 (next/image fill은 캡처가 안정적이지 않음) */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt="공유 카드 배경" src={selectedTemplate.src} crossOrigin="anonymous" />
-            <div className="share-card-overlay">
-              <p className="share-card-label">내 직관 승률</p>
-              <strong className="share-card-rate">{profile.winRate}</strong>
-              <span className="share-card-stats">{profile.wins}승 {profile.losses}패 {profile.draws}무</span>
-              <b className="share-card-team"><TeamBadge teamId={profile.mainTeamId} size="md" /> {getTeam(profile.mainTeamId).name}</b>
-              <em className="share-card-brand">오늘은 승요 <span className="share-card-ball" aria-hidden="true">⚾</span></em>
-            </div>
-          </div>
-          <div className="template-picker">
-            {templates.map((template) => {
-              const isActive = selectedTemplate.id === template.id;
-              return (
-                <button className={isActive ? "template-active" : ""} key={template.id} type="button" onClick={() => setSelectedTemplate(template)}>
-                  <span className="template-thumb">
-                    <Image alt={template.label} height={76} src={template.src} width={48} />
-                    {isActive ? <span className="template-check" aria-hidden="true">✓</span> : null}
-                  </span>
-                  <span>{template.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="share-actions">
-            <button
-              type="button"
-              className="share-action-primary"
-              disabled={isSharing}
-              onClick={async () => {
-                if (!shareCardRef.current || isSharing) return;
-                const team = getTeam(profile.mainTeamId);
-                const text = `내 직관 승률 ${profile.winRate}\n${profile.wins}승 ${profile.losses}패 ${profile.draws}무 (${team.name} 응원)\n\n오늘은 승요`;
-                const url = typeof window !== "undefined" ? window.location.origin : "";
-                const filename = `oneul-seungyo-${profile.winRate.replace(".", "")}.png`;
-
-                setIsSharing(true);
-                setShareStatus("");
-
-                try {
-                  // iOS Safari 렌더링 안정화 대기
-                  await new Promise((resolve) => setTimeout(resolve, 200));
-
-                  // 동적 import (번들 사이즈 절감)
-                  const html2canvas = (await import("html2canvas")).default;
-                  const canvas = await html2canvas(shareCardRef.current, {
-                    scale: 1.5,
-                    useCORS: true,
-                    allowTaint: false,
-                    backgroundColor: "#06101e",
-                    logging: false
-                  });
-
-                  const dataUrl = canvas.toDataURL("image/png");
-                  if (!dataUrl || dataUrl === "data:,") throw new Error("canvas 변환 실패");
-
-                  // base64 → Blob → File
-                  const byteString = atob(dataUrl.split(",")[1]);
-                  const ab = new ArrayBuffer(byteString.length);
-                  const ia = new Uint8Array(ab);
-                  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-                  const blob = new Blob([ab], { type: "image/png" });
-                  const file = new File([blob], filename, { type: "image/png" });
-
-                  // navigator.share with files (모바일 OS 공유 시트)
-                  const isMobileShare =
-                    typeof navigator !== "undefined" &&
-                    "share" in navigator &&
-                    (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-                      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
-
-                  if (isMobileShare && navigator.canShare?.({ files: [file] })) {
-                    try {
-                      await navigator.share({
-                        files: [file],
-                        title: "오늘은 승요",
-                        text: `${text}\n${url}`
-                      });
-                      setShareStatus("공유했어요!");
-                      return;
-                    } catch (err) {
-                      if ((err as Error)?.name === "AbortError") return;
-                      // fallback 으로
-                    }
-                  }
-
-                  // PC/미지원 환경: PNG 다운로드 + 텍스트 클립보드 복사
-                  const link = document.createElement("a");
-                  link.href = dataUrl;
-                  link.download = filename;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-
-                  try {
-                    await navigator.clipboard.writeText(`${text}\n${url}`);
-                    setShareStatus("이미지를 저장했고 텍스트는 클립보드에 복사됐어요.");
-                  } catch {
-                    setShareStatus("이미지를 저장했어요.");
-                  }
-                } catch (err) {
-                  console.error("share failed:", err);
-                  setShareStatus("이미지 생성에 실패했어요. 다시 시도해주세요.");
-                } finally {
-                  setIsSharing(false);
-                }
-              }}
-            >
-              <Share2 size={18} />
-              {isSharing ? "준비 중..." : "공유하기"}
-            </button>
-            <button
-              type="button"
-              className="share-action-secondary"
-              onClick={async () => {
-                const url = typeof window !== "undefined" ? window.location.origin : "";
-                try {
-                  await navigator.clipboard.writeText(url);
-                  setShareStatus("링크가 복사됐어요!");
-                } catch {
-                  setShareStatus("복사에 실패했어요.");
-                }
-              }}
-            >
-              <Link2 size={18} />
-              링크 복사
-            </button>
-          </div>
-          {shareStatus ? <p className="inline-success">{shareStatus}</p> : null}
-          <p className="share-help">
-            <span className="share-help-icon" aria-hidden="true"><Sparkles size={11} /></span>
-            공유하면 더 많은 팬들과 기록을 나눌 수 있어요.
-          </p>
-        </div>
-      </ModalShell>
-
+      <ShareCardModal open={open === "share"} onClose={onClose} profile={profile} />
     </>
   );
 }

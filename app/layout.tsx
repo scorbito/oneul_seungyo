@@ -9,6 +9,33 @@ import {
   listReviewsFromDb
 } from "@/lib/supabase/queries";
 import "./globals.css";
+import "@/styles/light-home.css";
+import "@/styles/light-auth-onboarding.css";
+import "@/styles/light-components-schedule.css";
+import "@/styles/light-rank-detail.css";
+import "@/styles/community.css";
+import "@/styles/profile-ticket.css";
+import "@/styles/modals-core-review.css";
+import "@/styles/modals-share-actions.css";
+import "@/styles/dark-core-home.css";
+import "@/styles/dark-home-more.css";
+import "@/styles/dark-schedule.css";
+import "@/styles/dark-community.css";
+import "@/styles/dark-review-modal.css";
+import "@/styles/dark-attendance-modal.css";
+import "@/styles/dark-my.css";
+import "@/styles/dark-series-attendance.css";
+import "@/styles/dark-detail-modals.css";
+import "@/styles/dark-share.css";
+import "@/styles/dark-review-detail.css";
+import "@/styles/dark-friends-settings.css";
+import "@/styles/dark-onboarding.css";
+import "@/styles/dark-login.css";
+import "@/styles/dark-ranking-anonymous.css";
+import "@/styles/dark-notices-help.css";
+import "@/styles/dark-contact-settings.css";
+import "@/styles/interactions-loading.css";
+import "@/styles/live-result.css";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oneul-seungyo.vercel.app";
 const SITE_TITLE = "오늘은 승요";

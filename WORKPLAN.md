@@ -54,19 +54,19 @@
 
 ## 4. 권장 기술 스택
 
-저장소가 현재 비어 있으므로 다음 스택을 기본으로 한다.
+초기 스캐폴딩 당시의 권장 스택은 아래와 같았고, 현재 코드베이스도 이 방향을 유지하되 Supabase/Auth/Storage, KBO 동기화, Gemini Vision, PWA, Vercel 배포 준비까지 확장된 상태다.
 
 - Next.js App Router
 - TypeScript
 - Tailwind CSS
 - lucide-react 아이콘
-- Mock data 기반 UI 목업
-- 이후 인증: NextAuth/Auth.js 또는 Supabase Auth
-- 이후 DB: PostgreSQL + Prisma 또는 Supabase
-- 이후 이미지 저장소: Supabase Storage 또는 S3 계열
-- 배포: Vercel 우선
+- Supabase Auth/DB/Storage
+- Service-role server action 패턴 (인증은 SSR client, 사용자 데이터 read/write는 admin client)
+- Gemini Vision 기반 티켓 OCR/매칭
+- KBO 일정/순위 동기화 route handler + cron
+- PWA manifest + Vercel 배포
 
-네트워크 제한이 있을 수 있으므로 패키지 설치가 막히면 사용자 승인 후 진행한다. 설치가 어려운 경우에도 최종 목표 스택은 Next.js로 유지하고, 의존성 설치 가능 시점에 이어서 진행한다.
+네트워크 제한이 있을 수 있으므로 패키지 설치가 막히면 사용자 승인 후 진행한다. 신규 의존성을 추가할 때도 최종 목표 스택은 Next.js/Supabase/Vercel 기준으로 유지한다.
 
 ## 5. 단계별 작업 계획
 
@@ -135,10 +135,10 @@ styles/
 
 리뷰어 검수:
 
-- [ ] 리뷰어 에이전트가 `data/design_brief.md`와 이 문서를 기준으로 구조/명령/어셋 정리를 검토
-- [ ] 리뷰 결과를 "리뷰 로그"에 기록
+- [x] 리뷰어 에이전트가 `data/design_brief.md`와 이 문서를 기준으로 구조/명령/어셋 정리를 검토 (2026-05-06 Phase 1-6 통합 리뷰)
+- [x] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Implemented / Reviewer Pending
+진행 상태: Completed / Reviewed
 
 ### Phase 2. 디자인 토큰과 공통 컴포넌트
 
@@ -163,10 +163,10 @@ styles/
 
 리뷰어 검수:
 
-- [ ] 리뷰어 에이전트가 KBO 로고 미사용, 디자인 토큰 일관성, 컴포넌트 재사용성을 검토
-- [ ] 리뷰 결과를 "리뷰 로그"에 기록
+- [x] 리뷰어 에이전트가 KBO 로고 미사용, 디자인 토큰 일관성, 컴포넌트 재사용성을 검토 (2026-05-06 Phase 1-6 통합 리뷰)
+- [x] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Implemented / Reviewer Pending
+진행 상태: Completed / Reviewed
 
 ### Phase 3. 홈/랜딩/온보딩 화면
 
@@ -190,10 +190,10 @@ styles/
 
 리뷰어 검수:
 
-- [ ] 리뷰어 에이전트가 이미지 시안 1번과 비교해 홈/진입 화면 유사도와 사용성을 검토
-- [ ] 리뷰 결과를 "리뷰 로그"에 기록
+- [x] 리뷰어 에이전트가 이미지 시안 1번과 비교해 홈/진입 화면 유사도와 사용성을 검토 (2026-05-06 Phase 1-6 통합 리뷰)
+- [x] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Implemented / Reviewer Pending
+진행 상태: Completed / Reviewed
 
 ### Phase 4. 일정/경기 상세/팀 순위
 
@@ -215,10 +215,10 @@ styles/
 
 리뷰어 검수:
 
-- [ ] 리뷰어 에이전트가 이미지 시안 2번과 비교해 일정/순위 UI 유사도와 정보 밀도를 검토
-- [ ] 리뷰 결과를 "리뷰 로그"에 기록
+- [x] 리뷰어 에이전트가 이미지 시안 2번과 비교해 일정/순위 UI 유사도와 정보 밀도를 검토 (2026-05-06 Phase 1-6 통합 리뷰)
+- [x] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Implemented / Reviewer Pending
+진행 상태: Completed / Reviewed (게임 상세는 Phase 8.7에서 보류)
 
 ### Phase 5. 커뮤니티/마이/설정 계열
 
@@ -242,10 +242,10 @@ styles/
 
 리뷰어 검수:
 
-- [ ] 리뷰어 에이전트가 이미지 시안 3번과 비교해 피드/마이 화면 유사도와 목록 사용성을 검토
-- [ ] 리뷰 결과를 "리뷰 로그"에 기록
+- [x] 리뷰어 에이전트가 이미지 시안 3번과 비교해 피드/마이 화면 유사도와 목록 사용성을 검토 (2026-05-06 Phase 1-6 통합 리뷰)
+- [x] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Implemented / Reviewer Pending
+진행 상태: Completed / Reviewed
 
 ### Phase 6. 모달과 공유 카드
 
@@ -269,10 +269,10 @@ styles/
 
 리뷰어 검수:
 
-- [ ] 리뷰어 에이전트가 이미지 시안 4번과 비교해 모달/공유 카드/디자인 시스템 준수 여부를 검토
-- [ ] 리뷰 결과를 "리뷰 로그"에 기록
+- [x] 리뷰어 에이전트가 이미지 시안 4번과 비교해 모달/공유 카드/디자인 시스템 준수 여부를 검토 (2026-05-06 Phase 1-6 통합 리뷰)
+- [x] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Implemented / Reviewer Pending
+진행 상태: Completed / Reviewed
 
 ### Phase 6.5. 프론트 인터랙션 완성
 
@@ -476,7 +476,7 @@ styles/
 
 - [x] 인증 방식 결정: Kakao, Google, email 중 MVP 범위 확정
 - [x] DB 연결 설정
-- [x] 마이그레이션 또는 Supabase schema 적용 — SQL/스토리지/시드/RLS 파일과 적용 순서는 [docs/phase-8-supabase-setup.md](docs/phase-8-supabase-setup.md#apply-checklist-사용자-작업)에 정리됨. 부분 적용된 schema 누락분(reviews/review_likes/review_saves/friends/friend_requests/notifications)을 [supabase/fix-reviews.sql](supabase/fix-reviews.sql)로 일괄 복구. profile_stats / verified_attendance_results view 누락분은 [supabase/fix-views.sql](supabase/fix-views.sql)로 복구
+- [x] 마이그레이션 또는 Supabase schema 적용 — 현재 기준은 `supabase/*.sql` 파일과 실제 원격 적용 상태를 따른다. 부분 적용된 schema 누락분(reviews/review_likes/review_saves/friends/friend_requests/notifications)을 [supabase/fix-reviews.sql](supabase/fix-reviews.sql)로 일괄 복구. profile_stats / verified_attendance_results view 누락분은 [supabase/fix-views.sql](supabase/fix-views.sql)로 복구
 - [x] **mock data 완전 제거** — `lib/mock/` 폴더 삭제, AppState/HomeScreen/ScheduleScreen/CommunityScreen에서 mock import 제거, `Review` 타입을 `lib/types/domain.ts`로 이동
 - [x] **RLS-JWT 우회 패턴 정착** — `@supabase/ssr` 0.10이 PostgREST에 JWT를 일관되게 못 넘기는 이슈 회피. 인증은 SSR client(`auth.getUser`)로 확인하고, DB 읽기/쓰기는 `createSupabaseAdminClient()`(service role)로 수행. `lib/actions/attendance.ts`, `lib/actions/review.ts`, `lib/actions/onboarding.ts`, `lib/supabase/queries.ts`의 모든 사용자 데이터 함수에 적용
 - [x] auth.users `on_auth_user_created` 트리거 충돌 제거 (회원가입 "Database error saving new user" 원인)
@@ -518,7 +518,7 @@ styles/
 - [x] 후기 자동 부착 텍스트("오늘도 승요! 직관 후기" 제목, "#직관후기/#public" 태그, "응원석의 열기..." 추가 텍스트) 모두 제거
 - [x] 후기 게임 라벨 한글화 (`KIWOOM 6 : 16 DOOSAN` → `키움 6 : 16 두산`)
 - [x] 후기 상세 페이지 `app/reviews/[id]/page.tsx`를 server component로 전환, `getReviewByIdFromDb`로 직접 조회
-- [x] 게임 상세 페이지 `app/games/[id]/page.tsx`를 server component로 전환, DB에서 game 조회
+- [x] 게임 상세 페이지 상태 정리 — 한때 DB 조회 server component로 전환했으나 Phase 8.7 다크 리디자인에서 기능을 보류했고, 현재 `app/games/[id]/page.tsx`는 `/schedule`로 redirect한다
 - [x] Supabase Storage 도메인 `next.config.mjs` `images.remotePatterns` 등록
 - [x] 환경변수 동적 접근 버그 수정 — `process.env[key]`는 브라우저에서 undefined가 되므로 정적 `process.env.NEXT_PUBLIC_*` 참조로 변경
 - [x] 홈/마이/일정/커뮤니티 화면 데이터 흐름 정리
@@ -893,7 +893,7 @@ styles/
 - [ ] 익명 → 정식 업그레이드 시 데이터 손실 / 중복 / 권한 누수 케이스 점검
 - [ ] 봇/스팸 익명 user 누적 위험 평가 + 30일 자동 정리 검증
 
-진행 상태: Completed (Supabase Anonymous sign-ins 활성화 + `anonymous-policies.sql` 적용 완료, 익명 로그인 흐름 수동 검증 통과)
+진행 상태: Implemented / Manual Upgrade QA Pending (Supabase Anonymous sign-ins 활성화 + `anonymous-policies.sql` 적용 완료, 익명 로그인 흐름 수동 검증 통과. 이메일/OAuth 정식 계정 업그레이드의 user.id 유지 검증은 운영 redirect 환경에서 추가 확인 필요)
 
 ### Phase 9. 반응형/접근성/시각 QA
 
@@ -995,26 +995,28 @@ styles/
 
 작업:
 
-- [ ] 환경변수 목록 정리
+- [ ] 환경변수 목록 정리 (`.env.example`, Vercel env, cron secret 기준 최종 표 필요)
 - [ ] production build 확인
-- [ ] Vercel 배포 설정
+- [x] Vercel 배포 설정 일부 완료 — `CRON_SECRET` 운영 환경변수 재등록, Production redeploy, cron route 인증 복구는 2026-05-09 로그 기준 완료
 - [ ] DB migration/seed 절차 문서화
 - [ ] 스토리지 CORS/권한 정책 점검
-- [ ] Open Graph / 공유 메타데이터 설정
+- [x] Open Graph / 공유 메타데이터 설정 — `app/layout.tsx`, `app/sitemap.ts`, `app/robots.ts`, PWA `app/manifest.ts` 기준 구현 완료
+- [x] PWA/홈 화면 추가 기반 정리 — standalone manifest, apple mobile web app 메타, safe-area 보정 적용
+- [x] 공유 카드 실제 이미지 공유 — `html2canvas` 기반 Web Share API + 다운로드 fallback 구현
 - [ ] 에러/로딩/빈 상태 최종 점검
 
 테스트:
 
 - [ ] 배포 환경 build 성공
-- [ ] 배포 URL에서 주요 플로우 확인
-- [ ] 모바일 실기기 또는 모바일 브라우저 viewport 확인
+- [ ] 배포 URL에서 주요 플로우 확인 (일부 실측 로그 있음. 최종 회귀 체크 필요)
+- [ ] 모바일 실기기 또는 모바일 브라우저 viewport 확인 (iOS standalone 일부 확인. 전체 라우트 QA 필요)
 
 리뷰어 검수:
 
 - [ ] 리뷰어 에이전트가 배포 설정, 환경변수 누락, 공개 권한 리스크를 검토
 - [ ] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Not Started
+진행 상태: In Progress / MVP Launch Prep Partial
 
 ### Phase 11. 인수 문서와 마무리
 
@@ -1023,6 +1025,7 @@ styles/
 작업:
 
 - [ ] README 업데이트: 실행, 빌드, 주요 폴더, 디자인 기준
+- [x] WORKPLAN 정합성 1차 정리 — 실제 코드 기준으로 기술 스택, 게임 상세 보류 상태, Phase 8.9 수동 QA 대기, Phase 10 진행 상태를 갱신
 - [ ] 구현 화면 목록 갱신
 - [ ] 남은 TODO 정리
 - [ ] 알려진 제한사항 기록
@@ -1038,7 +1041,7 @@ styles/
 - [ ] 리뷰어 에이전트가 문서와 실제 구현 상태가 맞는지 확인
 - [ ] 리뷰 결과를 "리뷰 로그"에 기록
 
-진행 상태: Not Started
+진행 상태: In Progress / WORKPLAN 정합성 1차 정리 완료
 
 ## 6. 병렬 작업 전략
 
@@ -1091,25 +1094,25 @@ styles/
 
 | Phase | 상태 | 담당 | 마지막 업데이트 |
 |---|---|---|---|
-| Phase 1. 프로젝트 스캐폴딩 | Implemented / Reviewer Pending | Codex | 2026-05-05 |
-| Phase 2. 디자인 토큰/공통 컴포넌트 | Implemented / Reviewer Pending | Codex | 2026-05-05 |
-| Phase 3. 홈/랜딩/온보딩 | Implemented / Reviewer Pending | Codex | 2026-05-05 |
-| Phase 4. 일정/경기 상세/팀 순위 | Implemented / Reviewer Pending | Codex | 2026-05-05 |
-| Phase 5. 커뮤니티/마이/설정 | Implemented / Reviewer Pending | Codex | 2026-05-05 |
-| Phase 6. 모달/공유 카드 | Implemented / Reviewer Pending | Codex | 2026-05-05 |
+| Phase 1. 프로젝트 스캐폴딩 | Completed / Reviewed | Codex | 2026-05-06 |
+| Phase 2. 디자인 토큰/공통 컴포넌트 | Completed / Reviewed | Codex | 2026-05-06 |
+| Phase 3. 홈/랜딩/온보딩 | Completed / Reviewed | Codex | 2026-05-06 |
+| Phase 4. 일정/경기 상세/팀 순위 | Completed / Reviewed (게임 상세는 Phase 8.7에서 보류) | Codex | 2026-05-08 |
+| Phase 5. 커뮤니티/마이/설정 | Completed / Reviewed | Codex | 2026-05-06 |
+| Phase 6. 모달/공유 카드 | Completed / Reviewed | Codex | 2026-05-06 |
 | Phase 6.5. 프론트 인터랙션 완성 | Completed / QA Passed | Codex + Subagents | 2026-05-06 |
 | Phase 6.8. 추가 수정사항 | Completed / QA Passed | Codex | 2026-05-06 |
 | Phase 7. 서비스 데이터 모델/API 설계 | Implemented / Reviewer Pending | Codex | 2026-05-06 |
-| Phase 8. 인증/DB/스토리지 연동 | Implemented / Reviewer Pending | Codex | 2026-05-07 |
-| Phase 8.5. 외부 데이터 연동 | Implemented / Reviewer Pending | Codex | 2026-05-07 |
+| Phase 8. 인증/DB/스토리지 연동 | Implemented / Protected-route QA Pending | Codex | 2026-05-07 |
+| Phase 8.5. 외부 데이터 연동 | Implemented / Vercel Cron QA Pending | Codex | 2026-05-09 |
 | Phase 8.6. 후기 댓글 기능 | Completed | Codex | 2026-05-08 |
 | Phase 8.7. 다크 컨셉 전면 리디자인 | Completed | Codex | 2026-05-08 |
-| Phase 8.8. 소셜 로그인(Google + 카카오) + 인증/온보딩 다크 리디자인 | Implemented / Reviewer Pending | Codex | 2026-05-08 |
-| Phase 8.9. 익명 로그인 + 정식 계정 업그레이드 | Completed | Codex | 2026-05-08 |
-| Phase 9. 반응형/접근성/시각 QA | Partial (반응형만) | Codex | 2026-05-08 |
-| Phase 9.5. 운영 페이지 (공지·이용안내·문의·약관) | Implemented (SQL 적용 대기) | Codex | 2026-05-08 |
-| Phase 10. 배포 준비 | Not Started | TBD | 2026-05-06 |
-| Phase 11. 인수 문서/마무리 | Not Started | TBD | 2026-05-06 |
+| Phase 8.8. 소셜 로그인(Google + 카카오) + 인증/온보딩 다크 리디자인 | Implemented / OAuth Manual QA Passed, Reviewer Pending | Codex | 2026-05-08 |
+| Phase 8.9. 익명 로그인 + 정식 계정 업그레이드 | Implemented / Manual Upgrade QA Pending | Codex | 2026-05-09 |
+| Phase 9. 반응형/접근성/시각 QA | Partial (반응형/PWA 일부 완료, 접근성·색대비·최종 lint/build 대기) | Codex | 2026-05-09 |
+| Phase 9.5. 운영 페이지 (공지·이용안내·문의·약관) | Implemented / Supabase Notice QA Pending | Codex | 2026-05-09 |
+| Phase 10. 배포 준비 | In Progress / MVP Launch Prep Partial | Codex | 2026-05-09 |
+| Phase 11. 인수 문서/마무리 | In Progress / WORKPLAN 정합성 1차 정리 완료 | Codex | 2026-05-09 |
 
 ## 9. 리뷰 로그
 
@@ -1156,6 +1159,24 @@ styles/
   - 실제 API 연결 전 모바일 실사용 클릭 QA를 계속 진행한다.
   - 태블릿/데스크톱 확장 레이아웃은 Phase 9에서 처리한다.
 
+### 2026-05-09 WORKPLAN 정합성 리뷰
+- Reviewer: Codex
+- 범위: WORKPLAN 현재 상태표, Phase 8/8.7/8.9 상충 기록, 실제 코드 상태 확인
+- 테스트/확인:
+  - `app/games/[id]/page.tsx`가 현재 `/schedule` redirect임을 확인
+  - `lib/actions/auth.ts`에 익명 로그인/계정 연동 코드(`signInAnonymously`, `linkIdentity`, `linkAnonymousToEmailAction`)가 있음을 확인
+  - `lib/actions/ticket.ts`, `lib/actions/attendance.ts`, `components/domain/AppModals.tsx`에 티켓 사후 인증, 경기 종료 확인, `html2canvas` 공유 카드 기능이 있음을 확인
+  - `app/manifest.ts`, 공지 query/page, `AppShell.headerAction` 존재 확인
+- 결론: Pass with Notes
+- Findings:
+  - P1: 진행 현황 요약이 최신 작업 로그와 어긋나 Phase 1-6, 8.5, 8.9, 9.5, 10, 11 상태를 현재 기준으로 갱신함
+  - P1: 게임 상세 페이지가 DB 조회 완료와 redirect 보류로 상충되어 현재 redirect 상태로 문구를 정리함
+  - P2: Phase 8.9는 익명 로그인 자체는 검증됐지만 이메일/OAuth 업그레이드 수동 검증이 남아 있어 `Manual Upgrade QA Pending`으로 조정함
+  - P2: 초기 스캐폴딩 전제 문구가 남아 있어 현재 Next.js/Supabase/Vercel/Gemini/KBO 동기화 스택 설명으로 갱신함
+- 후속 조치:
+  - Phase 9 잔여 QA(`lint`, `build`, 색 대비, focus, 모바일 실기기)를 완료한 뒤 Phase 10 상태를 다시 갱신한다.
+  - 초기 Supabase 적용 문서 2종은 현재 상태와 달라 혼란을 줄 수 있어 삭제하고, 실제 기준은 `docs/product-spec.md`, `supabase/*.sql`, `lib/actions/*`, `lib/supabase/*`로 단순화한다.
+
 ## 10. 의사결정 로그
 
 - 2026-05-05: KBO 구단 로고는 사용하지 않는다. 팀명/팀 컬러/이니셜 기반의 추상 배지를 사용한다.
@@ -1166,10 +1187,10 @@ styles/
 - 2026-05-05: Phase 4-6 범위의 일정/경기상세/팀순위/커뮤니티/마이/설정/모달 목업을 구현했다. 실제 API 연결은 Phase 7 이후로 보류한다.
 - 2026-05-06: 실제 API 연결 전에 mock data/client state 기반 프론트 인터랙션을 완성하는 Phase 6.5를 추가한다.
 - 2026-05-06: 앱의 최우선 개인화 기준은 사용자가 선택한 `내 팀`으로 둔다. 홈 승률 카드, 마이 프로필, 일정 우선 노출, 프로필 편집의 팀 변경 흐름에 반영하며, 실제 서비스에서는 팀 변경을 하루 1회로 제한한다.
-- 2026-05-06: Phase 7은 Supabase 기준으로 진행한다. 산출물은 `supabase/schema.sql`, `lib/types/api-contracts.ts`, `docs/phase-7-data-contract.md`에 분리해 기록한다.
+- 2026-05-06: Phase 7은 Supabase 기준으로 진행한다. 산출물은 당시 `supabase/schema.sql`, `lib/types/api-contracts.ts`, Phase 7 데이터 계약 문서에 분리해 기록했다. 현재 Phase 7 별도 문서는 삭제했고, 실제 기준은 `supabase/*.sql`과 구현 코드다.
 - 2026-05-06: Phase 8을 시작했다. Supabase SDK, client/server/middleware, seed/storage SQL, read query와 일부 서버 액션 경계를 추가했다. 원격 Supabase SQL 적용은 사용자가 대시보드에서 진행해야 한다.
 - 2026-05-06: Phase 7에서 전략만 정의되어 있던 KBO 일정/순위 자동 동기화와 티켓 Vision 인증을 별도 단계로 분리해 Phase 8.5(외부 데이터 연동)를 신설한다. 외부 API 연동, cron 스케줄링, 부정 방지 정책을 한 곳에서 관리한다.
-- 2026-05-06: Phase 8 코드 작업을 마무리했다. Supabase 이메일 확인 redirect를 처리하는 `/auth/callback` route handler를 추가하고, `docs/phase-8-supabase-setup.md`에 사용자 적용 체크리스트(SQL 4종 실행 순서, Auth URL 등록, env, 1회 회원가입 검증)를 정리했다. `npm run lint`/`npm run build` 모두 통과. 남은 항목은 사용자가 Supabase 대시보드에서 SQL을 적용하고 회원가입~후기 작성 4종 플로우를 실측 확인하는 것뿐이다.
+- 2026-05-06: Phase 8 코드 작업을 마무리했다. Supabase 이메일 확인 redirect를 처리하는 `/auth/callback` route handler를 추가하고, 당시 Supabase 적용 체크리스트(SQL 4종 실행 순서, Auth URL 등록, env, 1회 회원가입 검증)를 별도 문서로 정리했다. 해당 초기 문서는 2026-05-09에 삭제했고, 현재 기준은 `supabase/*.sql`, `.env.example`, 실제 구현 코드다. `npm run lint`/`npm run build` 모두 통과. 남은 항목은 사용자가 Supabase 대시보드에서 SQL을 적용하고 회원가입~후기 작성 4종 플로우를 실측 확인하는 것뿐이었다.
 - 2026-05-07: Phase 8 실측 라운드를 마쳤다. 발견된 이슈들과 해결:
   - `auth.users.on_auth_user_created` 트리거가 회원가입을 막는 원인이라 제거.
   - schema.sql이 attendances 이후로만 적용되어 있어서 `reviews`/`review_likes`/`review_saves`/`friends`/`friend_requests`/`notifications` 6개 테이블 + `profile_stats`/`verified_attendance_results` view 누락. `supabase/fix-reviews.sql` + `supabase/fix-views.sql`로 일괄 복구.
