@@ -128,6 +128,10 @@ export async function signInWithOAuthAction(provider: OAuthProvider) {
   const supabase = createSupabaseServerClient();
   const origin = getRequestOrigin();
 
+  // 카카오는 비즈 앱 인증 전이라 account_email 동의 항목을 받을 수 없음.
+  // → email 빼고 닉네임/프로필 사진만 요청.
+  const scopes = provider === "kakao" ? "profile_nickname profile_image" : undefined;
+
   // 현재 익명 세션이 있으면 link 흐름, 아니면 일반 sign in
   const { data: authData } = await supabase.auth.getUser();
   const isAnonymous = Boolean(authData?.user?.is_anonymous);
@@ -135,7 +139,7 @@ export async function signInWithOAuthAction(provider: OAuthProvider) {
   if (isAnonymous) {
     const { data, error } = await supabase.auth.linkIdentity({
       provider,
-      options: { redirectTo: `${origin}/auth/callback?upgrade=1` }
+      options: { redirectTo: `${origin}/auth/callback?upgrade=1`, scopes }
     });
     if (error || !data?.url) {
       redirect(`/login?error=${encodeURIComponent(error?.message ?? "계정 연동에 실패했습니다.")}`);
@@ -146,7 +150,8 @@ export async function signInWithOAuthAction(provider: OAuthProvider) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${origin}/auth/callback`
+      redirectTo: `${origin}/auth/callback`,
+      scopes
     }
   });
 
