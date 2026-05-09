@@ -58,6 +58,71 @@
   filter: brightness(1.05);
 }
 
+.phone-frame-dark .community-sort {
+  position: relative;
+  display: inline-flex;
+  margin-left: 2px;
+}
+
+.phone-frame-dark .community-sort-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--hd-border-soft);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--hd-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.phone-frame-dark .community-sort-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--hd-text-primary);
+}
+
+.phone-frame-dark .community-sort-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 140px;
+  background: #122340;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 20;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+.phone-frame-dark .community-sort-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--hd-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 6px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.phone-frame-dark .community-sort-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.phone-frame-dark .community-sort-item-active {
+  color: var(--hd-accent-orange);
+}
+
 /* Review feed */
 .phone-frame-dark .review-feed {
   display: flex;
@@ -355,7 +420,8 @@
 }
 
 .phone-frame-dark .review-card .review-actions button,
-.phone-frame-dark .review-card .review-actions span {
+.phone-frame-dark .review-card .review-actions span,
+.phone-frame-dark .review-card .review-actions a {
   background: transparent;
   border: 0;
   padding: 0;
@@ -366,6 +432,7 @@
   align-items: center;
   gap: 4px;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .phone-frame-dark .review-card .review-actions button:last-child,

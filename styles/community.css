@@ -145,6 +145,7 @@
 
 .review-actions span,
 .review-actions button,
+.review-actions a,
 .review-detail-actions button {
   border: 0;
   background: transparent;
@@ -154,6 +155,7 @@
   color: #334155;
   font-size: 13px;
   font-weight: 850;
+  text-decoration: none;
 }
 
 .review-actions button {

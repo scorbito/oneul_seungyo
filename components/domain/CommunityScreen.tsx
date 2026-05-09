@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PenLine } from "lucide-react";
+import { ArrowUpDown, Check, PenLine } from "lucide-react";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { AppShell } from "@/components/layout/AppShell";
 import { ReviewCard } from "@/components/domain/ReviewCard";
@@ -10,11 +10,17 @@ import { useAppState } from "@/lib/state/AppState";
 import type { Review } from "@/lib/types/domain";
 
 type FeedFilter = "all" | "myTeam" | "friends";
+type SortMode = "createdAt" | "gameDate";
 
 const filters: { id: FeedFilter; label: string }[] = [
   { id: "all", label: "전체" },
   { id: "myTeam", label: "내팀" },
   { id: "friends", label: "친구" }
+];
+
+const sortOptions: { id: SortMode; label: string }[] = [
+  { id: "createdAt", label: "작성 날짜순" },
+  { id: "gameDate", label: "경기 날짜순" }
 ];
 
 const friendAuthorNames = ["야구광이123", "승요팬", "불꽃직관"];
@@ -28,6 +34,8 @@ type CommunityScreenProps = {
 export function CommunityScreen({ dbReviews = [] }: CommunityScreenProps) {
   const { reviews: localReviews, profile, likedReviewIds, savedReviewIds, toggleLike, toggleSave } = useAppState();
   const [activeFilter, setActiveFilter] = useState<FeedFilter>("all");
+  const [sortMode, setSortMode] = useState<SortMode>("createdAt");
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [modal, setModal] = useState<ModalKind>(null);
 
   // dbReviews가 있으면 DB 모드(무한 스크롤). 없으면 mock 모드.
@@ -40,14 +48,40 @@ export function CommunityScreen({ dbReviews = [] }: CommunityScreenProps) {
   const sourceReviews = isDbMode ? feed : localReviews;
 
   const filteredReviews = useMemo(() => {
+    let list: Review[];
     if (activeFilter === "myTeam") {
-      return sourceReviews.filter((review) => review.teamId === profile.mainTeamId);
+      list = sourceReviews.filter((review) => review.teamId === profile.mainTeamId);
+    } else if (activeFilter === "friends") {
+      list = sourceReviews.filter((review) => friendAuthorNames.includes(review.author));
+    } else {
+      list = sourceReviews;
     }
-    if (activeFilter === "friends") {
-      return sourceReviews.filter((review) => friendAuthorNames.includes(review.author));
+    if (sortMode === "gameDate") {
+      // 경기 날짜순(최신 경기부터). 경기 정보가 없으면 뒤로 보냄.
+      return [...list].sort((a, b) => {
+        const da = a.game?.date ?? "";
+        const db = b.game?.date ?? "";
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return db.localeCompare(da);
+      });
     }
-    return sourceReviews;
-  }, [activeFilter, sourceReviews, profile.mainTeamId]);
+    // 기본: 서버에서 작성 날짜 내림차순으로 받아오므로 그대로 사용
+    return list;
+  }, [activeFilter, sourceReviews, profile.mainTeamId, sortMode]);
+
+  useEffect(() => {
+    if (!sortMenuOpen) return;
+    const handler = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (!target?.closest(".community-sort")) {
+        setSortMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [sortMenuOpen]);
 
   useEffect(() => {
     if (!isDbMode || !hasMore || loadingMore) return;
@@ -96,6 +130,41 @@ export function CommunityScreen({ dbReviews = [] }: CommunityScreenProps) {
               {filter.label}
             </button>
           ))}
+          <div className="community-sort">
+            <button
+              aria-label="정렬 방식 선택"
+              aria-haspopup="menu"
+              aria-expanded={sortMenuOpen}
+              className="community-sort-button"
+              onClick={() => setSortMenuOpen((open) => !open)}
+              type="button"
+            >
+              <ArrowUpDown size={16} />
+            </button>
+            {sortMenuOpen ? (
+              <div className="community-sort-menu" role="menu">
+                {sortOptions.map((option) => {
+                  const active = sortMode === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={active}
+                      className={active ? "community-sort-item community-sort-item-active" : "community-sort-item"}
+                      onClick={() => {
+                        setSortMode(option.id);
+                        setSortMenuOpen(false);
+                      }}
+                    >
+                      <span>{option.label}</span>
+                      {active ? <Check size={14} strokeWidth={3} /> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
         </div>
         <button className="community-write-button" type="button" onClick={() => setModal("review")}>
           <PenLine size={16} />

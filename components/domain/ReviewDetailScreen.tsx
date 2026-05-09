@@ -34,6 +34,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const carouselDragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const commentsSectionRef = useRef<HTMLElement | null>(null);
   const review = dbReview ?? reviews.find((item) => item.id === id);
 
   const isReviewOwner = Boolean(currentUserId && review?.ownerId && currentUserId === review.ownerId);
@@ -49,6 +50,23 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [moreOpen]);
+
+  // URL 해시가 #comments 인 경우 댓글 섹션으로 스크롤.
+  // .app-scroll 이 자체 스크롤 컨테이너라 브라우저 기본 해시 스크롤이 불안정하므로
+  // scrollIntoView 를 직접 호출. 이미지 로딩 후 레이아웃이 변하는 경우를 대비해 두 번 호출.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#comments") return;
+    const scrollToComments = () => {
+      commentsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    const t1 = window.setTimeout(scrollToComments, 50);
+    const t2 = window.setTimeout(scrollToComments, 500);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, []);
 
   if (!review) {
     return (
@@ -309,7 +327,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
         </div>
       </article>
 
-      <section className="comments-section">
+      <section ref={commentsSectionRef} id="comments" className="comments-section">
         <h2 className="comments-heading">댓글 ({comments.length})</h2>
         <ul className="comments-list">
           {comments.length === 0 ? (

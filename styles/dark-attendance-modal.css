@@ -109,6 +109,7 @@
   border: 1px solid var(--hd-border-soft);
   border-radius: 10px;
   color: var(--hd-text-primary);
+  color-scheme: dark;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
@@ -124,6 +125,13 @@
 .phone-frame-dark .attendance-modal-panel input[type="date"].plain-input::-webkit-calendar-picker-indicator {
   filter: invert(1) brightness(0.9);
   cursor: pointer;
+}
+
+/* select 드롭다운 옵션 — OS 기본 위젯이 라이트 테마로 떠서 흰 배경/흰 글씨 충돌이
+   생기는 문제를 막기 위해 다크 톤으로 명시. */
+.phone-frame-dark .attendance-modal-panel select.plain-input option {
+  background: #122340;
+  color: var(--hd-text-primary);
 }
 
 /* Game/team picker rows */

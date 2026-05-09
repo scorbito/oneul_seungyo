@@ -105,7 +105,9 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
           <Heart fill={liked ? "currentColor" : "none"} size={18} />
           {likeCount}
         </button>
-        <span><MessageCircle size={18} />{review.comments}</span>
+        <Link className="review-comment-link" href={`/reviews/${review.id}#comments`} prefetch aria-label="댓글 보기">
+          <MessageCircle size={18} />{review.comments}
+        </Link>
         <span><Send size={18} /></span>
         <button
           aria-label={saved ? "저장 취소" : "저장"}

@@ -28,8 +28,6 @@ type AttendanceModalProps = {
   selectedGameId: string;
   supportTeamId: string;
   setSupportTeamId: (value: string) => void;
-  attendanceMemo: string;
-  setAttendanceMemo: (value: string) => void;
   savingAttendance: boolean;
   onTicketFileChange: (file: File | null) => void;
   onSelectGameAndTeam: (gameId: string, teamId: string) => void;
@@ -48,8 +46,6 @@ export function AttendanceModal({
   selectedGameId,
   supportTeamId,
   setSupportTeamId,
-  attendanceMemo,
-  setAttendanceMemo,
   savingAttendance,
   onTicketFileChange,
   onSelectGameAndTeam,
@@ -126,10 +122,6 @@ export function AttendanceModal({
           <select className="plain-input" value={supportTeamId} onChange={(event) => setSupportTeamId(event.target.value)}>
             {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
           </select>
-        </label>
-        <label className="textarea-field">
-          <span>4. 메모 (선택)</span>
-          <textarea value={attendanceMemo} placeholder="직관에 대한 간단한 메모를 남겨보세요." onChange={(event) => setAttendanceMemo(event.target.value)} />
         </label>
         <Button disabled={savingAttendance} onClick={onSubmit}>{savingAttendance ? "저장 중" : "등록하기"}</Button>
       </div>

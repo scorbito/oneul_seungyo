@@ -34,7 +34,6 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [selectedGameId, setSelectedGameId] = useState(games[0]?.id ?? "");
   const [supportTeamId, setSupportTeamId] = useState("lg");
-  const [attendanceMemo, setAttendanceMemo] = useState("");
   const [ticketFileName, setTicketFileName] = useState("");
   const [processingTicket, setProcessingTicket] = useState(false);
   // Vision으로 미리 분석된 티켓 정보. 등록 시 hash dedup + ticket 인증 흐름에 사용.
@@ -225,8 +224,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
       supportTeamId,
       score: selectedGame.status === "finished" ? `${selectedGame.homeScore ?? 0} : ${selectedGame.awayScore ?? 0}` : "경기전",
       result: getAttendanceResult(selectedGame, supportTeamId),
-      verified: Boolean(ticketFileName),
-      memo: attendanceMemo
+      verified: Boolean(ticketFileName)
     };
 
     setSavingAttendance(true);
@@ -236,8 +234,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
         const result = await registerAttendanceFromTicket({
           imageBase64: ticketPreview.imageBase64,
           mimeType: ticketPreview.mimeType,
-          supportTeamId,
-          memo: attendanceMemo
+          supportTeamId
         });
         if (!result.ok) {
           showToast(result.reason);
@@ -252,8 +249,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
           date: attendance.date,
           homeTeamId: attendance.homeTeamId,
           awayTeamId: attendance.awayTeamId,
-          supportTeamId,
-          memo: attendanceMemo
+          supportTeamId
         });
         addAttendance(attendance);
         showToast("직관을 DB에 저장했어요.");
@@ -270,7 +266,6 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
       }
     }
     setSavingAttendance(false);
-    setAttendanceMemo("");
     setTicketFileName("");
     setTicketPreview(null);
     setOpen(null);
@@ -369,8 +364,6 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
         selectedGameId={selectedGameId}
         supportTeamId={supportTeamId}
         setSupportTeamId={setSupportTeamId}
-        attendanceMemo={attendanceMemo}
-        setAttendanceMemo={setAttendanceMemo}
         savingAttendance={savingAttendance}
         onTicketFileChange={handleTicketFileChange}
         onSelectGameAndTeam={selectGameAndTeam}
