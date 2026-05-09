@@ -37,12 +37,14 @@ button {
 }
 
 /* iOS Safari는 input/textarea/select의 font-size가 16px 미만일 때 포커스 시
-   화면을 자동 확대합니다. 모바일에서만 16px로 강제하여 줌인을 방지합니다. */
+   화면을 자동 확대합니다. 모바일에서만 16px로 강제하여 줌인을 방지합니다.
+   다중 클래스 셀렉터(예: .phone-frame-dark .review-modal-panel .textarea-field textarea)가
+   기본 font-size를 13px 등으로 덮어쓰므로 !important 로 우선순위를 강제합니다. */
 @media (max-width: 480px) {
   input,
   textarea,
   select {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 

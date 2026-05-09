@@ -91,24 +91,6 @@ export function MyScreen() {
         ) : null}
         <button type="button" className="profile-edit-btn" onClick={() => setEditing(true)}>프로필 편집</button>
       </Card>
-      <Card className="stats-card">
-        <h2>내 직관 통계</h2>
-        <div className="stat-grid">
-          <span>
-            <em><CalendarDays size={14} />직관 경기</em>
-            <b>{attendances.length}경기</b>
-            <i>(인증 {attendances.filter((item) => item.verified).length})</i>
-          </span>
-          <span>
-            <em><Trophy size={14} />승리</em>
-            <b>{profile.wins}경기</b>
-          </span>
-          <span>
-            <em><TrendingUp size={14} />승률</em>
-            <b>{profile.winRate}</b>
-          </span>
-        </div>
-      </Card>
       <section className="menu-list">
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -127,6 +109,24 @@ export function MyScreen() {
           );
         })}
       </section>
+      <Card className="stats-card">
+        <h2>내 직관 통계</h2>
+        <div className="stat-grid">
+          <span>
+            <em><CalendarDays size={14} />직관 경기</em>
+            <b>{attendances.length}경기</b>
+            <i>(인증 {attendances.filter((item) => item.verified).length})</i>
+          </span>
+          <span>
+            <em><Trophy size={14} />승리</em>
+            <b>{profile.wins}경기</b>
+          </span>
+          <span>
+            <em><TrendingUp size={14} />승률</em>
+            <b>{profile.winRate}</b>
+          </span>
+        </div>
+      </Card>
       <ModalShell open={editing} title="프로필 편집" onClose={() => setEditing(false)} panelClassName="profile-modal-panel">
         <div className="form-stack">
           <div className="profile-avatar-edit">
