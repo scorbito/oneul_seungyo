@@ -14,9 +14,11 @@ export {
 } from "@/lib/supabase/query-parts/attendances";
 
 export {
+  getCurrentUserReviewReactionsFromDb,
   getReviewByIdFromDb,
   listCommentsByReviewId,
-  listReviewsFromDb
+  listReviewsFromDb,
+  listSavedReviewsFromDb
 } from "@/lib/supabase/query-parts/reviews";
 
 export {

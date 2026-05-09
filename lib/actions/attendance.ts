@@ -320,10 +320,6 @@ export async function finalizeAttendanceAction(attendanceId: string): Promise<Fi
   else if (myScore < opponentScore) result = "lose";
   else result = "draw";
 
-  revalidatePath("/");
-  revalidatePath("/my");
-  revalidatePath("/my/attendances");
-
   return {
     ok: true,
     result,
@@ -335,4 +331,3 @@ export async function finalizeAttendanceAction(attendanceId: string): Promise<Fi
     stadium: game.stadium
   };
 }
-

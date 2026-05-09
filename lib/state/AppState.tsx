@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Review, UserProfile } from "@/lib/types/domain";
 import type { ProfileStats, UserProfileRecord } from "@/lib/types/api-contracts";
+import { toggleReviewLikeAction, toggleReviewSaveAction } from "@/lib/actions/reviewReactions";
 
 export type AttendanceRecord = {
   id: string;
@@ -120,9 +121,11 @@ type AppStateProviderProps = {
   initialAttendances?: AttendanceRecord[];
   initialReviews?: Review[];
   initialIsAnonymous?: boolean;
+  initialLikedReviewIds?: string[];
+  initialSavedReviewIds?: string[];
 };
 
-export function AppStateProvider({ children, initialProfile, initialStats, initialAttendances, initialReviews, initialIsAnonymous = false }: AppStateProviderProps) {
+export function AppStateProvider({ children, initialProfile, initialStats, initialAttendances, initialReviews, initialIsAnonymous = false, initialLikedReviewIds = [], initialSavedReviewIds = [] }: AppStateProviderProps) {
   const isAuthed = Boolean(initialProfile);
   const [attendances, setAttendances] = useState<AttendanceRecord[]>(
     (initialAttendances ?? []).map(normalizeAttendance)
@@ -150,8 +153,16 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
     });
   }, [initialProfile?.nickname, initialProfile?.mainTeamId, initialProfile?.avatarImageUrl]);
   const [dbStats] = useState<ProfileStats | null>(initialStats ?? null);
-  const [likedReviewIds, setLikedReviewIds] = useState<string[]>([]);
-  const [savedReviewIds, setSavedReviewIds] = useState<string[]>([]);
+  const [likedReviewIds, setLikedReviewIds] = useState<string[]>(initialLikedReviewIds);
+  const [savedReviewIds, setSavedReviewIds] = useState<string[]>(initialSavedReviewIds);
+
+  // SSR 으로 받은 초기 reactions가 변경되면 (router.refresh) 동기화
+  useEffect(() => {
+    setLikedReviewIds(initialLikedReviewIds);
+  }, [initialLikedReviewIds.join(",")]);
+  useEffect(() => {
+    setSavedReviewIds(initialSavedReviewIds);
+  }, [initialSavedReviewIds.join(",")]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     initialProfile?.notificationsEnabled ?? true
   );
@@ -233,10 +244,33 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
         showToast("후기를 삭제했어요.");
       },
       toggleLike: (id) => {
-        setLikedReviewIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+        // 낙관적 업데이트 → server action → 실패 시 롤백
+        const wasLiked = likedReviewIds.includes(id);
+        setLikedReviewIds((current) => wasLiked ? current.filter((item) => item !== id) : [...current, id]);
+        // 카운트 ±1 도 같이 (review.likes 는 props 라 setReviews 로 갱신)
+        setReviews((current) =>
+          current.map((review) =>
+            review.id === id ? { ...review, likes: Math.max(0, review.likes + (wasLiked ? -1 : 1)) } : review
+          )
+        );
+        toggleReviewLikeAction(id).catch((err) => {
+          // 롤백
+          setLikedReviewIds((current) => wasLiked ? [...current, id] : current.filter((item) => item !== id));
+          setReviews((current) =>
+            current.map((review) =>
+              review.id === id ? { ...review, likes: Math.max(0, review.likes + (wasLiked ? 1 : -1)) } : review
+            )
+          );
+          showToast(err instanceof Error ? err.message : "좋아요 처리에 실패했어요.");
+        });
       },
       toggleSave: (id) => {
-        setSavedReviewIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+        const wasSaved = savedReviewIds.includes(id);
+        setSavedReviewIds((current) => wasSaved ? current.filter((item) => item !== id) : [...current, id]);
+        toggleReviewSaveAction(id).catch((err) => {
+          setSavedReviewIds((current) => wasSaved ? [...current, id] : current.filter((item) => item !== id));
+          showToast(err instanceof Error ? err.message : "저장 처리에 실패했어요.");
+        });
       },
       setNotificationsEnabled: (enabled) => {
         setNotificationsEnabled(enabled);

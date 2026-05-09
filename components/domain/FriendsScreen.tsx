@@ -3,11 +3,14 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Check, Inbox, Lock, Search, UserPlus, X } from "lucide-react";
+import { Check, Inbox, Lock, Search, UserMinus, UserPlus, X } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { Button } from "@/components/common/Button";
+import { ModalShell } from "@/components/common/ModalShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { useAppState } from "@/lib/state/AppState";
 import {
+  deleteFriendAction,
   respondFriendRequestAction,
   searchProfilesByNicknameAction,
   sendFriendRequestAction,
@@ -32,6 +35,7 @@ export function FriendsScreen({ initialIncomingRequests, initialFriends }: Frien
   const [friends, setFriends] = useState(initialFriends);
   const [isPending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<FriendListItem | null>(null);
   const debounceRef = useRef<number | null>(null);
 
   // 검색어 입력 → 300ms 디바운스 후 server action 호출
@@ -117,6 +121,29 @@ export function FriendsScreen({ initialIncomingRequests, initialFriends }: Frien
         }
       } catch (err) {
         showToast(err instanceof Error ? err.message : "요청 처리에 실패했어요.");
+      } finally {
+        setBusyId(null);
+      }
+    });
+  };
+
+  const handleDeleteFriend = () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setBusyId(target.userId);
+    startTransition(async () => {
+      try {
+        await deleteFriendAction(target.userId);
+        setFriends((current) => current.filter((friend) => friend.userId !== target.userId));
+        setDeleteTarget(null);
+        setSearchResults((current) =>
+          current.map((item) =>
+            item.userId === target.userId ? { ...item, relationship: "none" } : item
+          )
+        );
+        showToast(`${target.nickname}님을 친구 목록에서 삭제했어요.`);
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "친구 삭제에 실패했어요.");
       } finally {
         setBusyId(null);
       }
@@ -212,13 +239,20 @@ export function FriendsScreen({ initialIncomingRequests, initialFriends }: Frien
                 </div>
               ) : (
                 friends.map((friend) => (
-                  <article className="friend-row" key={friend.userId}>
+                  <article className="friend-row friend-row-compact" key={friend.userId}>
                     {renderAvatar(friend)}
                     <div>
                       <strong>{friend.nickname}</strong>
                     </div>
-                    <button type="button" className="friend-action-done" disabled>
-                      <Check size={14} /> 친구
+                    <button
+                      type="button"
+                      className="friend-action-remove"
+                      aria-label={`${friend.nickname} 친구 삭제`}
+                      title="친구 삭제"
+                      disabled={busyId === friend.userId && isPending}
+                      onClick={() => setDeleteTarget(friend)}
+                    >
+                      <UserMinus size={15} />
                     </button>
                   </article>
                 ))
@@ -270,6 +304,33 @@ export function FriendsScreen({ initialIncomingRequests, initialFriends }: Frien
           </section>
         </>
       )}
+      <ModalShell
+        open={Boolean(deleteTarget)}
+        title="친구 삭제"
+        onClose={() => setDeleteTarget(null)}
+        panelClassName="dark-confirm-panel"
+      >
+        <div className="confirm-stack">
+          <p>{deleteTarget?.nickname}님을 친구 목록에서 삭제할까요?</p>
+          <span className="confirm-hint">서로의 친구 공개 후기를 더 이상 볼 수 없어요.</span>
+          <div className="confirm-actions">
+            <button
+              type="button"
+              className="confirm-cancel"
+              disabled={Boolean(deleteTarget && busyId === deleteTarget.userId && isPending)}
+              onClick={() => setDeleteTarget(null)}
+            >
+              취소
+            </button>
+            <Button
+              disabled={Boolean(deleteTarget && busyId === deleteTarget.userId && isPending)}
+              onClick={handleDeleteFriend}
+            >
+              {deleteTarget && busyId === deleteTarget.userId && isPending ? "삭제 중" : "삭제하기"}
+            </Button>
+          </div>
+        </div>
+      </ModalShell>
     </AppShell>
   );
 }

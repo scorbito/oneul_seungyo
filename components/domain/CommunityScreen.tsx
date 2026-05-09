@@ -23,15 +23,14 @@ const sortOptions: { id: SortMode; label: string }[] = [
   { id: "gameDate", label: "경기 날짜순" }
 ];
 
-const friendAuthorNames = ["야구광이123", "승요팬", "불꽃직관"];
-
 const PAGE_SIZE = 20;
 
 type CommunityScreenProps = {
   dbReviews?: Review[];
+  friendIds?: string[];
 };
 
-export function CommunityScreen({ dbReviews = [] }: CommunityScreenProps) {
+export function CommunityScreen({ dbReviews = [], friendIds = [] }: CommunityScreenProps) {
   const { reviews: localReviews, profile, likedReviewIds, savedReviewIds, toggleLike, toggleSave } = useAppState();
   const [activeFilter, setActiveFilter] = useState<FeedFilter>("all");
   const [sortMode, setSortMode] = useState<SortMode>("createdAt");
@@ -47,12 +46,15 @@ export function CommunityScreen({ dbReviews = [] }: CommunityScreenProps) {
 
   const sourceReviews = isDbMode ? feed : localReviews;
 
+  const friendIdSet = useMemo(() => new Set(friendIds), [friendIds]);
+
   const filteredReviews = useMemo(() => {
     let list: Review[];
     if (activeFilter === "myTeam") {
       list = sourceReviews.filter((review) => review.teamId === profile.mainTeamId);
     } else if (activeFilter === "friends") {
-      list = sourceReviews.filter((review) => friendAuthorNames.includes(review.author));
+      // 실제 친구 목록의 user_id 와 review.ownerId 를 매칭. ownerId 없는 mock 데이터는 제외.
+      list = sourceReviews.filter((review) => Boolean(review.ownerId) && friendIdSet.has(review.ownerId!));
     } else {
       list = sourceReviews;
     }
@@ -69,7 +71,7 @@ export function CommunityScreen({ dbReviews = [] }: CommunityScreenProps) {
     }
     // 기본: 서버에서 작성 날짜 내림차순으로 받아오므로 그대로 사용
     return list;
-  }, [activeFilter, sourceReviews, profile.mainTeamId, sortMode]);
+  }, [activeFilter, sourceReviews, profile.mainTeamId, sortMode, friendIdSet]);
 
   useEffect(() => {
     if (!sortMenuOpen) return;
@@ -184,7 +186,11 @@ export function CommunityScreen({ dbReviews = [] }: CommunityScreenProps) {
         ))}
         {filteredReviews.length === 0 ? (
           <p className="empty-inline">
-            {activeFilter === "friends" ? "친구가 작성한 후기가 아직 없어요." : "표시할 후기가 없어요."}
+            {activeFilter === "friends"
+              ? friendIds.length === 0
+                ? "아직 친구가 없어요. 마이 → 친구 관리에서 친구를 추가해보세요."
+                : "친구가 작성한 후기가 아직 없어요."
+              : "표시할 후기가 없어요."}
           </p>
         ) : null}
         {isDbMode && hasMore ? (

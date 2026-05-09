@@ -8,7 +8,6 @@ export type StandingsSyncResult = {
 
 /**
  * 팀 순위 동기화. team_standings.unique(team_id, season) 기준으로 upsert.
- * 최근 5경기 form은 추후 games에서 파생할 예정 — 지금은 빈 배열로 둠.
  */
 export async function syncStandings(season: number): Promise<StandingsSyncResult> {
   const { standings, source } = await fetchStandings(season);
@@ -18,6 +17,49 @@ export async function syncStandings(season: number): Promise<StandingsSyncResult
   }
 
   const supabase = createSupabaseAdminClient();
+  const teamIds = standings.map((standing) => standing.teamId);
+  const { data: games, error: gamesError } = await supabase
+    .from("games")
+    .select("game_date,game_time,home_team_id,away_team_id,home_score,away_score,status")
+    .eq("status", "finished")
+    .not("home_score", "is", null)
+    .not("away_score", "is", null)
+    .or(teamIds.map((teamId) => `home_team_id.eq.${teamId},away_team_id.eq.${teamId}`).join(","))
+    .order("game_date", { ascending: false })
+    .order("game_time", { ascending: false });
+
+  if (gamesError) {
+    throw new Error(`standings form games load failed: ${gamesError.message}`);
+  }
+
+  const formsByTeam = new Map<string, Array<"win" | "lose" | "draw">>();
+  for (const teamId of teamIds) {
+    formsByTeam.set(teamId, []);
+  }
+
+  for (const game of games ?? []) {
+    const homeScore = game.home_score;
+    const awayScore = game.away_score;
+    if (homeScore === null || awayScore === null) continue;
+
+    const homeForm = homeScore === awayScore ? "draw" : homeScore > awayScore ? "win" : "lose";
+    const awayForm = homeScore === awayScore ? "draw" : awayScore > homeScore ? "win" : "lose";
+    const homeItems = formsByTeam.get(game.home_team_id);
+    const awayItems = formsByTeam.get(game.away_team_id);
+
+    if (homeItems && homeItems.length < 5) {
+      homeItems.unshift(homeForm);
+    }
+    if (awayItems && awayItems.length < 5) {
+      awayItems.unshift(awayForm);
+    }
+
+    const hasAllForms = teamIds.every((teamId) => (formsByTeam.get(teamId)?.length ?? 0) >= 5);
+    if (hasAllForms) {
+      break;
+    }
+  }
+
   const rows = standings.map((s) => ({
     team_id: s.teamId,
     season,
@@ -26,7 +68,7 @@ export async function syncStandings(season: number): Promise<StandingsSyncResult
     losses: s.losses,
     draws: s.draws,
     games_behind: s.gamesBehind,
-    form: [] as Array<"win" | "lose" | "draw">,
+    form: formsByTeam.get(s.teamId) ?? [],
     synced_at: new Date().toISOString()
   }));
 

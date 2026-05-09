@@ -57,6 +57,10 @@
   border-radius: 12px;
 }
 
+.phone-frame-dark .friend-row-compact {
+  grid-template-columns: 36px 1fr auto;
+}
+
 .phone-frame-dark .friend-row .team-badge {
   width: 36px;
   height: 36px;
@@ -119,6 +123,21 @@
   border-color: rgba(36, 194, 106, 0.45);
   color: var(--hd-success);
   cursor: default;
+}
+
+.phone-frame-dark .friend-row .friend-action-remove {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--hd-text-secondary);
+}
+
+.phone-frame-dark .friend-row .friend-action-remove:hover:not(:disabled) {
+  background: rgba(255, 79, 99, 0.14);
+  border-color: rgba(255, 79, 99, 0.4);
+  color: #ff7b8c;
 }
 
 .phone-frame-dark .segmented-control .segment {

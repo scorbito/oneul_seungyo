@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Bookmark, Heart, MessageCircle, Send } from "lucide-react";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { getTeam } from "@/lib/constants/teams";
+import { useAppState } from "@/lib/state/AppState";
 import type { Review } from "@/lib/types/domain";
 
 type ReviewCardProps = {
@@ -19,6 +20,7 @@ type ReviewCardProps = {
 };
 
 export function ReviewCard({ review, liked = false, saved = false, onToggleLike, onToggleSave, actionSlot }: ReviewCardProps) {
+  const { showToast } = useAppState();
   const [expanded, setExpanded] = useState(false);
   const [isClamped, setIsClamped] = useState(false);
   const bodyRef = useRef<HTMLParagraphElement>(null);
@@ -29,8 +31,37 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
     setIsClamped(el.scrollHeight > el.clientHeight + 1);
   }, [review.body]);
 
-  const likeCount = review.likes + (liked ? 1 : 0);
   const showToggle = isClamped || expanded;
+
+  const handleShare = async () => {
+    if (typeof window === "undefined") return;
+    const shareUrl = `${window.location.origin}/reviews/${review.id}`;
+    const shareTitle = review.title || `${review.author}님의 직관 후기`;
+
+    // 1. Native Web Share API 우선 사용 (모바일 기본 공유 시트)
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: shareTitle, url: shareUrl });
+        return;
+      } catch (err) {
+        // 사용자가 시트를 닫은 경우(AbortError)는 그냥 종료
+        if (err instanceof Error && err.name === "AbortError") return;
+        // 다른 오류는 클립보드 폴백 시도
+      }
+    }
+
+    // 2. 폴백 — 클립보드 복사
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        showToast("링크가 복사되었어요. 원하는 곳에 붙여넣어보세요.");
+      } else {
+        showToast("이 브라우저에서는 공유를 지원하지 않아요.");
+      }
+    } catch {
+      showToast("링크 복사에 실패했어요.");
+    }
+  };
 
   return (
     <article className="review-card">
@@ -51,8 +82,15 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
         {actionSlot ? <div className="review-author-action">{actionSlot}</div> : null}
         <TeamBadge teamId={review.teamId} size="sm" />
       </div>
-      <Link className="review-image-link" href={`/reviews/${review.id}`} prefetch>
-        <Image alt={review.title || "후기 사진"} className="review-image" height={220} src={review.image} width={330} />
+      <Link className="review-image-link" href={`/reviews/${review.id}`} prefetch draggable={false}>
+        <Image
+          alt={review.title || "후기 사진"}
+          className="review-image"
+          height={220}
+          src={review.image}
+          width={330}
+          draggable={false}
+        />
         {review.images && review.images.length > 1 ? <span>1/{review.images.length}</span> : null}
       </Link>
       {review.game ? (() => {
@@ -67,11 +105,15 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
           <div className="review-game-meta">
             <span className="review-game-meta-date">{review.game.date}</span>
             <div className="review-game-meta-match">
-              <TeamBadge teamId={review.game.homeTeamId} size="sm" />
-              <strong>{home.shortName}</strong>
+              <span className="review-game-meta-side review-game-meta-side-home">
+                <TeamBadge teamId={review.game.homeTeamId} size="sm" />
+                <strong>{home.shortName}</strong>
+              </span>
               <b>{score}</b>
-              <strong>{away.shortName}</strong>
-              <TeamBadge teamId={review.game.awayTeamId} size="sm" />
+              <span className="review-game-meta-side review-game-meta-side-away">
+                <strong>{away.shortName}</strong>
+                <TeamBadge teamId={review.game.awayTeamId} size="sm" />
+              </span>
             </div>
             {resultLabel ? (
               <span className={`review-game-meta-result review-game-meta-result-${result}`}>{resultLabel}</span>
@@ -103,12 +145,14 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
           type="button"
         >
           <Heart fill={liked ? "currentColor" : "none"} size={18} />
-          {likeCount}
+          {review.likes}
         </button>
         <Link className="review-comment-link" href={`/reviews/${review.id}#comments`} prefetch aria-label="댓글 보기">
           <MessageCircle size={18} />{review.comments}
         </Link>
-        <span><Send size={18} /></span>
+        <button type="button" aria-label="후기 공유" onClick={handleShare}>
+          <Send size={18} />
+        </button>
         <button
           aria-label={saved ? "저장 취소" : "저장"}
           aria-pressed={saved}

@@ -1,10 +1,15 @@
 import { CommunityScreen } from "@/components/domain/CommunityScreen";
-import { listReviewsFromDb } from "@/lib/supabase/queries";
+import { listAcceptedFriendsFromDb, listReviewsFromDb } from "@/lib/supabase/queries";
 
-export const revalidate = 60;
+// revalidate 대신 force-dynamic — 친구 목록은 사용자별로 다르므로 캐시 공유 금지
+export const dynamic = "force-dynamic";
 
 export default async function CommunityPage() {
-  const dbReviews = await listReviewsFromDb({ limit: 20 }).catch(() => []);
+  const [dbReviews, friends] = await Promise.all([
+    listReviewsFromDb({ limit: 20 }).catch(() => []),
+    listAcceptedFriendsFromDb().catch(() => [])
+  ]);
+  const friendIds = friends.map((f) => f.userId);
 
-  return <CommunityScreen dbReviews={dbReviews} />;
+  return <CommunityScreen dbReviews={dbReviews} friendIds={friendIds} />;
 }

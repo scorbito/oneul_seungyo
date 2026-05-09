@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/sync-kbo-standings",
-      "schedule": "30 23 * * *"
+      "schedule": "30 14 * * *"
     }
   ]
 }

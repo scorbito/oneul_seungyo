@@ -77,6 +77,9 @@
 .review-image-link {
   position: relative;
   display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .review-image,
@@ -84,6 +87,12 @@
   width: 100%;
   object-fit: cover;
   border-radius: 12px;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.review-image-link .review-image {
+  pointer-events: none;
 }
 
 .review-image {
@@ -137,8 +146,10 @@
 
 .review-actions,
 .review-detail-actions {
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 14px;
   margin-top: 12px;
 }
@@ -158,8 +169,13 @@
   text-decoration: none;
 }
 
-.review-actions button {
-  margin-left: auto;
+/* 북마크(마지막 자식)는 flex 흐름에서 빼서 우측 고정. 나머지 좋아요/댓글/공유는
+   부모의 justify-content: center 로 컨테이너 정중앙 정렬. */
+.review-actions > :last-child {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .review-detail-meta {

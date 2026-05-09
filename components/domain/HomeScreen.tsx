@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bell, ChevronLeft, ChevronRight, Flag, Plus, Share2 } from "lucide-react";
@@ -15,6 +15,7 @@ import type { Game, TeamStanding } from "@/lib/types/domain";
 
 const WEEK_LABELS_SUN = ["일", "월", "화", "수", "목", "금", "토"];
 const WEEK_LABELS_MON = ["월", "화", "수", "목", "금", "토", "일"];
+const RESULT_PAYLOAD_STORAGE_KEY = "oneul-seungyo.pendingResultPayload";
 
 function parseDotDate(date: string) {
   const [year, month, day] = date.split(".").map(Number);
@@ -111,6 +112,49 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
   const [resultPayload, setResultPayload] = useState<AttendanceResultPayload | null>(null);
   const [finalizingId, setFinalizingId] = useState<string | null>(null);
   const [, startFinalize] = useTransition();
+  const resultOpenTimerRef = useRef<number | null>(null);
+
+  const clearResultOpenTimer = () => {
+    if (resultOpenTimerRef.current === null) return;
+    window.clearTimeout(resultOpenTimerRef.current);
+    resultOpenTimerRef.current = null;
+  };
+
+  const openResultModal = (payload: AttendanceResultPayload, options: { persist?: boolean; delayMs?: number } = {}) => {
+    clearResultOpenTimer();
+
+    if (options.persist) {
+      try {
+        window.sessionStorage.setItem(RESULT_PAYLOAD_STORAGE_KEY, JSON.stringify(payload));
+      } catch {
+        // sessionStorage가 막힌 환경에서는 현재 화면 상태만 사용.
+      }
+    }
+
+    const applyPayload = () => {
+      setResultPayload((current) => current?.attendanceId === payload.attendanceId ? current : payload);
+      resultOpenTimerRef.current = null;
+    };
+
+    if (options.delayMs && options.delayMs > 0) {
+      resultOpenTimerRef.current = window.setTimeout(applyPayload, options.delayMs);
+      return;
+    }
+
+    applyPayload();
+  };
+
+  const closeResultModal = () => {
+    clearResultOpenTimer();
+    try {
+      window.sessionStorage.removeItem(RESULT_PAYLOAD_STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    setResultPayload(null);
+  };
+
+  useEffect(() => clearResultOpenTimer, []);
 
   useEffect(() => {
     if (!latestNoticeAt) {
@@ -124,6 +168,20 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
       setHasUnreadNotice(true);
     }
   }, [latestNoticeAt]);
+
+  useEffect(() => {
+    try {
+      const stored = window.sessionStorage.getItem(RESULT_PAYLOAD_STORAGE_KEY);
+      if (!stored || resultPayload) return;
+      setResultPayload(JSON.parse(stored) as AttendanceResultPayload);
+    } catch {
+      try {
+        window.sessionStorage.removeItem(RESULT_PAYLOAD_STORAGE_KEY);
+      } catch {
+        // ignore
+      }
+    }
+  }, [resultPayload]);
 
   const myTeam = getTeam(profile.mainTeamId);
 
@@ -331,7 +389,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
                             supportTeamId: res.myTeamId,
                             homeTeamId: att.homeTeamId
                           });
-                          setResultPayload({ attendanceId: att.id, ...res });
+                          openResultModal({ attendanceId: att.id, ...res }, { persist: true, delayMs: 350 });
                           setFinalizingId(null);
                         } catch (err) {
                           showToast(err instanceof Error ? err.message : "확인 중 오류가 발생했어요.");
@@ -405,7 +463,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
                   key={att.id}
                   onClick={() => {
                     const payload = buildResultPayload(att);
-                    if (payload) setResultPayload(payload);
+                    if (payload) openResultModal(payload);
                   }}
                   aria-label={`${compactDate} ${getTeam(att.homeTeamId).shortName} vs ${getTeam(att.awayTeamId).shortName} ${resultLabel} 다시 보기`}
                 >
@@ -486,13 +544,13 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
       <AttendanceResultModal
         payload={resultPayload}
         onClose={() => {
-          setResultPayload(null);
+          closeResultModal();
           // 모달 닫은 후에 다른 페이지(/my, /my/attendances)도 최신 데이터 반영되도록.
           router.refresh();
         }}
         onWriteReview={(attendanceId) => {
           // 결과 모달 닫고 → 후기 작성 모달 열기 (해당 직관 미리 선택된 상태)
-          setResultPayload(null);
+          closeResultModal();
           setReviewTargetId(attendanceId);
           setModal("review");
         }}

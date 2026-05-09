@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getCurrentProfileFromDb,
   getCurrentProfileStatsFromDb,
+  getCurrentUserReviewReactionsFromDb,
   listCurrentAttendancesFromDb,
   listReviewsFromDb
 } from "@/lib/supabase/queries";
@@ -117,11 +118,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { data: authData } = await ssr.auth.getUser();
   const isAnonymous = Boolean(authData?.user?.is_anonymous);
 
-  const [profile, stats, attendances, reviews] = await Promise.all([
+  const [profile, stats, attendances, reviews, reactions] = await Promise.all([
     getCurrentProfileFromDb().catch(() => null),
     getCurrentProfileStatsFromDb().catch(() => null),
     listCurrentAttendancesFromDb().catch(() => []),
-    listReviewsFromDb({ onlyMine: true }).catch(() => [])
+    listReviewsFromDb({ onlyMine: true }).catch(() => []),
+    getCurrentUserReviewReactionsFromDb().catch(() => ({ likedReviewIds: [], savedReviewIds: [] }))
   ]);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -155,6 +157,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           initialAttendances={attendances}
           initialReviews={reviews}
           initialIsAnonymous={isAnonymous}
+          initialLikedReviewIds={reactions.likedReviewIds}
+          initialSavedReviewIds={reactions.savedReviewIds}
         >
           {children}
         </AppStateProvider>

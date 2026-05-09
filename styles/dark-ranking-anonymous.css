@@ -11,6 +11,8 @@
 .phone-frame-dark .rankings-title {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 0 4px;
 }
 
@@ -20,6 +22,42 @@
   font-weight: 800;
   color: var(--hd-text-primary);
   letter-spacing: -0.4px;
+}
+
+.phone-frame-dark .rankings-refresh {
+  height: 32px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 106, 43, 0.5);
+  background: rgba(255, 106, 43, 0.14);
+  color: var(--hd-accent-orange);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.phone-frame-dark .rankings-refresh:hover:not(:disabled) {
+  background: rgba(255, 106, 43, 0.22);
+}
+
+.phone-frame-dark .rankings-refresh:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.rankings-refresh-spin {
+  animation: rankings-refresh-spin 0.8s linear infinite;
+}
+
+@keyframes rankings-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Ranking table */

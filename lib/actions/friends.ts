@@ -135,3 +135,25 @@ export async function respondFriendRequestAction(requestId: string, status: "acc
   revalidatePath("/community");
 }
 
+export async function deleteFriendAction(friendUserId: string) {
+  const supabase = createSupabaseServerClient();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !authData.user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const pair = sortFriendPair(authData.user.id, friendUserId);
+  const { error } = await supabase
+    .from("friends")
+    .delete()
+    .eq("user_a_id", pair.user_a_id)
+    .eq("user_b_id", pair.user_b_id);
+
+  if (error) {
+    throw new Error(`친구 삭제에 실패했습니다: ${error.message}`);
+  }
+
+  revalidatePath("/my/friends");
+  revalidatePath("/community");
+}

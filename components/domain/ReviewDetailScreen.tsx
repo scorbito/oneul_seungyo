@@ -237,16 +237,24 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
               onPointerLeave={() => { carouselDragStartRef.current = null; }}
               onPointerUp={handlePointerUp}
             >
-              <Image
-                alt={review.title || "후기 사진"}
-                className="review-detail-image"
-                draggable={false}
-                height={260}
-                key={imgs[safeIdx]}
-                priority
-                src={imgs[safeIdx]}
-                width={360}
-              />
+              <div
+                className="review-detail-track"
+                style={{ transform: `translateX(-${safeIdx * 100}%)` }}
+              >
+                {imgs.map((src, i) => (
+                  <div className="review-detail-slide" key={`${src}-${i}`}>
+                    <Image
+                      alt={review.title || "후기 사진"}
+                      className="review-detail-image"
+                      draggable={false}
+                      height={260}
+                      priority={i === 0}
+                      src={src}
+                      width={360}
+                    />
+                  </div>
+                ))}
+              </div>
               {imgs.length > 1 ? (
                 <>
                   <button
@@ -289,11 +297,15 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
           return (
             <div className="review-game-meta">
               <div className="review-game-meta-match">
-                <TeamBadge teamId={review.game.homeTeamId} size="sm" />
-                <strong>{home.shortName}</strong>
+                <span className="review-game-meta-side review-game-meta-side-home">
+                  <TeamBadge teamId={review.game.homeTeamId} size="sm" />
+                  <strong>{home.shortName}</strong>
+                </span>
                 <b>{score}</b>
-                <strong>{away.shortName}</strong>
-                <TeamBadge teamId={review.game.awayTeamId} size="sm" />
+                <span className="review-game-meta-side review-game-meta-side-away">
+                  <strong>{away.shortName}</strong>
+                  <TeamBadge teamId={review.game.awayTeamId} size="sm" />
+                </span>
               </div>
               {resultLabel ? (
                 <span className={`review-game-meta-result review-game-meta-result-${result}`}>{resultLabel}</span>
@@ -318,7 +330,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
         {/* 해시태그 칩은 MVP에서 숨김 */}
         <div className="review-detail-actions">
           <button type="button" onClick={() => toggleLike(review.id)} style={liked ? { color: "#e11d48" } : undefined}>
-            <Heart fill={liked ? "currentColor" : "none"} size={18} /> {review.likes + (liked ? 1 : 0)}
+            <Heart fill={liked ? "currentColor" : "none"} size={18} /> {review.likes}
           </button>
           <button type="button" onClick={() => showToast("공유 준비가 완료됐어요.")}><Send size={18} /> 공유</button>
           <button type="button" onClick={() => toggleSave(review.id)} style={saved ? { color: "#2563eb" } : undefined}>

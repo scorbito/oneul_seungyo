@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, Camera, Check, ChevronRight, ListChecks, MessageSquareText, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
+import { Bookmark, CalendarDays, Camera, Check, ChevronRight, ListChecks, MessageSquareText, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Card } from "@/components/common/Card";
@@ -19,12 +19,17 @@ const menuItems = [
   { label: "내 직관 리스트", href: "/my/attendances", icon: ListChecks },
   { label: "내 티켓 컬렉션", href: "/my/tickets", icon: Ticket },
   { label: "내 후기 모음", href: "/my/reviews", icon: MessageSquareText },
+  { label: "저장한 후기", href: "/my/saved", icon: Bookmark },
   { label: "친구 관리", href: "/my/friends", icon: UserPlus },
   { label: "설정", href: "/my/settings", icon: Settings }
 ];
 
-export function MyScreen() {
-  const { profile, attendances, reviews, isAnonymous, updateProfile, showToast } = useAppState();
+type MyScreenProps = {
+  friendsCount?: number;
+};
+
+export function MyScreen({ friendsCount = 0 }: MyScreenProps) {
+  const { profile, attendances, reviews, savedReviewIds, isAnonymous, updateProfile, showToast } = useAppState();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [nickname, setNickname] = useState(profile.nickname);
@@ -98,6 +103,8 @@ export function MyScreen() {
           if (item.label === "내 직관 리스트") count = attendances.length;
           else if (item.label === "내 티켓 컬렉션") count = attendances.filter((a) => a.verified).length;
           else if (item.label === "내 후기 모음") count = reviews.length;
+          else if (item.label === "저장한 후기") count = savedReviewIds.length;
+          else if (item.label === "친구 관리") count = friendsCount;
 
           return (
             <Link href={item.href} key={item.label} prefetch>
