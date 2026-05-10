@@ -51,6 +51,12 @@
   margin: 0 auto;
 }
 
+.phone-frame-dark .brand-beta {
+  background: rgba(255, 106, 43, 0.16);
+  border-color: rgba(255, 106, 43, 0.5);
+  color: var(--hd-accent-orange);
+}
+
 .phone-frame-dark .app-content {
   padding: 8px 20px 24px;
   display: flex;

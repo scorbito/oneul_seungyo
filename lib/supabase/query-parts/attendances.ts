@@ -40,7 +40,7 @@ export async function listCurrentAttendancesFromDb(): Promise<AttendanceRecord[]
   const admin = createSupabaseAdminClient();
   const { data: attendances, error: attendanceError } = await admin
     .from("attendances")
-    .select("id,game_id,support_team_id,verified,memo,created_at")
+    .select("id,game_id,support_team_id,verified,memo,created_at,result_acknowledged_at")
     .eq("user_id", authData.user.id)
     .order("created_at", { ascending: false });
 
@@ -95,7 +95,8 @@ export async function listCurrentAttendancesFromDb(): Promise<AttendanceRecord[]
       score,
       result: getAttendanceResult(mappedGame, attendance.support_team_id),
       verified: attendance.verified,
-      memo: attendance.memo ?? undefined
+      memo: attendance.memo ?? undefined,
+      resultAcknowledgedAt: attendance.result_acknowledged_at ?? null
     }];
   });
 }

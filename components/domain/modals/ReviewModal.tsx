@@ -114,6 +114,7 @@ export function ReviewModal({
         ) : (
           <div className="review-attendance-picker">
             <span>1. 직관 경기 선택</span>
+            <p className="review-attendance-help">경기 종료된 직관마다 후기는 1개씩 작성할 수 있어요.</p>
             <div className="review-attendance-list" ref={attendanceDrag.ref} onPointerDown={attendanceDrag.onPointerDown} onPointerMove={attendanceDrag.onPointerMove} onPointerUp={attendanceDrag.onPointerUp} onPointerLeave={attendanceDrag.onPointerLeave} onPointerCancel={attendanceDrag.onPointerCancel} onClickCapture={attendanceDrag.onClickCapture}>
               {reviewableAttendances.map((attendance) => (
                 <button
@@ -135,7 +136,12 @@ export function ReviewModal({
                   </div>
                 </button>
               ))}
-              {reviewableAttendances.length === 0 ? <p>후기를 작성할 수 있는 종료된 직관 경기가 없어요.</p> : null}
+              {reviewableAttendances.length === 0 ? (
+                <p className="review-attendance-empty">
+                  후기를 쓸 수 있는 직관이 없어요.<br />
+                  경기 종료 전이거나 이미 후기를 작성한 직관은 목록에 표시되지 않아요.
+                </p>
+              ) : null}
             </div>
           </div>
         )}

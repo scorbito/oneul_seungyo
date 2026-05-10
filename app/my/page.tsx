@@ -1,9 +1,12 @@
 import { MyScreen } from "@/components/domain/MyScreen";
-import { listAcceptedFriendsFromDb } from "@/lib/supabase/queries";
+import { getCurrentAuthAccountInfo, listAcceptedFriendsFromDb } from "@/lib/supabase/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function MyPage() {
-  const friends = await listAcceptedFriendsFromDb().catch(() => []);
-  return <MyScreen friendsCount={friends.length} />;
+  const [friends, accountInfo] = await Promise.all([
+    listAcceptedFriendsFromDb().catch(() => []),
+    getCurrentAuthAccountInfo().catch(() => null)
+  ]);
+  return <MyScreen friendsCount={friends.length} accountInfo={accountInfo} />;
 }

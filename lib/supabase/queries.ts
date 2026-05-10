@@ -6,7 +6,9 @@ export {
 
 export {
   getCurrentProfileFromDb,
-  getCurrentProfileStatsFromDb
+  getCurrentProfileStatsFromDb,
+  getCurrentAuthAccountInfo,
+  type AuthAccountInfo
 } from "@/lib/supabase/query-parts/profile";
 
 export {

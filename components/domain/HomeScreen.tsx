@@ -17,6 +17,11 @@ const WEEK_LABELS_SUN = ["일", "월", "화", "수", "목", "금", "토"];
 const WEEK_LABELS_MON = ["월", "화", "수", "목", "금", "토", "일"];
 const RESULT_PAYLOAD_STORAGE_KEY = "oneul-seungyo.pendingResultPayload";
 
+function todayDotDate(): string {
+  const d = new Date();
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function parseDotDate(date: string) {
   const [year, month, day] = date.split(".").map(Number);
   return new Date(year, month - 1, day);
@@ -102,7 +107,7 @@ type HomeScreenProps = {
 };
 
 export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestNoticeAt = null }: HomeScreenProps) {
-  const { attendances, profile, showToast, markAttendanceResult } = useAppState();
+  const { attendances, profile, showToast, markAttendanceResult, acknowledgeAttendanceResult } = useAppState();
   const router = useRouter();
   const [modal, setModal] = useState<ModalKind>(null);
   const [reviewTargetId, setReviewTargetId] = useState<string | undefined>(undefined);
@@ -212,18 +217,20 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
   const weekHomeCount = weekDays.filter((d) => d.game?.isHome).length;
   const weekAwayCount = weekDays.filter((d) => d.game && !d.game.isHome).length;
 
+  // 결과가 있어도 사용자가 결과 이펙트를 직접 확인하기 전까진 "현재 직관" 영역에 남긴다.
+  // (자동 노출이 아니라 사용자 클릭으로 결과를 보게 해 보상감 + 추후 경험치 트리거 활용)
   const upcomingAttendances = attendances
-    .filter((a) => !a.result)
+    .filter((a) => !a.result || !a.resultAcknowledgedAt)
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  // 최근 직관: 오래된 → 최신 (좌→우)
+  // 최근 직관: 결과 있고 + 사용자가 이펙트를 본 직관만. 오래된 → 최신 (좌→우)
   const recentAttendances = attendances
-    .filter((a) => !!a.result)
+    .filter((a) => !!a.result && !!a.resultAcknowledgedAt)
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 3)
     .reverse();
 
-  // 섹션 헤더용: 최근 5경기 승/패 집계
+  // 섹션 헤더용: 최근 5경기 승/패 집계 — 통계 자체는 acknowledged 와 무관.
   const last5Attendances = attendances
     .filter((a) => !!a.result)
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -240,6 +247,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
     <AppShell
       activeTab="home"
       theme="dark"
+      showBeta
       headerAction={
         <Link className="header-action" href="/my/notices" aria-label="공지사항" prefetch>
           <Bell size={17} />
@@ -304,7 +312,11 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
         const hasPrev = safeIndex > 0;
         const hasNext = safeIndex < upcomingAttendances.length - 1;
         const isLive = hasGameStarted(att.date, att.time);
-        const sectionTitle = isLive ? "현재 직관" : "다음 직관";
+        const today = todayDotDate();
+        const isPast = att.date < today;
+        const hasUnseenResult = !!att.result;
+        // 섹션 제목: 결과가 이미 있고 지난날이면 "지난 직관", 시작했거나 오늘이면 "현재 직관", 아니면 "다음 직관"
+        const sectionTitle = hasUnseenResult && isPast ? "지난 직관" : isLive ? "현재 직관" : "다음 직관";
         return (
           <section className="hd-card hd-next" aria-label={sectionTitle}>
             <div className="hd-section-header">
@@ -359,56 +371,73 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
                 </div>
               </div>
 
-              {hasGameStarted(att.date, att.time) ? (
+              {isLive ? (
                 <div className="hd-game-progress-row">
                   <span className="hd-game-progress-label">
                     <span className="hd-game-progress-pulse" aria-hidden="true" />
-                    경기가 시작되었어요
+                    {hasUnseenResult ? (isPast ? "경기 결과가 도착했어요" : "경기가 끝났어요") : "경기가 시작되었어요"}
                   </span>
-                  <button
-                    type="button"
-                    className="hd-game-end-btn"
-                    disabled={finalizingId === att.id}
-                    onClick={() => {
-                      if (finalizingId === att.id) return;
-                      setFinalizingId(att.id);
-                      startFinalize(async () => {
-                        try {
-                          const res = await finalizeAttendanceAction(att.id);
-                          if (!res.ok) {
-                            showToast(res.reason);
-                            setFinalizingId(null);
-                            return;
-                          }
-                          // 클라이언트 state 즉시 업데이트 — router.refresh() 대신.
-                          // refresh를 여기서 부르면 Suspense 경계 재발동 → 모달 state 손실 + 카드 깜빡.
-                          markAttendanceResult(att.id, {
-                            result: res.result,
-                            myScore: res.myScore,
-                            opponentScore: res.opponentScore,
-                            supportTeamId: res.myTeamId,
-                            homeTeamId: att.homeTeamId
-                          });
-                          openResultModal({ attendanceId: att.id, ...res }, { persist: true, delayMs: 350 });
-                          setFinalizingId(null);
-                        } catch (err) {
-                          showToast(err instanceof Error ? err.message : "확인 중 오류가 발생했어요.");
-                          setFinalizingId(null);
+                  {hasUnseenResult ? (
+                    <button
+                      type="button"
+                      className="hd-game-end-btn"
+                      onClick={() => {
+                        const payload = buildResultPayload(att);
+                        if (!payload) {
+                          showToast("결과 데이터를 불러오지 못했어요.");
+                          return;
                         }
-                      });
-                    }}
-                  >
-                    {finalizingId === att.id ? (
-                      <>
-                        <span className="onboarding-submit-spinner" aria-hidden="true" />
-                        확인 중...
-                      </>
-                    ) : (
-                      <>
-                        <Flag size={14} /> 경기 종료
-                      </>
-                    )}
-                  </button>
+                        openResultModal(payload, { persist: true });
+                      }}
+                    >
+                      <Flag size={14} /> {isPast ? "결과 보기" : "경기 종료"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="hd-game-end-btn"
+                      disabled={finalizingId === att.id}
+                      onClick={() => {
+                        if (finalizingId === att.id) return;
+                        setFinalizingId(att.id);
+                        startFinalize(async () => {
+                          try {
+                            const res = await finalizeAttendanceAction(att.id);
+                            if (!res.ok) {
+                              showToast(res.reason);
+                              setFinalizingId(null);
+                              return;
+                            }
+                            // 클라이언트 state 즉시 업데이트 — router.refresh() 대신.
+                            // refresh를 여기서 부르면 Suspense 경계 재발동 → 모달 state 손실 + 카드 깜빡.
+                            markAttendanceResult(att.id, {
+                              result: res.result,
+                              myScore: res.myScore,
+                              opponentScore: res.opponentScore,
+                              supportTeamId: res.myTeamId,
+                              homeTeamId: att.homeTeamId
+                            });
+                            openResultModal({ attendanceId: att.id, ...res }, { persist: true, delayMs: 350 });
+                            setFinalizingId(null);
+                          } catch (err) {
+                            showToast(err instanceof Error ? err.message : "확인 중 오류가 발생했어요.");
+                            setFinalizingId(null);
+                          }
+                        });
+                      }}
+                    >
+                      {finalizingId === att.id ? (
+                        <>
+                          <span className="onboarding-submit-spinner" aria-hidden="true" />
+                          확인 중...
+                        </>
+                      ) : (
+                        <>
+                          <Flag size={14} /> 경기 종료
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -544,12 +573,15 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
       <AttendanceResultModal
         payload={resultPayload}
         onClose={() => {
+          // 결과를 본 직관은 DB에 ack 시각 저장 → 다음 진입부터 "최근 직관"으로 이동.
+          if (resultPayload) acknowledgeAttendanceResult(resultPayload.attendanceId);
           closeResultModal();
           // 모달 닫은 후에 다른 페이지(/my, /my/attendances)도 최신 데이터 반영되도록.
           router.refresh();
         }}
         onWriteReview={(attendanceId) => {
-          // 결과 모달 닫고 → 후기 작성 모달 열기 (해당 직관 미리 선택된 상태)
+          // 후기 작성 흐름으로 넘어가는 것도 결과를 확인한 행위로 본다.
+          acknowledgeAttendanceResult(attendanceId);
           closeResultModal();
           setReviewTargetId(attendanceId);
           setModal("review");

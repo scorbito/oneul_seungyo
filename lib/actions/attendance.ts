@@ -331,3 +331,35 @@ export async function finalizeAttendanceAction(attendanceId: string): Promise<Fi
     stadium: game.stadium
   };
 }
+
+// ============================================================
+// acknowledgeAttendanceResult — 사용자가 결과 이펙트를 처음 확인한 시점 기록
+// 멱등 — 이미 ack된 직관은 그대로 두고 ok만 반환.
+// 추후 경험치/포인트 시스템 도입 시 이 액션이 첫 적립의 트리거가 됨.
+// ============================================================
+
+export async function acknowledgeAttendanceResultAction(attendanceId: string): Promise<{ ok: boolean; reason?: string }> {
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    return { ok: false, reason: "로그인이 필요합니다." };
+  }
+  const admin = createSupabaseAdminClient();
+  const userId = authData.user.id;
+
+  // 이미 ack된 행은 건드리지 않음 (멱등 + 첫 ack 시점 보존).
+  const { data, error } = await admin
+    .from("attendances")
+    .update({ result_acknowledged_at: new Date().toISOString() })
+    .eq("id", attendanceId)
+    .eq("user_id", userId)
+    .is("result_acknowledged_at", null)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, reason: `결과 확인 처리 실패: ${error.message}` };
+  }
+  // data가 null이면 이미 ack됐거나 본인 직관이 아님 — 둘 다 사용자 입장에선 OK.
+  return { ok: true };
+}

@@ -1,6 +1,52 @@
 ﻿import type { ProfileStats, UserProfileRecord } from "@/lib/types/api-contracts";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
+export type AuthAccountInfo = {
+  provider: "google" | "kakao" | "email" | "anonymous" | "unknown";
+  // Google/email은 실제 이메일, 카카오는 닉네임 또는 카카오ID, 익명은 null.
+  identifier: string | null;
+  isAnonymous: boolean;
+};
+
+/** 현재 로그인한 사용자의 OAuth provider + 식별자(이메일/닉네임)를 반환.
+ *  마이 페이지의 "어떤 계정으로 로그인했는지" 표시에 사용. */
+export async function getCurrentAuthAccountInfo(): Promise<AuthAccountInfo | null> {
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) return null;
+
+  const user = data.user;
+  if (user.is_anonymous) {
+    return { provider: "anonymous", identifier: null, isAnonymous: true };
+  }
+
+  // identities 배열에서 가장 최근 link된 OAuth identity 우선.
+  // 카카오는 identity_data.email이 fake(@kakao.supabase 등)일 수 있어
+  // user_name / nickname / preferred_username을 우선.
+  const identities = user.identities ?? [];
+  const oauth = identities.find((i) => i.provider === "google" || i.provider === "kakao");
+
+  if (oauth?.provider === "google") {
+    const email = (oauth.identity_data?.email as string | undefined) ?? user.email ?? null;
+    return { provider: "google", identifier: email, isAnonymous: false };
+  }
+
+  if (oauth?.provider === "kakao") {
+    const nickname = (oauth.identity_data?.user_name as string | undefined)
+      ?? (oauth.identity_data?.nickname as string | undefined)
+      ?? (oauth.identity_data?.preferred_username as string | undefined)
+      ?? null;
+    return { provider: "kakao", identifier: nickname, isAnonymous: false };
+  }
+
+  // 이메일/비번 가입
+  if (identities.some((i) => i.provider === "email") || user.email) {
+    return { provider: "email", identifier: user.email ?? null, isAnonymous: false };
+  }
+
+  return { provider: "unknown", identifier: user.email ?? null, isAnonymous: false };
+}
+
 export async function getCurrentProfileFromDb(): Promise<UserProfileRecord | null> {
   const supabase = createSupabaseServerClient();
   const { data: authData, error: authError } = await supabase.auth.getUser();

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { Review, UserProfile } from "@/lib/types/domain";
 import type { ProfileStats, UserProfileRecord } from "@/lib/types/api-contracts";
 import { toggleReviewLikeAction, toggleReviewSaveAction } from "@/lib/actions/reviewReactions";
+import { acknowledgeAttendanceResultAction } from "@/lib/actions/attendance";
 
 export type AttendanceRecord = {
   id: string;
@@ -17,6 +18,8 @@ export type AttendanceRecord = {
   result?: "win" | "lose" | "draw";
   verified: boolean;
   memo?: string;
+  // 사용자가 결과 이펙트를 처음 확인한 ISO timestamp. null/undefined면 미확인 → 홈에서 "결과 보기" 버튼 노출.
+  resultAcknowledgedAt?: string | null;
 };
 
 type RawAttendanceRecord = Omit<AttendanceRecord, "result"> & {
@@ -44,6 +47,7 @@ type AppState = {
   deleteAttendance: (id: string) => void;
   markAttendanceVerified: (id: string) => void;
   markAttendanceResult: (id: string, payload: { result: "win" | "lose" | "draw"; myScore: number; opponentScore: number; supportTeamId: string; homeTeamId: string }) => void;
+  acknowledgeAttendanceResult: (id: string) => void;
   updateProfile: (profile: Partial<ProfileSettings>) => void;
   addReview: (review: Omit<Review, "id" | "likes" | "comments" | "timeAgo">) => void;
   deleteReview: (id: string) => void;
@@ -221,6 +225,29 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
             };
           })
         );
+      },
+      acknowledgeAttendanceResult: (id) => {
+        // 이미 ack된 직관이면 클라이언트/서버 둘 다 건너뜀 (멱등 + 첫 ack 시점 보존).
+        const target = attendances.find((item) => item.id === id);
+        if (!target || target.resultAcknowledgedAt) return;
+
+        const optimisticTimestamp = new Date().toISOString();
+        setAttendances((current) =>
+          current.map((item) => (item.id === id ? { ...item, resultAcknowledgedAt: optimisticTimestamp } : item))
+        );
+        acknowledgeAttendanceResultAction(id).then((res) => {
+          if (!res.ok) {
+            // 실패 시 롤백 — 다음 진입 때 다시 결과 보기 버튼 노출
+            setAttendances((current) =>
+              current.map((item) => (item.id === id ? { ...item, resultAcknowledgedAt: undefined } : item))
+            );
+            // 사용자에게 토스트로 알리진 않음 — UX상 결과 모달은 이미 보여줬고 다음 기회에 또 볼 수 있음.
+          }
+        }).catch(() => {
+          setAttendances((current) =>
+            current.map((item) => (item.id === id ? { ...item, resultAcknowledgedAt: undefined } : item))
+          );
+        });
       },
       updateProfile: (nextProfile) => {
         setProfileSettings((current) => ({ ...current, ...nextProfile }));

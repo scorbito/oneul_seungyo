@@ -144,9 +144,27 @@ button {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 18px;
   font-weight: 850;
   letter-spacing: 0;
+}
+
+.brand-beta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 17px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(255, 106, 43, 0.14);
+  border: 1px solid rgba(255, 106, 43, 0.45);
+  color: var(--primary-strong);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .header-actions {

@@ -132,6 +132,16 @@ export async function signInWithOAuthAction(provider: OAuthProvider) {
   // → email 빼고 닉네임/프로필 사진만 요청.
   const scopes = provider === "kakao" ? "profile_nickname profile_image" : undefined;
 
+  // 다른 계정으로 로그인 가능하게 강제 — provider 측에 활성 세션이 있어도
+  // 자동 sign-in이 아니라 사용자가 계정을 선택/입력하도록 함.
+  // - Google: `prompt=select_account` → 계정 선택 화면
+  // - 카카오: `prompt=login` → 로그인 화면 강제 (자동 통과 방지)
+  const queryParams = provider === "google"
+    ? { prompt: "select_account" }
+    : provider === "kakao"
+      ? { prompt: "login" }
+      : undefined;
+
   // 현재 익명 세션이 있으면 link 흐름, 아니면 일반 sign in
   const { data: authData } = await supabase.auth.getUser();
   const isAnonymous = Boolean(authData?.user?.is_anonymous);
@@ -139,7 +149,7 @@ export async function signInWithOAuthAction(provider: OAuthProvider) {
   if (isAnonymous) {
     const { data, error } = await supabase.auth.linkIdentity({
       provider,
-      options: { redirectTo: `${origin}/auth/callback?upgrade=1`, scopes }
+      options: { redirectTo: `${origin}/auth/callback?upgrade=1`, scopes, queryParams }
     });
     if (error || !data?.url) {
       redirect(`/login?error=${encodeURIComponent(error?.message ?? "계정 연동에 실패했습니다.")}`);
@@ -151,7 +161,8 @@ export async function signInWithOAuthAction(provider: OAuthProvider) {
     provider,
     options: {
       redirectTo: `${origin}/auth/callback`,
-      scopes
+      scopes,
+      queryParams
     }
   });
 

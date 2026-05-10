@@ -98,6 +98,10 @@
   font-weight: 800;
 }
 
+.phone-frame-dark .review-modal-panel .review-attendance-help {
+  color: var(--hd-text-muted);
+}
+
 /* Attendance pick cards */
 .phone-frame-dark .review-modal-panel .review-attendance-list {
   gap: 8px;
