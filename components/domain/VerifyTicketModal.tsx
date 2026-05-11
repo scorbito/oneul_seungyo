@@ -119,7 +119,8 @@ export function VerifyTicketModal({ open, attendanceId, gameLabel, onClose, onSu
         {gameLabel ? <p className="verify-ticket-label">{gameLabel} 경기 직관</p> : null}
         <p className="verify-ticket-help">
           이 직관의 티켓 사진을 올려주세요. <br />
-          AI가 자동으로 경기 정보를 확인해 인증해드려요.
+          AI가 자동으로 경기 정보를 확인해 인증해드려요.<br />
+          인증된 티켓은 티켓 컬렉션에 보관됩니다.
         </p>
 
         {previewUrl ? (

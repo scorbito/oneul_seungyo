@@ -28,6 +28,28 @@
   gap: 12px;
 }
 
+.phone-frame-dark .ticket-empty {
+  padding: 28px 16px;
+  border: 1px solid var(--hd-border-soft);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: center;
+}
+
+.phone-frame-dark .ticket-empty p {
+  margin: 0 0 6px;
+  color: var(--hd-text-primary);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.phone-frame-dark .ticket-empty span {
+  color: var(--hd-text-muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
 .phone-frame-dark .ticket-card {
   background: var(--hd-bg-card);
   border: 1px solid rgba(255, 255, 255, 0.18);

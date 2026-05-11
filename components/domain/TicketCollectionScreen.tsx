@@ -18,7 +18,10 @@ export function TicketCollectionScreen({ items }: Props) {
   return (
     <AppShell activeTab="my" title="내 티켓 컬렉션" theme="dark" backHref="/my">
       {items.length === 0 ? (
-        <p className="empty-inline">아직 인증된 티켓이 없어요. 직관 등록 화면에서 티켓 사진으로 인증해 보세요!</p>
+        <div className="ticket-empty">
+          <p>티켓으로 인증한 직관이 여기에 모여요.</p>
+          <span>첫 티켓을 인증해 디지털 컬렉션을 만들어보세요.</span>
+        </div>
       ) : (
         <div className="ticket-grid">
           {items.map((item) => {

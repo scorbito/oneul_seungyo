@@ -433,6 +433,16 @@
   background: rgba(36, 194, 106, 0.12);
 }
 
+.phone-frame-dark .attendance-help-text {
+  margin: 2px 0 0;
+  padding-right: 42px;
+  color: var(--hd-text-muted);
+  font-size: 11.5px;
+  font-weight: 650;
+  line-height: 1.45;
+  text-align: center;
+}
+
 /* Delete button — absolute, bottom-right of the card */
 .phone-frame-dark .attendance-item > .inline-delete {
   position: absolute;

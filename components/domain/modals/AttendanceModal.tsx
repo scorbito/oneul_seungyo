@@ -77,11 +77,14 @@ export function AttendanceModal({
         </label>
         <label className="field-row">
           <span>1. 직관 날짜 선택</span>
+          <p className="field-help">앞으로 갈 경기뿐 아니라 이미 다녀온 경기도 등록할 수 있어요.</p>
           <input className="plain-input" type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
         </label>
         <div className="field-group">
           <span>2. 경기와 응원팀 선택</span>
-          {gamesOnSelectedDate.length === 0 && <p style={{ color: "#7b8290", fontSize: 13 }}>이 날짜에 등록 가능한 경기가 없어요.</p>}
+          {gamesOnSelectedDate.length === 0 && (
+            <p className="field-empty">이 날짜에 등록 가능한 경기가 없어요. 다른 날짜를 선택해보세요.</p>
+          )}
           {gamesOnSelectedDate.map((game) => {
             const home = getTeam(game.homeTeamId);
             const away = getTeam(game.awayTeamId);

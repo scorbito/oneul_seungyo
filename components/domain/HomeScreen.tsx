@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, ChevronLeft, ChevronRight, Flag, Plus, Share2 } from "lucide-react";
+import { Bell, ChevronLeft, ChevronRight, CircleHelp, Flag, Plus, Share2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
+import { AppGuideModal } from "@/components/domain/AppGuideModal";
 import { AttendanceResultModal, type AttendanceResultPayload } from "@/components/domain/AttendanceResultModal";
 import { getTeam } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
@@ -16,6 +17,7 @@ import type { Game, TeamStanding } from "@/lib/types/domain";
 const WEEK_LABELS_SUN = ["일", "월", "화", "수", "목", "금", "토"];
 const WEEK_LABELS_MON = ["월", "화", "수", "목", "금", "토", "일"];
 const RESULT_PAYLOAD_STORAGE_KEY = "oneul-seungyo.pendingResultPayload";
+const GUIDE_SEEN_STORAGE_KEY = "oneul-seungyo.guideSeen";
 
 function todayDotDate(): string {
   const d = new Date();
@@ -114,6 +116,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
   const [nextIndex, setNextIndex] = useState(0);
   const [nextDir, setNextDir] = useState<"next" | "prev">("next");
   const [hasUnreadNotice, setHasUnreadNotice] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [resultPayload, setResultPayload] = useState<AttendanceResultPayload | null>(null);
   const [finalizingId, setFinalizingId] = useState<string | null>(null);
   const [, startFinalize] = useTransition();
@@ -173,6 +176,24 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
       setHasUnreadNotice(true);
     }
   }, [latestNoticeAt]);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(GUIDE_SEEN_STORAGE_KEY) === "1") return;
+      setGuideOpen(true);
+    } catch {
+      setGuideOpen(true);
+    }
+  }, []);
+
+  const closeGuide = () => {
+    try {
+      window.localStorage.setItem(GUIDE_SEEN_STORAGE_KEY, "1");
+    } catch {
+      // ignore
+    }
+    setGuideOpen(false);
+  };
 
   useEffect(() => {
     try {
@@ -249,10 +270,15 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
       theme="dark"
       showBeta
       headerAction={
-        <Link className="header-action" href="/my/notices" aria-label="공지사항" prefetch>
-          <Bell size={17} />
-          {hasUnreadNotice ? <span className="header-action-badge" aria-hidden="true" /> : null}
-        </Link>
+        <div className="header-actions">
+          <button className="header-action" type="button" aria-label="사용법 안내" onClick={() => setGuideOpen(true)}>
+            <CircleHelp size={17} />
+          </button>
+          <Link className="header-action" href="/my/notices" aria-label="공지사항" prefetch>
+            <Bell size={17} />
+            {hasUnreadNotice ? <span className="header-action-badge" aria-hidden="true" /> : null}
+          </Link>
+        </div>
       }
     >
       {/* HERO */}
@@ -570,6 +596,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
       )}
 
       <AppModals open={modal} setOpen={setModal} games={modalGames} initialAttendanceId={reviewTargetId} />
+      <AppGuideModal open={guideOpen} onClose={closeGuide} />
       <AttendanceResultModal
         payload={resultPayload}
         onClose={() => {

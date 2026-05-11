@@ -57,6 +57,119 @@
   color: var(--hd-accent-orange);
 }
 
+.phone-frame-dark .guide-modal-backdrop {
+  align-items: flex-start;
+  padding: 86px 18px 18px;
+}
+
+.phone-frame-dark .guide-modal-panel {
+  max-width: calc(100% - 0px);
+  border-radius: 20px;
+  background: #0d1a30;
+  color: var(--hd-text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.36);
+}
+
+.phone-frame-dark .guide-modal-panel .modal-header {
+  background: transparent;
+  border-bottom-color: var(--hd-border-soft);
+}
+
+.phone-frame-dark .guide-modal-panel .modal-header strong {
+  color: var(--hd-text-primary);
+}
+
+.phone-frame-dark .guide-modal-panel .modal-close {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--hd-text-primary);
+}
+
+.phone-frame-dark .guide-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 4px 2px 2px;
+}
+
+.phone-frame-dark .guide-step-indicator {
+  align-self: flex-start;
+  color: var(--hd-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.phone-frame-dark .guide-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: rgba(255, 106, 43, 0.15);
+  color: var(--hd-accent-orange);
+}
+
+.phone-frame-dark .guide-modal-content h2 {
+  margin: 2px 0 0;
+  color: var(--hd-text-primary);
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+
+.phone-frame-dark .guide-modal-content p {
+  margin: 0;
+  color: var(--hd-text-secondary);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+.phone-frame-dark .guide-modal-content p span {
+  display: block;
+}
+
+.phone-frame-dark .guide-dots {
+  display: inline-flex;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.phone-frame-dark .guide-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.phone-frame-dark .guide-dot-active {
+  width: 18px;
+  border-radius: 999px;
+  background: var(--hd-accent-orange);
+}
+
+.phone-frame-dark .guide-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.phone-frame-dark .guide-skip {
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--hd-text-secondary);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .phone-frame-dark .app-content {
   padding: 8px 20px 24px;
   display: flex;

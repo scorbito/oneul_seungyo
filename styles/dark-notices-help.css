@@ -110,12 +110,19 @@
   margin: 0;
 }
 
-/* 헤더 우측 공지 아이콘 */
-.phone-frame-dark .header-action {
+/* 헤더 우측 액션 아이콘 */
+.phone-frame-dark .app-header .header-actions {
   position: absolute;
   right: 18px;
   top: calc(50% + 5px);
   transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.phone-frame-dark .header-action {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;

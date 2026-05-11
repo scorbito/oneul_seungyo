@@ -104,7 +104,9 @@ export function MyAttendancesScreen({ dbAttendances = [] }: MyAttendancesScreenP
                       </button>
                     )}
                   </div>
-                ) : null}
+                ) : (
+                  <p className="attendance-help-text">경기 종료 후 결과가 확정되면 후기를 작성할 수 있어요.</p>
+                )}
               </div>
               <button className="inline-delete" type="button" aria-label="삭제" onClick={() => setDeleteTargetId(item.id)}>
                 <Trash2 size={18} />
