@@ -62,6 +62,10 @@ export const metadata: Metadata = {
     title: SITE_TITLE,
     statusBarStyle: "black-translucent"
   },
+  // apple-mobile-web-app-capable의 표준 후속 태그 — Chrome/Edge 콘솔 경고 해소.
+  other: {
+    "mobile-web-app-capable": "yes"
+  },
   icons: {
     icon: "/assets/mascot-default.png",
     apple: { url: "/assets/mascot-default.png", sizes: "180x180", type: "image/png" }
