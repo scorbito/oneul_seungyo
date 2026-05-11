@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { InstallAppBanner } from "@/components/domain/InstallAppBanner";
 import { AppStateLoader } from "./app-state-loader";
 import "./globals.css";
@@ -148,13 +149,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </span>
         </div>
         {/* AppState 데이터 페치를 Suspense로 감싸 — 페치 중에도 위의 initial-loader가 즉시 노출됨.
-            fallback은 null이라 추가 빈 화면 없음 (loader가 그대로 유지). */}
-        <Suspense fallback={null}>
-          <AppStateLoader isAnonymous={isAnonymous}>
-            {children}
-            <InstallAppBanner />
-          </AppStateLoader>
-        </Suspense>
+            fallback은 null이라 추가 빈 화면 없음 (loader가 그대로 유지).
+            ErrorBoundary로 감싸 클라이언트 사이드 에러 발생 시 자동 reload로 복구. */}
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <AppStateLoader isAnonymous={isAnonymous}>
+              {children}
+              <InstallAppBanner />
+            </AppStateLoader>
+          </Suspense>
+        </ErrorBoundary>
       </body>
     </html>
   );
