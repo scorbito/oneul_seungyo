@@ -4,14 +4,16 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Bookmark, CalendarDays, Camera, Check, ChevronRight, ListChecks, MessageSquareText, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
+import { Bookmark, CalendarDays, Camera, Check, ChevronRight, Download, ListChecks, MessageSquareText, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Card } from "@/components/common/Card";
 import { ModalShell } from "@/components/common/ModalShell";
 import { Button } from "@/components/common/Button";
+import { InstallAppModal } from "@/components/domain/InstallAppModal";
 import { getTeam, teams } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
+import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 import { updateAvatarAction, updateProfileAction } from "@/lib/actions/profile";
 import { uploadUserFile } from "@/lib/supabase/storage-client";
 import type { AuthAccountInfo } from "@/lib/supabase/queries";
@@ -46,8 +48,10 @@ function formatAccountLabel(info: AuthAccountInfo | null | undefined): { label: 
 
 export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps) {
   const { profile, attendances, reviews, savedReviewIds, isAnonymous, updateProfile, showToast } = useAppState();
+  const { isStandalone } = useInstallPrompt();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
+  const [installModalOpen, setInstallModalOpen] = useState(false);
   const [nickname, setNickname] = useState(profile.nickname);
   const [selectedTeamId, setSelectedTeamId] = useState(profile.mainTeamId);
   const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(profile.avatarUrl);
@@ -138,6 +142,15 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
             </Link>
           );
         })}
+        {/* 이미 PWA로 설치된 사용자에겐 메뉴 숨김 — 설치 권유 의미 없음 */}
+        {!isStandalone ? (
+          <button type="button" className="menu-row-button" onClick={() => setInstallModalOpen(true)}>
+            <Download size={18} />
+            <strong>앱으로 설치</strong>
+            <span className="menu-count" />
+            <ChevronRight size={18} />
+          </button>
+        ) : null}
       </section>
       <Card className="stats-card">
         <h2>내 직관 통계</h2>
@@ -175,7 +188,13 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
           </div>
           <label className="field-row">
             <span>닉네임</span>
-            <input className="plain-input" value={nickname} maxLength={10} onChange={(event) => setNickname(event.target.value)} />
+            <input
+              className="plain-input"
+              value={nickname}
+              maxLength={15}
+              placeholder="닉네임 (최대 15자)"
+              onChange={(event) => setNickname(event.target.value)}
+            />
           </label>
           <div className="field-group">
             <span>내 팀</span>
@@ -215,6 +234,7 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
           </Button>
         </div>
       </ModalShell>
+      <InstallAppModal open={installModalOpen} onClose={() => setInstallModalOpen(false)} />
     </AppShell>
   );
 }

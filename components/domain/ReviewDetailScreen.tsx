@@ -329,7 +329,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
         <p>{review.body}</p>
         {/* 해시태그 칩은 MVP에서 숨김 */}
         <div className="review-detail-actions">
-          <button type="button" onClick={() => toggleLike(review.id)} style={liked ? { color: "#e11d48" } : undefined}>
+          <button type="button" onClick={() => toggleLike(review.id)} style={liked ? { color: "#ff6a2b" } : undefined}>
             <Heart fill={liked ? "currentColor" : "none"} size={18} /> {review.likes}
           </button>
           <button type="button" onClick={() => showToast("공유 준비가 완료됐어요.")}><Send size={18} /> 공유</button>

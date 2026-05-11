@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, ChevronLeft, ChevronRight, CircleHelp, Flag, Plus, Share2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CircleHelp, Flag, Megaphone, Plus, Share2 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
@@ -274,7 +274,7 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }:
             <CircleHelp size={17} />
           </button>
           <Link className="header-action" href="/my/notices" aria-label="공지사항" prefetch>
-            <Bell size={17} />
+            <Megaphone size={17} />
             {hasUnreadNotice ? <span className="header-action-badge" aria-hidden="true" /> : null}
           </Link>
         </div>

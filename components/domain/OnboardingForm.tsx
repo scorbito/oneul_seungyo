@@ -46,12 +46,13 @@ export function OnboardingForm({ error }: OnboardingFormProps) {
           <div className="onboarding-input-wrap">
             <input
               aria-label="닉네임"
-              maxLength={10}
+              maxLength={15}
+              placeholder="닉네임 (최대 15자)"
               name="nickname"
               value={nickname}
               onChange={(event) => setNickname(event.target.value)}
             />
-            <em>{nickname.length}/10</em>
+            <em>{nickname.length}/15</em>
           </div>
         </label>
 

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { InstallAppBanner } from "@/components/domain/InstallAppBanner";
 import { AppStateLoader } from "./app-state-loader";
 import "./globals.css";
 import "@/styles/light-home.css";
@@ -31,6 +32,7 @@ import "@/styles/dark-notices-help.css";
 import "@/styles/dark-contact-settings.css";
 import "@/styles/interactions-loading.css";
 import "@/styles/live-result.css";
+import "@/styles/dark-install.css";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oneul-seungyo.vercel.app";
 const SITE_TITLE = "오늘은 승요";
@@ -146,6 +148,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Suspense fallback={null}>
           <AppStateLoader isAnonymous={isAnonymous}>
             {children}
+            <InstallAppBanner />
           </AppStateLoader>
         </Suspense>
       </body>

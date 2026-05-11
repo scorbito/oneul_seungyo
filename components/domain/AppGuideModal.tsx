@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarCheck, Camera, MessageSquareText, Users } from "lucide-react";
+import { CalendarCheck, Camera, Download, MessageSquareText, Users } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { ModalShell } from "@/components/common/ModalShell";
 
@@ -42,6 +42,14 @@ const steps = [
       "사용법은 홈 상단의 ? 아이콘에서 다시 볼 수 있습니다."
     ],
     icon: Users
+  },
+  {
+    title: "홈 화면에 추가해 보세요",
+    body: [
+      "iPhone Safari나 Android Chrome에서 홈 화면에 추가하면 앱처럼 풀스크린으로 사용할 수 있어요.",
+      "마이 페이지의 \"앱으로 설치\" 메뉴에서 안내를 확인하세요."
+    ],
+    icon: Download
   }
 ];
 

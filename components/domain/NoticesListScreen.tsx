@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Pin, Bell } from "lucide-react";
+import { Pin, Megaphone } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import type { Notice } from "@/lib/types/domain";
 
@@ -42,7 +42,7 @@ export function NoticesListScreen({ notices }: Props) {
     <AppShell activeTab="my" title="공지사항" theme="dark" backHref="/">
       {notices.length === 0 ? (
         <div className="empty-state-large">
-          <div className="empty-state-icon"><Bell size={28} /></div>
+          <div className="empty-state-icon"><Megaphone size={28} /></div>
           <p>아직 등록된 공지가 없어요.</p>
         </div>
       ) : (

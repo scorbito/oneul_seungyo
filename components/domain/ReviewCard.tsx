@@ -141,7 +141,7 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
           aria-label={liked ? "좋아요 취소" : "좋아요"}
           aria-pressed={liked}
           onClick={onToggleLike}
-          style={liked ? { color: "#e11d48" } : undefined}
+          style={liked ? { color: "#ff6a2b" } : undefined}
           type="button"
         >
           <Heart fill={liked ? "currentColor" : "none"} size={18} />
