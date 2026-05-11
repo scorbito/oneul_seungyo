@@ -1,7 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
-import { redirect } from "next/navigation";
 import { HomeScreen } from "@/components/domain/HomeScreen";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listGamesFromDb, listNoticesFromDb, listStandingsFromDb } from "@/lib/supabase/queries";
 import type { Game } from "@/lib/types/domain";
 
@@ -25,12 +23,9 @@ function toDomainGame(game: Awaited<ReturnType<typeof listGamesFromDb>>[number])
 export default async function HomePage() {
   noStore();
 
-  // 비로그인 사용자는 랜딩으로
-  const ssr = createSupabaseServerClient();
-  const { data: authData } = await ssr.auth.getUser();
-  if (!authData?.user) {
-    redirect("/landing");
-  }
+  // 비로그인 사용자는 middleware(lib/supabase/middleware.ts)에서 /landing으로 리다이렉트.
+  // 서버 컴포넌트에서 redirect() 호출이 Next.js App Router의 React #310 버그를
+  // 트리거하므로(https://github.com/vercel/next.js/issues/78396) HTTP 레벨에서 처리.
 
   // 이번주 (월요일 시작 ~ 일요일 끝) 범위
   const today = new Date();
