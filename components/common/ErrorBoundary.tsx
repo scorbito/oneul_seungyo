@@ -26,17 +26,27 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    // 비-minified 에러 정보 콘솔에 덤프 (사용자가 캡처할 수 있도록)
-    console.error("[ErrorBoundary]", {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      componentStack: info.componentStack
-    });
+    console.error("[ErrorBoundary]", error, info);
 
-    // 디버깅 중에는 auto-reload 비활성화 — 에러 페이지가 충분히 머물러야 콘솔 캡처 가능.
-    // 원인 파악 후 다시 활성화 예정.
-    this.setState({ willReload: false });
+    if (typeof window === "undefined") return;
+
+    try {
+      const lastReload = Number(window.sessionStorage.getItem(RELOAD_KEY) ?? "0");
+      const elapsed = Date.now() - lastReload;
+      if (elapsed < RELOAD_COOLDOWN_MS) {
+        // 최근에 이미 reload했는데 또 에러 → 진짜 코드 버그일 수 있음, 더 이상 reload 안 함.
+        this.setState({ willReload: false });
+        return;
+      }
+      window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+    } catch {
+      // sessionStorage 차단 환경 — 그래도 한 번은 reload 시도.
+    }
+
+    this.setState({ willReload: true });
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 100);
   }
 
   render() {

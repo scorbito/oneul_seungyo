@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 /** Next.js global error boundary — 루트 레이아웃 포함 어디에서 에러가 나도 catch.
- *  현재는 디버깅 목적으로 에러 메시지 + digest를 화면에 노출 (자동 reload 안 함). */
+ *  사용자에겐 친근한 안내 + 재시도 옵션만 노출. 자세한 에러 정보는 콘솔에만 남김. */
 export default function GlobalError({
   error,
   reset
@@ -11,59 +11,15 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
-
   useEffect(() => {
-    // 콘솔에 비-minified 에러 정보 덤프 (브라우저 콘솔에서 확인 가능)
+    // 콘솔에 비-minified 에러 정보 덤프 (개발자 도구에서 확인 가능)
     console.error("[GlobalError]", {
       message: error.message,
       digest: error.digest,
-      stack: error.stack,
-      name: error.name
+      name: error.name,
+      stack: error.stack
     });
   }, [error]);
-
-  const buildReport = () => {
-    const lines = [
-      `[오늘은 승요 에러 리포트]`,
-      `time: ${new Date().toISOString()}`,
-      `url: ${typeof window !== "undefined" ? window.location.href : "(unknown)"}`,
-      `ua: ${typeof navigator !== "undefined" ? navigator.userAgent : "(unknown)"}`,
-      ``,
-      `name: ${error.name}`,
-      `message: ${error.message}`,
-      error.digest ? `digest: ${error.digest}` : "",
-      ``,
-      `stack:`,
-      error.stack ?? "(no stack)"
-    ];
-    return lines.filter(Boolean).join("\n");
-  };
-
-  const copyReport = async () => {
-    const text = buildReport();
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        // 구형 브라우저 fallback
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("[GlobalError] clipboard copy failed:", err);
-      // 복사 실패해도 최소 alert로 보여줌
-      window.prompt("아래 내용을 직접 복사해주세요 (Ctrl+C / Cmd+C):", text);
-    }
-  };
 
   return (
     <html lang="ko">
@@ -80,117 +36,51 @@ export default function GlobalError({
           padding: 24
         }}
       >
-        <div style={{ maxWidth: 480, width: "100%", textAlign: "center" }}>
-          <p style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>오류가 발생했어요</p>
-          <p style={{ fontSize: 13, color: "rgba(247,249,252,0.65)", marginBottom: 18 }}>
-            화면을 그리는 도중 문제가 생겼어요. 다시 시도해 보세요.
+        <div style={{ maxWidth: 360, width: "100%", textAlign: "center" }}>
+          <p style={{ fontSize: 17, fontWeight: 850, margin: "0 0 8px" }}>오류가 발생했어요</p>
+          <p style={{ fontSize: 13, color: "rgba(247,249,252,0.65)", margin: "0 0 24px", lineHeight: 1.55 }}>
+            화면을 그리는 도중 문제가 생겼어요.<br />다시 시도해 주세요.
           </p>
 
-          {/* 디버깅 정보 — 출시 후엔 숨기거나 ErrorBoundary 자동 reload로 전환 */}
-          <details
-            style={{
-              textAlign: "left",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              borderRadius: 12,
-              padding: 12,
-              fontSize: 11,
-              marginBottom: 18,
-              color: "rgba(247,249,252,0.85)"
-            }}
-          >
-            <summary style={{ cursor: "pointer", fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
-              <span>개발자용 에러 정보</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  void copyReport();
-                }}
-                style={{
-                  marginLeft: "auto",
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(255,106,43,0.5)",
-                  background: copied ? "#ff6a2b" : "rgba(255,106,43,0.16)",
-                  color: copied ? "#ffffff" : "#ff6a2b",
-                  fontSize: 10,
-                  fontWeight: 800,
-                  cursor: "pointer"
-                }}
-              >
-                {copied ? "복사됨 ✓" : "에러 복사"}
-              </button>
-            </summary>
-            <p style={{ margin: "4px 0", wordBreak: "break-all" }}>
-              <strong>message:</strong> {error.message || "(no message)"}
-            </p>
-            {error.digest ? (
-              <p style={{ margin: "4px 0" }}>
-                <strong>digest:</strong> {error.digest}
-              </p>
-            ) : null}
-            {error.name ? (
-              <p style={{ margin: "4px 0" }}>
-                <strong>name:</strong> {error.name}
-              </p>
-            ) : null}
-            {error.stack ? (
-              <pre
-                style={{
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-all",
-                  fontSize: 10,
-                  margin: "8px 0 0",
-                  maxHeight: 200,
-                  overflowY: "auto",
-                  color: "rgba(247,249,252,0.7)"
-                }}
-              >
-                {error.stack}
-              </pre>
-            ) : null}
-          </details>
-
-          <button
-            type="button"
-            onClick={() => reset()}
-            style={{
-              padding: "12px 28px",
-              borderRadius: 12,
-              border: 0,
-              background: "#ff6a2b",
-              color: "#ffffff",
-              fontSize: 14,
-              fontWeight: 800,
-              cursor: "pointer",
-              boxShadow: "0 6px 18px rgba(255,106,43,0.32)"
-            }}
-          >
-            다시 시도하기
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                window.location.href = "/landing";
-              }
-            }}
-            style={{
-              marginLeft: 8,
-              padding: "12px 20px",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "transparent",
-              color: "rgba(247,249,252,0.85)",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-          >
-            홈으로
-          </button>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            <button
+              type="button"
+              onClick={() => reset()}
+              style={{
+                padding: "12px 28px",
+                borderRadius: 12,
+                border: 0,
+                background: "#ff6a2b",
+                color: "#ffffff",
+                fontSize: 14,
+                fontWeight: 800,
+                cursor: "pointer",
+                boxShadow: "0 6px 18px rgba(255,106,43,0.32)"
+              }}
+            >
+              다시 시도하기
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/landing";
+                }
+              }}
+              style={{
+                padding: "12px 20px",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.18)",
+                background: "transparent",
+                color: "rgba(247,249,252,0.85)",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              홈으로
+            </button>
+          </div>
         </div>
       </body>
     </html>
