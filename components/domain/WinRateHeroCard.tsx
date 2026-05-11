@@ -52,7 +52,7 @@ export function WinRateHeroCard({ profile, games = [] }: WinRateHeroCardProps) {
           </button>
         </div>
       </section>
-      <AppModals open={modal} setOpen={setModal} games={games} />
+      <AppModals open={modal} setOpen={setModal} initialGames={games} />
     </>
   );
 }

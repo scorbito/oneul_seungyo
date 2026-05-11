@@ -409,7 +409,7 @@ export function ScheduleScreen({ games = [] }: ScheduleScreenProps) {
         </div>
       </section>
 
-      <AppModals open={modal} setOpen={setModal} games={games} initialDate={selectedKey} />
+      <AppModals open={modal} setOpen={setModal} initialGames={games} initialDate={selectedKey} />
     </AppShell>
   );
 }

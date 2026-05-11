@@ -6,6 +6,7 @@ import { getTeam } from "@/lib/constants/teams";
 import { createAttendanceAction, findCurrentUserAttendanceId } from "@/lib/actions/attendance";
 import { createReviewAction, updateReviewAction } from "@/lib/actions/review";
 import { previewTicket, registerAttendanceFromTicket } from "@/lib/actions/ticket";
+import { loadAttendanceModalGamesAction } from "@/lib/actions/initialData";
 import { AttendanceModal } from "@/components/domain/modals/AttendanceModal";
 import { ReviewModal } from "@/components/domain/modals/ReviewModal";
 import { ShareCardModal } from "@/components/domain/modals/ShareCardModal";
@@ -20,7 +21,8 @@ export type ModalKind = "attendance" | "review" | "share" | null;
 type AppModalsProps = {
   open: ModalKind;
   setOpen: (open: ModalKind) => void;
-  games?: Game[];
+  /** SSR 등에서 미리 받아둔 games. 없으면 모달 열 때 lazy fetch. */
+  initialGames?: Game[];
   initialGameId?: string;
   initialDate?: string;
   initialAttendanceId?: string;
@@ -28,11 +30,15 @@ type AppModalsProps = {
   editReview?: Review | null;
 };
 
-export function AppModals({ open, setOpen, games = [], initialGameId, initialDate, initialAttendanceId, editReview = null }: AppModalsProps) {
+export function AppModals({ open, setOpen, initialGames, initialGameId, initialDate, initialAttendanceId, editReview = null }: AppModalsProps) {
   const { addAttendance, addReview, attendances, reviews, profile, isAnonymous, showToast } = useAppState();
   const router = useRouter();
+  // games는 모달 열 때 lazy fetch (홈 SSR에서 빼서 첫 진입 시간 단축).
+  // initialGames가 있으면 그대로 사용, 없으면 모달 열릴 때 한 번만 server action 호출.
+  const [games, setGames] = useState<Game[]>(initialGames ?? []);
+  const [gamesLoading, setGamesLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [selectedGameId, setSelectedGameId] = useState(games[0]?.id ?? "");
+  const [selectedGameId, setSelectedGameId] = useState(initialGames?.[0]?.id ?? "");
   const [supportTeamId, setSupportTeamId] = useState("lg");
   const [ticketFileName, setTicketFileName] = useState("");
   const [processingTicket, setProcessingTicket] = useState(false);
@@ -158,6 +164,24 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
       setSelectedDate(initialDate.replaceAll(".", "-"));
     }
   }, [games, initialDate, initialGameId, open]);
+
+  // attendance / review 모달이 열릴 때 games가 비어 있으면 server action으로 lazy fetch.
+  // 한 번 받아오면 세션 내내 재사용 — 모달 닫고 다시 열어도 캐시.
+  useEffect(() => {
+    if (open !== "attendance" && open !== "review") return;
+    if (games.length > 0 || gamesLoading) return;
+    setGamesLoading(true);
+    loadAttendanceModalGamesAction()
+      .then((data) => {
+        setGames(data);
+      })
+      .catch(() => {
+        showToast("경기 목록을 불러오지 못했어요.");
+      })
+      .finally(() => {
+        setGamesLoading(false);
+      });
+  }, [open, games.length, gamesLoading, showToast]);
 
   // 날짜 변경 시 해당 날짜의 첫 경기를 자동 선택
   useEffect(() => {
@@ -361,6 +385,7 @@ export function AppModals({ open, setOpen, games = [], initialGameId, initialDat
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
         gamesOnSelectedDate={gamesOnSelectedDate}
+        gamesLoading={gamesLoading}
         selectedGameId={selectedGameId}
         supportTeamId={supportTeamId}
         setSupportTeamId={setSupportTeamId}

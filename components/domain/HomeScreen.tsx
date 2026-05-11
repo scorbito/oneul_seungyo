@@ -104,11 +104,10 @@ type HomeScreenProps = {
   standings?: TeamStanding[];
   weekGames?: Game[];
   weekStart?: string;
-  modalGames?: Game[];
   latestNoticeAt?: string | null;
 };
 
-export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestNoticeAt = null }: HomeScreenProps) {
+export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }: HomeScreenProps) {
   const { attendances, profile, showToast, markAttendanceResult, acknowledgeAttendanceResult } = useAppState();
   const router = useRouter();
   const [modal, setModal] = useState<ModalKind>(null);
@@ -595,7 +594,7 @@ export function HomeScreen({ weekGames = [], weekStart, modalGames = [], latestN
         </section>
       )}
 
-      <AppModals open={modal} setOpen={setModal} games={modalGames} initialAttendanceId={reviewTargetId} />
+      <AppModals open={modal} setOpen={setModal} initialAttendanceId={reviewTargetId} />
       <AppGuideModal open={guideOpen} onClose={closeGuide} />
       <AttendanceResultModal
         payload={resultPayload}

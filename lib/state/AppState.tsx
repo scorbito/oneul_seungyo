@@ -5,6 +5,7 @@ import type { Review, UserProfile } from "@/lib/types/domain";
 import type { ProfileStats, UserProfileRecord } from "@/lib/types/api-contracts";
 import { toggleReviewLikeAction, toggleReviewSaveAction } from "@/lib/actions/reviewReactions";
 import { acknowledgeAttendanceResultAction } from "@/lib/actions/attendance";
+import { loadMyReactionsAction, loadMyReviewsAction } from "@/lib/actions/initialData";
 
 export type AttendanceRecord = {
   id: string;
@@ -164,6 +165,32 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
   }, []);
 
   const [dbStats] = useState<ProfileStats | null>(initialStats ?? null);
+
+  // reviews + reactions는 layout SSR에서 빠진 데이터 — 마운트 후 백그라운드 페치.
+  // 홈/일정 화면은 영향 없음. 마이/커뮤니티/후기 상세에선 초기 렌더 직후 채워짐 (~200ms).
+  useEffect(() => {
+    let cancelled = false;
+    void loadMyReviewsAction()
+      .then((data) => {
+        if (cancelled) return;
+        setReviews(data);
+      })
+      .catch(() => {
+        // 실패해도 사용자 체험은 그대로 — 빈 리스트 노출.
+      });
+    void loadMyReactionsAction()
+      .then((data) => {
+        if (cancelled) return;
+        setLikedReviewIds(data.likedReviewIds);
+        setSavedReviewIds(data.savedReviewIds);
+      })
+      .catch(() => {
+        // 실패해도 좋아요/저장 상태 없이 진행.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [likedReviewIds, setLikedReviewIds] = useState<string[]>(initialLikedReviewIds);
   const [savedReviewIds, setSavedReviewIds] = useState<string[]>(initialSavedReviewIds);
 

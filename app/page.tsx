@@ -39,33 +39,21 @@ export default async function HomePage() {
   const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offsetToMonday);
   const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
 
-  // 직관 등록 모달용: 이번 시즌 시작(3월 1일) ~ 오늘 +14일
-  const modalRangeStart = new Date(today.getFullYear(), 2, 1); // 3월 1일
-  const modalRangeEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14);
-
-  const [standings, recentGames, notices] = await Promise.all([
+  // 홈 첫 화면은 이번주 경기만 SSR — 모달용 전체 시즌 경기 목록은 모달 열 때 lazy fetch.
+  const [standings, weekGames, notices] = await Promise.all([
     listStandingsFromDb(today.getFullYear()).catch(() => []),
-    listGamesFromDb({ from: fmt(modalRangeStart), to: fmt(modalRangeEnd) })
+    listGamesFromDb({ from: fmt(monday), to: fmt(sunday) })
       .then((items) => items.map(toDomainGame))
       .catch(() => []),
     listNoticesFromDb().catch(() => [])
   ]);
   const latestNoticeAt = notices[0]?.publishedAt ?? null;
 
-  // 이번주 게임은 recentGames에서 필터
-  const weekGames = recentGames.filter((g) => {
-    const dot = g.date.replaceAll("-", ".");
-    const [y, m, d] = dot.split(".").map(Number);
-    const gameTime = new Date(y, m - 1, d).getTime();
-    return gameTime >= monday.getTime() && gameTime <= sunday.getTime();
-  });
-
   return (
     <HomeScreen
       standings={standings}
       weekGames={weekGames}
       weekStart={fmt(monday)}
-      modalGames={recentGames}
       latestNoticeAt={latestNoticeAt}
     />
   );

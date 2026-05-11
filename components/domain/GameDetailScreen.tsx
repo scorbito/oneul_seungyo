@@ -75,7 +75,7 @@ export function GameDetailScreen({ game }: GameDetailScreenProps) {
           이 경기 직관 등록
         </Button>
       </div>
-      <AppModals open={modal} setOpen={setModal} games={[game]} initialGameId={game.id} initialDate={game.date} />
+      <AppModals open={modal} setOpen={setModal} initialGames={[game]} initialGameId={game.id} initialDate={game.date} />
     </AppShell>
   );
 }

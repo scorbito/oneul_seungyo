@@ -25,6 +25,7 @@ type AttendanceModalProps = {
   selectedDate: string;
   setSelectedDate: (value: string) => void;
   gamesOnSelectedDate: Game[];
+  gamesLoading?: boolean;
   selectedGameId: string;
   supportTeamId: string;
   setSupportTeamId: (value: string) => void;
@@ -43,6 +44,7 @@ export function AttendanceModal({
   selectedDate,
   setSelectedDate,
   gamesOnSelectedDate,
+  gamesLoading = false,
   selectedGameId,
   supportTeamId,
   setSupportTeamId,
@@ -82,9 +84,11 @@ export function AttendanceModal({
         </label>
         <div className="field-group">
           <span>2. 경기와 응원팀 선택</span>
-          {gamesOnSelectedDate.length === 0 && (
+          {gamesLoading ? (
+            <p className="field-empty">경기 목록을 불러오는 중...</p>
+          ) : gamesOnSelectedDate.length === 0 ? (
             <p className="field-empty">이 날짜에 등록 가능한 경기가 없어요. 다른 날짜를 선택해보세요.</p>
-          )}
+          ) : null}
           {gamesOnSelectedDate.map((game) => {
             const home = getTeam(game.homeTeamId);
             const away = getTeam(game.awayTeamId);
