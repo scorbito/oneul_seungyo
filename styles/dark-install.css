@@ -130,40 +130,40 @@
 }
 
 /* ---- 설치 안내 모달 ---- */
-.phone-frame-dark .install-modal-backdrop {
+.install-modal-backdrop {
   background: rgba(6, 16, 30, 0.78);
   backdrop-filter: blur(6px);
 }
 
-.phone-frame-dark .install-modal-panel {
+.install-modal-panel {
   background: linear-gradient(180deg, #0e1c33 0%, #08111f 100%);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: var(--hd-text-primary);
   max-width: 360px;
 }
 
-.phone-frame-dark .install-modal-panel .modal-header {
+.install-modal-panel .modal-header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.phone-frame-dark .install-modal-panel .modal-header strong {
+.install-modal-panel .modal-header strong {
   font-size: 15px;
   font-weight: 850;
   color: var(--hd-text-primary);
 }
 
-.phone-frame-dark .install-modal-panel .modal-close {
+.install-modal-panel .modal-close {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.phone-frame-dark .install-modal-content {
+.install-modal-content {
   padding: 20px 18px 16px;
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-.phone-frame-dark .install-modal-hero {
+.install-modal-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -171,11 +171,11 @@
   gap: 10px;
 }
 
-.phone-frame-dark .install-modal-mascot {
+.install-modal-mascot {
   filter: drop-shadow(0 6px 16px rgba(255, 106, 43, 0.4));
 }
 
-.phone-frame-dark .install-modal-hero h2 {
+.install-modal-hero h2 {
   margin: 0;
   font-size: 17px;
   font-weight: 850;
@@ -183,7 +183,7 @@
   line-height: 1.35;
 }
 
-.phone-frame-dark .install-modal-hero p {
+.install-modal-hero p {
   margin: 0;
   font-size: 12.5px;
   font-weight: 600;
@@ -192,7 +192,7 @@
 }
 
 /* ---- 단계 리스트 (iOS/Android) ---- */
-.phone-frame-dark .install-steps {
+.install-steps {
   list-style: none;
   margin: 0;
   padding: 14px;
@@ -204,13 +204,13 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.phone-frame-dark .install-steps li {
+.install-steps li {
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
 
-.phone-frame-dark .install-step-num {
+.install-step-num {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
@@ -224,7 +224,7 @@
   font-weight: 850;
 }
 
-.phone-frame-dark .install-step-body {
+.install-step-body {
   flex: 1;
   font-size: 13px;
   font-weight: 600;
@@ -232,12 +232,27 @@
   color: var(--hd-text-primary);
 }
 
-.phone-frame-dark .install-step-body strong {
+.install-step-body strong {
   font-weight: 800;
   color: var(--hd-accent-orange);
 }
 
-.phone-frame-dark .install-step-icon {
+.install-step-hint {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  font-style: normal;
+  color: var(--hd-text-muted);
+  line-height: 1.5;
+}
+
+.install-step-hint strong {
+  font-weight: 700;
+  color: var(--hd-text-secondary);
+}
+
+.install-step-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -251,7 +266,7 @@
 }
 
 /* ---- Android 원클릭 CTA ---- */
-.phone-frame-dark .install-android-cta {
+.install-android-cta {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -262,7 +277,7 @@
   border: 1px solid rgba(255, 106, 43, 0.3);
 }
 
-.phone-frame-dark .install-android-cta p {
+.install-android-cta p {
   margin: 0;
   font-size: 13px;
   font-weight: 650;
@@ -271,12 +286,12 @@
   line-height: 1.55;
 }
 
-.phone-frame-dark .install-android-cta button {
+.install-android-cta button {
   width: 100%;
 }
 
 /* ---- PC fallback ---- */
-.phone-frame-dark .install-desktop-hint {
+.install-desktop-hint {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -288,12 +303,12 @@
   text-align: center;
 }
 
-.phone-frame-dark .install-desktop-hint > svg {
+.install-desktop-hint > svg {
   color: var(--hd-accent-orange);
   opacity: 0.85;
 }
 
-.phone-frame-dark .install-desktop-hint p {
+.install-desktop-hint p {
   margin: 0;
   font-size: 13px;
   font-weight: 650;
@@ -302,7 +317,7 @@
 }
 
 /* ---- 닫기 버튼 ---- */
-.phone-frame-dark .install-modal-close {
+.install-modal-close {
   width: 100%;
   height: 40px;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -314,6 +329,6 @@
   cursor: pointer;
 }
 
-.phone-frame-dark .install-modal-close:hover {
+.install-modal-close:hover {
   background: rgba(255, 255, 255, 0.08);
 }

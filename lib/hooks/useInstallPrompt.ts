@@ -31,7 +31,13 @@ export function useInstallPrompt(): InstallPromptState {
     if (typeof window === "undefined") return;
 
     const ua = window.navigator.userAgent;
-    setIsIOS(/iPhone|iPad|iPod/.test(ua));
+    // iPad는 iPadOS 13+부터 사파리가 desktop UA로 위장 (iPad 문자열 없음).
+    // navigator.platform === "MacIntel" + maxTouchPoints > 1로 별도 감지.
+    const isIPadOS =
+      window.navigator.platform === "MacIntel" &&
+      typeof window.navigator.maxTouchPoints === "number" &&
+      window.navigator.maxTouchPoints > 1;
+    setIsIOS(/iPhone|iPad|iPod/.test(ua) || isIPadOS);
     setIsAndroid(/Android/.test(ua));
 
     const standalone =

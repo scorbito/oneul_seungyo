@@ -57,17 +57,25 @@ export function InstallAppModal({ open, onClose }: Props) {
             <li>
               <span className="install-step-num">1</span>
               <span className="install-step-body">
-                Safari 하단의 <span className="install-step-icon"><Share2 size={14} /></span> 공유 버튼을 누르세요.
+                Safari 하단의 <strong>⋯</strong> 또는 <span className="install-step-icon"><Share2 size={14} /></span> 버튼을 누르세요.
               </span>
             </li>
             <li>
               <span className="install-step-num">2</span>
               <span className="install-step-body">
-                메뉴에서 <strong>「홈 화면에 추가」</strong>를 선택하세요.
+                메뉴에서 <strong>「공유」</strong>를 누르세요.
+                <em className="install-step-hint">(바로 공유 메뉴가 떴다면 건너뛰세요)</em>
               </span>
             </li>
             <li>
               <span className="install-step-num">3</span>
+              <span className="install-step-body">
+                <strong>「홈 화면에 추가」</strong>를 선택하세요.
+                <em className="install-step-hint">(안 보이면 <strong>「더 보기」</strong> 안에 있어요)</em>
+              </span>
+            </li>
+            <li>
+              <span className="install-step-num">4</span>
               <span className="install-step-body">
                 오른쪽 위 <strong>「추가」</strong>를 누르면 끝이에요! 🎉
               </span>
