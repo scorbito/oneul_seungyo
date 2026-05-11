@@ -75,27 +75,27 @@ export function InstallAppBanner() {
     }
   };
 
-  if (!visible) {
-    return modalOpen ? <InstallAppModal open={modalOpen} onClose={() => setModalOpen(false)} /> : null;
-  }
-
+  // 항상 동일한 구조를 반환 — 조건부 분기로 렌더링 트리 구조가 바뀌지 않도록.
+  // 배너 div는 visible일 때만 보이고, 모달은 항상 마운트 (open prop으로 표시 제어).
   return (
     <>
-      <div className="install-banner" role="region" aria-label="앱으로 설치 안내">
-        <div className="install-banner-icon" aria-hidden="true">
-          <Download size={16} />
+      {visible ? (
+        <div className="install-banner" role="region" aria-label="앱으로 설치 안내">
+          <div className="install-banner-icon" aria-hidden="true">
+            <Download size={16} />
+          </div>
+          <div className="install-banner-text">
+            <strong>홈 화면에 추가하면 더 편해요!</strong>
+            <span>URL 바 없이 풀스크린으로 사용</span>
+          </div>
+          <button type="button" className="install-banner-cta" onClick={() => setModalOpen(true)}>
+            설치방법
+          </button>
+          <button type="button" className="install-banner-dismiss" onClick={dismiss} aria-label="닫기">
+            <X size={16} />
+          </button>
         </div>
-        <div className="install-banner-text">
-          <strong>홈 화면에 추가하면 더 편해요!</strong>
-          <span>URL 바 없이 풀스크린으로 사용</span>
-        </div>
-        <button type="button" className="install-banner-cta" onClick={() => setModalOpen(true)}>
-          설치방법
-        </button>
-        <button type="button" className="install-banner-dismiss" onClick={dismiss} aria-label="닫기">
-          <X size={16} />
-        </button>
-      </div>
+      ) : null}
       <InstallAppModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );

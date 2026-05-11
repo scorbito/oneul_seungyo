@@ -132,7 +132,9 @@ type AppStateProviderProps = {
 };
 
 export function AppStateProvider({ children, initialProfile, initialStats, initialAttendances, initialReviews, initialIsAnonymous = false, initialLikedReviewIds = [], initialSavedReviewIds = [] }: AppStateProviderProps) {
-  const isAuthed = Boolean(initialProfile);
+  // ─────────────────────────────────────────────
+  // 1. useState — 모든 상태 선언을 맨 앞에 모아둠 (Rules of Hooks 준수, 가독성)
+  // ─────────────────────────────────────────────
   const [attendances, setAttendances] = useState<AttendanceRecord[]>(
     (initialAttendances ?? []).map(normalizeAttendance)
   );
@@ -147,6 +149,27 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
         }
       : emptyProfileSettings
   );
+  const [dbStats] = useState<ProfileStats | null>(initialStats ?? null);
+  const [likedReviewIds, setLikedReviewIds] = useState<string[]>(initialLikedReviewIds);
+  const [savedReviewIds, setSavedReviewIds] = useState<string[]>(initialSavedReviewIds);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    initialProfile?.notificationsEnabled ?? true
+  );
+  const [publicScope, setPublicScope] = useState(
+    initialProfile?.defaultPublicScope === "friends" ? "친구 공개"
+    : initialProfile?.defaultPublicScope === "private" ? "나만 보기"
+    : "전체 공개"
+  );
+  const [toast, setToast] = useState<Toast | null>(null);
+
+  // ─────────────────────────────────────────────
+  // 2. 커스텀 hook (내부적으로 useEffect 등 사용)
+  // ─────────────────────────────────────────────
+  useVisibilityRefresh();
+
+  // ─────────────────────────────────────────────
+  // 3. useEffect — 모든 사이드 이펙트를 한 곳에 모음
+  // ─────────────────────────────────────────────
 
   // SSR로 받은 initialProfile이 변경되면 (router.refresh 등) client state도 동기화
   useEffect(() => {
@@ -160,18 +183,11 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
   }, [initialProfile?.nickname, initialProfile?.mainTeamId, initialProfile?.avatarImageUrl]);
 
   // React 콘텐츠가 마운트되면 initial-loader 페이드아웃 신호.
-  // (layout.tsx에서 SSR 셸이 HTML로 도착한 뒤, AppStateProvider 하이드레이션 완료 시점)
   useEffect(() => {
     document.documentElement.setAttribute("data-loaded", "true");
   }, []);
 
-  // 사용자가 PWA/탭을 다시 활성화할 때 자동 새로고침 (30초 이상 떨어졌다 돌아온 경우만).
-  useVisibilityRefresh();
-
-  const [dbStats] = useState<ProfileStats | null>(initialStats ?? null);
-
   // reviews + reactions는 layout SSR에서 빠진 데이터 — 마운트 후 백그라운드 페치.
-  // 홈/일정 화면은 영향 없음. 마이/커뮤니티/후기 상세에선 초기 렌더 직후 채워짐 (~200ms).
   useEffect(() => {
     let cancelled = false;
     void loadMyReviewsAction()
@@ -195,8 +211,6 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
       cancelled = true;
     };
   }, []);
-  const [likedReviewIds, setLikedReviewIds] = useState<string[]>(initialLikedReviewIds);
-  const [savedReviewIds, setSavedReviewIds] = useState<string[]>(initialSavedReviewIds);
 
   // SSR 으로 받은 초기 reactions가 변경되면 (router.refresh) 동기화
   useEffect(() => {
@@ -205,15 +219,11 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
   useEffect(() => {
     setSavedReviewIds(initialSavedReviewIds);
   }, [initialSavedReviewIds.join(",")]);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(
-    initialProfile?.notificationsEnabled ?? true
-  );
-  const [publicScope, setPublicScope] = useState(
-    initialProfile?.defaultPublicScope === "friends" ? "친구 공개"
-    : initialProfile?.defaultPublicScope === "private" ? "나만 보기"
-    : "전체 공개"
-  );
-  const [toast, setToast] = useState<Toast | null>(null);
+
+  // ─────────────────────────────────────────────
+  // 4. 일반 변수 / 핸들러 (hook 아님)
+  // ─────────────────────────────────────────────
+  const isAuthed = Boolean(initialProfile);
 
   const showToast = (message: string) => {
     const id = Date.now();
