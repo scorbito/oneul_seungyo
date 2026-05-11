@@ -422,3 +422,42 @@ html[data-loaded="true"] .initial-loader {
   gap: 2px;
 }
 
+
+/* ============================================================
+ * Pull-to-Refresh 인디케이터 + 헤더 새로고침 버튼 회전
+ * - 페이지 상단에서 손가락으로 당기면 아이콘이 회전하며 진행감 표시
+ * - 헤더 우측 새로고침 버튼 클릭 시 0.8초 회전
+ * ============================================================ */
+
+.ptr-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, 0);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 106, 43, 0.92);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(255, 106, 43, 0.35);
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.ptr-icon {
+  transition: transform 0.05s linear;
+}
+
+.ptr-icon-spinning {
+  animation: ptr-spin 0.6s linear infinite;
+}
+
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}
+

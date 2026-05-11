@@ -6,6 +6,7 @@ import type { ProfileStats, UserProfileRecord } from "@/lib/types/api-contracts"
 import { toggleReviewLikeAction, toggleReviewSaveAction } from "@/lib/actions/reviewReactions";
 import { acknowledgeAttendanceResultAction } from "@/lib/actions/attendance";
 import { loadMyReactionsAction, loadMyReviewsAction } from "@/lib/actions/initialData";
+import { useVisibilityRefresh } from "@/lib/hooks/useVisibilityRefresh";
 
 export type AttendanceRecord = {
   id: string;
@@ -163,6 +164,9 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
   useEffect(() => {
     document.documentElement.setAttribute("data-loaded", "true");
   }, []);
+
+  // 사용자가 PWA/탭을 다시 활성화할 때 자동 새로고침 (30초 이상 떨어졌다 돌아온 경우만).
+  useVisibilityRefresh();
 
   const [dbStats] = useState<ProfileStats | null>(initialStats ?? null);
 

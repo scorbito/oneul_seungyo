@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BottomTabs } from "@/components/layout/BottomTabs";
+import { PullToRefresh } from "@/components/common/PullToRefresh";
 
 type AppShellProps = {
   activeTab?: "home" | "schedule" | "community" | "my";
@@ -30,7 +31,9 @@ export function AppShell({ activeTab = "home", title = "오늘은 승요", showB
             </Link>
             {headerAction}
           </header>
-          <div className="app-content">{children}</div>
+          <div className="app-content">
+            <PullToRefresh>{children}</PullToRefresh>
+          </div>
         </div>
         <BottomTabs activeTab={activeTab} />
       </section>
