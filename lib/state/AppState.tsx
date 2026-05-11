@@ -156,6 +156,13 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
       avatarUrl: initialProfile.avatarImageUrl ?? null
     });
   }, [initialProfile?.nickname, initialProfile?.mainTeamId, initialProfile?.avatarImageUrl]);
+
+  // React 콘텐츠가 마운트되면 initial-loader 페이드아웃 신호.
+  // (layout.tsx에서 SSR 셸이 HTML로 도착한 뒤, AppStateProvider 하이드레이션 완료 시점)
+  useEffect(() => {
+    document.documentElement.setAttribute("data-loaded", "true");
+  }, []);
+
   const [dbStats] = useState<ProfileStats | null>(initialStats ?? null);
   const [likedReviewIds, setLikedReviewIds] = useState<string[]>(initialLikedReviewIds);
   const [savedReviewIds, setSavedReviewIds] = useState<string[]>(initialSavedReviewIds);

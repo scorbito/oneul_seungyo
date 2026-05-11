@@ -1,14 +1,8 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { unstable_noStore as noStore } from "next/cache";
-import { AppStateProvider } from "@/lib/state/AppState";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import {
-  getCurrentProfileFromDb,
-  getCurrentProfileStatsFromDb,
-  getCurrentUserReviewReactionsFromDb,
-  listCurrentAttendancesFromDb,
-  listReviewsFromDb
-} from "@/lib/supabase/queries";
+import { AppStateLoader } from "./app-state-loader";
 import "./globals.css";
 import "@/styles/light-home.css";
 import "@/styles/light-auth-onboarding.css";
@@ -114,17 +108,10 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   noStore();
 
+  // 빠른 auth 체크만 동기로 수행 — 무거운 DB 페치는 AppStateLoader가 Suspense 안에서.
   const ssr = createSupabaseServerClient();
   const { data: authData } = await ssr.auth.getUser();
   const isAnonymous = Boolean(authData?.user?.is_anonymous);
-
-  const [profile, stats, attendances, reviews, reactions] = await Promise.all([
-    getCurrentProfileFromDb().catch(() => null),
-    getCurrentProfileStatsFromDb().catch(() => null),
-    listCurrentAttendancesFromDb().catch(() => []),
-    listReviewsFromDb({ onlyMine: true }).catch(() => []),
-    getCurrentUserReviewReactionsFromDb().catch(() => ({ likedReviewIds: [], savedReviewIds: [] }))
-  ]);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -137,31 +124,30 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <link rel="dns-prefetch" href={supabaseUrl} />
           </>
         ) : null}
+        {/* 스플래시 마스코트는 첫 페인트 직후 보여야 해서 highest priority preload */}
+        <link rel="preload" as="image" href="/assets/mascot-cheer.png" fetchPriority="high" />
         <link rel="preload" as="image" href="/assets/stadium-hero-vertical.png" fetchPriority="high" />
       </head>
       <body>
         <div className="initial-loader" aria-hidden="true">
-          <div className="initial-loader-spinner" />
+          <div className="initial-loader-mascot-wrap">
+            <div className="initial-loader-mascot" />
+            <div className="initial-loader-shadow" aria-hidden="true" />
+          </div>
           <span className="initial-loader-text">오늘은 승요</span>
-          <span className="initial-loader-sub">시작 중...</span>
+          <span className="initial-loader-dots" aria-hidden="true">
+            <span className="initial-loader-dot" />
+            <span className="initial-loader-dot" />
+            <span className="initial-loader-dot" />
+          </span>
         </div>
-        <script
-          // DOM 준비되는 순간 loader 숨김. JS 실행 전엔 CSS fallback이 1.5초 후 자동 숨김.
-          dangerouslySetInnerHTML={{
-            __html: `(function(){var d=document.documentElement;function r(){d.setAttribute('data-loaded','true');}if(document.readyState==='complete'||document.readyState==='interactive'){requestAnimationFrame(r);}else{document.addEventListener('DOMContentLoaded',r);}})();`
-          }}
-        />
-        <AppStateProvider
-          initialProfile={profile}
-          initialStats={stats}
-          initialAttendances={attendances}
-          initialReviews={reviews}
-          initialIsAnonymous={isAnonymous}
-          initialLikedReviewIds={reactions.likedReviewIds}
-          initialSavedReviewIds={reactions.savedReviewIds}
-        >
-          {children}
-        </AppStateProvider>
+        {/* AppState 데이터 페치를 Suspense로 감싸 — 페치 중에도 위의 initial-loader가 즉시 노출됨.
+            fallback은 null이라 추가 빈 화면 없음 (loader가 그대로 유지). */}
+        <Suspense fallback={null}>
+          <AppStateLoader isAnonymous={isAnonymous}>
+            {children}
+          </AppStateLoader>
+        </Suspense>
       </body>
     </html>
   );
