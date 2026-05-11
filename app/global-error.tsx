@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /** Next.js global error boundary — 루트 레이아웃 포함 어디에서 에러가 나도 catch.
  *  현재는 디버깅 목적으로 에러 메시지 + digest를 화면에 노출 (자동 reload 안 함). */
@@ -11,6 +11,8 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     // 콘솔에 비-minified 에러 정보 덤프 (브라우저 콘솔에서 확인 가능)
     console.error("[GlobalError]", {
@@ -20,6 +22,48 @@ export default function GlobalError({
       name: error.name
     });
   }, [error]);
+
+  const buildReport = () => {
+    const lines = [
+      `[오늘은 승요 에러 리포트]`,
+      `time: ${new Date().toISOString()}`,
+      `url: ${typeof window !== "undefined" ? window.location.href : "(unknown)"}`,
+      `ua: ${typeof navigator !== "undefined" ? navigator.userAgent : "(unknown)"}`,
+      ``,
+      `name: ${error.name}`,
+      `message: ${error.message}`,
+      error.digest ? `digest: ${error.digest}` : "",
+      ``,
+      `stack:`,
+      error.stack ?? "(no stack)"
+    ];
+    return lines.filter(Boolean).join("\n");
+  };
+
+  const copyReport = async () => {
+    const text = buildReport();
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // 구형 브라우저 fallback
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("[GlobalError] clipboard copy failed:", err);
+      // 복사 실패해도 최소 alert로 보여줌
+      window.prompt("아래 내용을 직접 복사해주세요 (Ctrl+C / Cmd+C):", text);
+    }
+  };
 
   return (
     <html lang="ko">
@@ -55,8 +99,29 @@ export default function GlobalError({
               color: "rgba(247,249,252,0.85)"
             }}
           >
-            <summary style={{ cursor: "pointer", fontWeight: 700, marginBottom: 8 }}>
-              개발자용 에러 정보
+            <summary style={{ cursor: "pointer", fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+              <span>개발자용 에러 정보</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void copyReport();
+                }}
+                style={{
+                  marginLeft: "auto",
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(255,106,43,0.5)",
+                  background: copied ? "#ff6a2b" : "rgba(255,106,43,0.16)",
+                  color: copied ? "#ffffff" : "#ff6a2b",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  cursor: "pointer"
+                }}
+              >
+                {copied ? "복사됨 ✓" : "에러 복사"}
+              </button>
             </summary>
             <p style={{ margin: "4px 0", wordBreak: "break-all" }}>
               <strong>message:</strong> {error.message || "(no message)"}
