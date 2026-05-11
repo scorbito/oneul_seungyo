@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Download, Share2, Smartphone } from "lucide-react";
+import { Download, Smartphone } from "lucide-react";
 import { ModalShell } from "@/components/common/ModalShell";
 import { Button } from "@/components/common/Button";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
@@ -57,7 +57,7 @@ export function InstallAppModal({ open, onClose }: Props) {
             <li>
               <span className="install-step-num">1</span>
               <span className="install-step-body">
-                Safari 하단의 <strong>⋯</strong> 또는 <span className="install-step-icon"><Share2 size={14} /></span> 버튼을 누르세요.
+                Safari 하단의 <strong>⋯</strong> 또는 <strong>공유</strong> 버튼을 누르세요.
               </span>
             </li>
             <li>

@@ -7,7 +7,8 @@ import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 
 const DISMISS_KEY = "install-banner.dismissedAt";
 const COOLDOWN_DAYS = 30;
-const SHOW_AFTER_MS = 30_000; // 첫 진입 30초 뒤
+// 페이지 콘텐츠가 먼저 그려진 뒤 자연스럽게 슬라이드 업 — 너무 빠르면 콘텐츠보다 배너가 먼저.
+const SHOW_AFTER_MS = 1_500;
 
 /** 하단 플로팅 설치 안내 바.
  *  - 이미 설치(standalone) → 표시 X

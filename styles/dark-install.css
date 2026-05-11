@@ -2,6 +2,20 @@
  * PWA 설치 안내 — 하단 플로팅 바 + 디바이스별 안내 모달
  * ============================================================ */
 
+/* CSS 변수 fallback — InstallAppBanner/InstallAppModal은 layout 레벨에서
+   .phone-frame-dark 바깥에 렌더되어 --hd-* 변수 스코프 밖에 있음.
+   여기서 다시 정의해 글자/배경 색이 검정으로 떨어지는 문제 방지. */
+.install-banner,
+.install-modal-backdrop,
+.install-modal-panel {
+  --hd-text-primary: #f7f9fc;
+  --hd-text-secondary: rgba(247, 249, 252, 0.72);
+  --hd-text-muted: rgba(247, 249, 252, 0.48);
+  --hd-accent-orange: #ff6a2b;
+  --hd-border-soft: rgba(255, 255, 255, 0.08);
+  --hd-border-medium: rgba(255, 255, 255, 0.12);
+}
+
 /* ---- 하단 플로팅 배너 ---- */
 .install-banner {
   position: fixed;
@@ -153,7 +167,12 @@
 }
 
 .install-modal-panel .modal-close {
-  color: rgba(255, 255, 255, 0.6);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.install-modal-panel .modal-close:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .install-modal-content {
