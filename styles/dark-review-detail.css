@@ -563,28 +563,32 @@
 }
 
 /* ============================================================
- * 라이트박스(yet-another-react-lightbox) — iOS Safari safe-area 대응
- * 상단 컨트롤(카운터, 줌, 닫기)이 노치/상태바와 겹치지 않도록 내려줌
+ * 라이트박스(yet-another-react-lightbox) — iOS Safari/PWA safe-area 대응
+ * 상단 툴바·카운터는 컨테이너 기준 position:absolute; top:0 으로 붙어 있어서
+ * 그냥 컨테이너 padding만 줘선 안 내려옴. top 값 자체를 safe-area로 키움.
+ * PWA standalone에서 상단 상태바(노치 포함) 영역 겹침 방지.
  * ============================================================ */
-.yarl__container {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+.yarl__portal .yarl__toolbar {
+  top: env(safe-area-inset-top, 0px) !important;
+  padding: 12px !important;
 }
 
-.yarl__toolbar {
-  top: env(safe-area-inset-top, 0px);
-  padding-top: 8px;
-  padding-right: 8px;
-}
-
-.yarl__counter {
-  top: calc(env(safe-area-inset-top, 0px) + 12px);
-  left: 12px;
+.yarl__portal .yarl__counter {
+  top: env(safe-area-inset-top, 0px) !important;
+  margin: 12px !important;
 }
 
 /* 터치 타겟 확대 — 44x44 권장 사이즈 보장 */
-.yarl__button {
+.yarl__portal .yarl__button {
   min-width: 44px;
   min-height: 44px;
+  padding: 10px !important;
+}
+
+/* 좌우 네비게이션 버튼도 safe-area 영역 안에 오도록 */
+.yarl__portal .yarl__navigation_prev,
+.yarl__portal .yarl__navigation_next {
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
 }
 
