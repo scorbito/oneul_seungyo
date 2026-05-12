@@ -562,3 +562,29 @@
   font-size: 13px;
 }
 
+/* ============================================================
+ * 라이트박스(yet-another-react-lightbox) — iOS Safari safe-area 대응
+ * 상단 컨트롤(카운터, 줌, 닫기)이 노치/상태바와 겹치지 않도록 내려줌
+ * ============================================================ */
+.yarl__container {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.yarl__toolbar {
+  top: env(safe-area-inset-top, 0px);
+  padding-top: 8px;
+  padding-right: 8px;
+}
+
+.yarl__counter {
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 12px;
+}
+
+/* 터치 타겟 확대 — 44x44 권장 사이즈 보장 */
+.yarl__button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
