@@ -29,6 +29,8 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   const [input, setInput] = useState("");
   const [isPending, startTransition] = useTransition();
   const [imageIndex, setImageIndex] = useState(0);
+  // 첫 사진의 가로:세로 비율 — 캐러셀 컨테이너 높이를 첫 사진 기준으로 고정해 본문이 출렁이지 않게 함
+  const [firstImageRatio, setFirstImageRatio] = useState<number | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [appModalOpen, setAppModalOpen] = useState<ModalKind>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -236,6 +238,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
               onPointerDown={handlePointerDown}
               onPointerLeave={() => { carouselDragStartRef.current = null; }}
               onPointerUp={handlePointerUp}
+              style={firstImageRatio ? { aspectRatio: String(firstImageRatio) } : undefined}
             >
               <div
                 className="review-detail-track"
@@ -251,6 +254,11 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
                       priority={i === 0}
                       src={src}
                       width={360}
+                      onLoadingComplete={(img) => {
+                        if (i === 0 && img.naturalWidth > 0 && img.naturalHeight > 0) {
+                          setFirstImageRatio(img.naturalWidth / img.naturalHeight);
+                        }
+                      }}
                     />
                   </div>
                 ))}
