@@ -161,6 +161,7 @@
   background: rgba(0, 0, 0, 0.3);
   touch-action: pan-y;
   user-select: none;
+  cursor: zoom-in;
 }
 
 .phone-frame-dark .review-detail-track {

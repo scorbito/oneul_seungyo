@@ -4,6 +4,11 @@ import { useEffect, useRef, useState, useTransition, type PointerEvent } from "r
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Bookmark, ChevronLeft, ChevronRight, Heart, MoreHorizontal, PenSquare, Send, Trash2 } from "lucide-react";
+import Lightbox from "yet-another-react-lightbox";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import Counter from "yet-another-react-lightbox/plugins/counter";
+import "yet-another-react-lightbox/styles.css";
+import "yet-another-react-lightbox/plugins/counter.css";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/common/Button";
 import { ModalShell } from "@/components/common/ModalShell";
@@ -31,6 +36,8 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   const [imageIndex, setImageIndex] = useState(0);
   // 첫 사진의 가로:세로 비율 — 캐러셀 컨테이너 높이를 첫 사진 기준으로 고정해 본문이 출렁이지 않게 함
   const [firstImageRatio, setFirstImageRatio] = useState<number | null>(null);
+  // 라이트박스(전체화면 확대 보기) — null이면 닫힘, 숫자면 해당 인덱스로 열림
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [appModalOpen, setAppModalOpen] = useState<ModalKind>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -209,20 +216,27 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
           const goPrev = () => setImageIndex((i) => Math.max(0, i - 1));
           const goNext = () => setImageIndex((i) => Math.min(imgs.length - 1, i + 1));
           const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-            if (imgs.length <= 1) return;
             if ((event.target as HTMLElement | null)?.closest("button")) return;
             carouselDragStartRef.current = { x: event.clientX, y: event.clientY };
           };
           const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
             const start = carouselDragStartRef.current;
             carouselDragStartRef.current = null;
-            if (!start || imgs.length <= 1) return;
+            if (!start) return;
+            if ((event.target as HTMLElement | null)?.closest("button")) return;
 
             const diffX = event.clientX - start.x;
             const diffY = event.clientY - start.y;
             const absX = Math.abs(diffX);
             const absY = Math.abs(diffY);
 
+            // 거의 안 움직였으면 "탭" — 라이트박스(확대 보기) 오픈
+            if (absX < 8 && absY < 8) {
+              setLightboxIndex(safeIdx);
+              return;
+            }
+
+            if (imgs.length <= 1) return;
             if (absX < 45 || absX < absY * 1.2) return;
             if (diffX < 0) {
               goNext();
@@ -434,6 +448,19 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
           </div>
         </div>
       </ModalShell>
+
+      <Lightbox
+        open={lightboxIndex !== null}
+        index={lightboxIndex ?? 0}
+        close={() => setLightboxIndex(null)}
+        slides={(review.images && review.images.length > 0 ? review.images : [review.image]).map((src) => ({ src }))}
+        plugins={[Zoom, Counter]}
+        zoom={{ maxZoomPixelRatio: 4, scrollToZoom: true, doubleTapDelay: 300, doubleClickDelay: 300 }}
+        carousel={{ finite: true }}
+        animation={{ fade: 200, swipe: 280 }}
+        controller={{ closeOnBackdropClick: true }}
+        styles={{ container: { backgroundColor: "rgba(0, 0, 0, 0.95)" } }}
+      />
     </AppShell>
   );
 }
