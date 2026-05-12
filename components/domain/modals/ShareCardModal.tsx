@@ -46,15 +46,29 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
     try {
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // 1) 배경 이미지를 미리 fetch해서 data URL로 변환.
-      //    모바일 사파리에서 crossOrigin 이미지가 캡처 시 빈 화면으로 나오는 문제 회피.
-      const bgResponse = await fetch(selectedTemplate.src);
-      const bgBlob = await bgResponse.blob();
+      // 1) 배경 이미지를 JS Image 객체로 로드 후 canvas로 data URL 변환.
+      //    fetch + crossOrigin 의존도 없이 same-origin 이미지를 안전하게 가져옴.
+      //    모바일 사파리/PWA에서 html-to-image가 빈 이미지로 캡처하는 문제 회피.
       const bgDataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error("배경 이미지 로드 실패"));
-        reader.readAsDataURL(bgBlob);
+        const img = new window.Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              reject(new Error("canvas context 생성 실패"));
+              return;
+            }
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL("image/png"));
+          } catch (err) {
+            reject(err);
+          }
+        };
+        img.onerror = () => reject(new Error("배경 이미지 로드 실패"));
+        img.src = selectedTemplate.src;
       });
 
       // 2) html-to-image로 카드 캡처. 카드를 화면 밖에 복제하되 부모 클래스 체인
