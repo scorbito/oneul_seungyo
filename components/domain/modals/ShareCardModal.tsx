@@ -62,10 +62,18 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
         cacheBust: true,
         pixelRatio: 2.5,
         backgroundColor: "#06101e",
+        width: 270,
+        height: 480,
+        canvasWidth: 270,
+        canvasHeight: 480,
         style: {
           opacity: "1",
           visibility: "visible",
-          transform: "scale(1)"
+          transform: "scale(1)",
+          transformOrigin: "top left",
+          margin: "0",
+          width: "270px",
+          height: "480px"
         }
       });
 
@@ -138,26 +146,122 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
   return (
     <ModalShell open={open} title="공유하기" onClose={onClose} panelClassName="share-modal-panel">
       <div className="share-modal-content">
-        <div className="share-card-preview" ref={shareCardRef}>
-          {/* html-to-image 호환을 위해 일반 <img> 사용 (next/image의 wrapper가 캡처를 방해함) */}
+        {/* 공유 카드 — 모든 스타일을 인라인으로. 부모 CSS 컨텍스트 의존성 0.
+            html-to-image가 원본을 그대로 캡처해도 미리보기와 1:1 일치 보장. */}
+        <div
+          ref={shareCardRef}
+          style={{
+            position: "relative",
+            width: 270,
+            height: 480,
+            margin: "0 auto",
+            borderRadius: 16,
+            overflow: "hidden",
+            background: "#1a2640",
+            flexShrink: 0,
+            boxShadow: "0 12px 32px rgba(0, 0, 0, 0.4)"
+          }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="공유 카드 배경" src={selectedTemplate.src} crossOrigin="anonymous" />
-          <div className="share-card-overlay">
-            <p className="share-card-label">내 직관 승률</p>
-            <strong className="share-card-rate">{profile.winRate}</strong>
-            <span className="share-card-stats">{profile.wins}승 {profile.losses}패 {profile.draws}무</span>
-            <div className="share-card-team-row">
-              <b className="share-card-team-pill"><TeamBadge teamId={profile.mainTeamId} size="md" /> {getTeam(profile.mainTeamId).name}</b>
+          <img
+            alt="공유 카드 배경"
+            src={selectedTemplate.src}
+            crossOrigin="anonymous"
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0 }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              textAlign: "center",
+              padding: "26px 18px",
+              boxSizing: "border-box",
+              background: "linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.55) 100%)"
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "rgba(255, 255, 255, 0.85)", letterSpacing: "0.2px" }}>
+              내 직관 승률
+            </p>
+            <strong style={{ margin: 0, fontSize: 52, fontWeight: 900, color: "#ffffff", lineHeight: 1, letterSpacing: "-0.05em", textShadow: "0 4px 18px rgba(0, 0, 0, 0.5)" }}>
+              {profile.winRate}
+            </strong>
+            <span style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "rgba(255, 255, 255, 0.82)" }}>
+              {profile.wins}승 {profile.losses}패 {profile.draws}무
+            </span>
+            <div style={{ margin: "4px 0 0" }}>
+              <b
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "4px 10px 4px 4px",
+                  background: "rgba(0, 0, 0, 0.45)",
+                  border: "1px solid rgba(255, 255, 255, 0.18)",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  fontStyle: "normal",
+                  whiteSpace: "nowrap",
+                  lineHeight: 1
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 18,
+                    height: 18,
+                    flexShrink: 0,
+                    overflow: "hidden",
+                    borderRadius: "50%"
+                  }}
+                >
+                  <span style={{ transform: "scale(0.72)", transformOrigin: "center", display: "inline-flex" }}>
+                    <TeamBadge teamId={profile.mainTeamId} size="sm" />
+                  </span>
+                </span>
+                {getTeam(profile.mainTeamId).name}
+              </b>
             </div>
-            <em className="share-card-brand">
-              오늘은 승요
-              <svg className="share-card-ball" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#1a2640" strokeWidth="0.5" />
-                <path d="M5 6 Q9 9 9.5 12 Q10 15 5.5 18" stroke="#ff2a2a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-                <path d="M19 6 Q15 9 14.5 12 Q14 15 18.5 18" stroke="#ff2a2a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-              </svg>
-            </em>
           </div>
+          {/* "오늘은 승요" 브랜드 — 카드 하단 고정 */}
+          <em
+            style={{
+              position: "absolute",
+              bottom: 48,
+              left: 0,
+              right: 0,
+              zIndex: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 5,
+              fontStyle: "normal",
+              fontSize: 17,
+              fontWeight: 800,
+              color: "#ff6a2b",
+              letterSpacing: "-0.2px",
+              textShadow: "0 2px 8px rgba(0, 0, 0, 0.4)"
+            }}
+          >
+            오늘은 승요
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" xmlns="http://www.w3.org/2000/svg" style={{ display: "inline-block" }}>
+              <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#1a2640" strokeWidth="0.5" />
+              <path d="M5 6 Q9 9 9.5 12 Q10 15 5.5 18" stroke="#ff2a2a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+              <path d="M19 6 Q15 9 14.5 12 Q14 15 18.5 18" stroke="#ff2a2a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            </svg>
+          </em>
         </div>
         <div className="template-picker">
           {shareTemplates.map((template) => {
