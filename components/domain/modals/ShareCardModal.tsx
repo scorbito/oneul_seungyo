@@ -44,81 +44,205 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
     setShareStatus("");
 
     try {
-      // 1) 웹 폰트 로딩 완료까지 대기 — 캡처 시 폰트가 빠진 채로 그려지는 것 방지
+      // ============================================================
+      // Canvas 2D API로 카드 직접 그리기.
+      // html-to-image 등 DOM 캡처 방식은 모바일 사파리/PWA에서 외부 이미지가
+      // 누락되는 문제가 있어 Canvas로 픽셀 단위 직접 렌더링. 100% 호환.
+      // ============================================================
+      const CARD_W = 540;
+      const CARD_H = 960;
+      const canvas = document.createElement("canvas");
+      canvas.width = CARD_W;
+      canvas.height = CARD_H;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas context 생성 실패");
+
+      // 1) 폰트 로딩 대기
       if (typeof document !== "undefined" && "fonts" in document) {
         try {
           await (document as Document & { fonts: { ready: Promise<unknown> } }).fonts.ready;
         } catch {
-          // 폰트 API 미지원이면 무시
+          /* ignore */
         }
       }
 
-      // 2) 배경 이미지를 미리 data URL로 변환 — 모바일에서 html-to-image가
-      //    외부 이미지를 fetch하지 못해 배경이 빈 채로 캡처되는 문제 회피.
-      const bgImg = shareCardRef.current.querySelector("img");
-      let originalSrc: string | null = null;
-      if (bgImg) {
-        originalSrc = bgImg.getAttribute("src");
-        try {
-          const response = await fetch(selectedTemplate.src);
-          const blob = await response.blob();
-          const dataUrlBg = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = () => reject(new Error("배경 이미지 로드 실패"));
-            reader.readAsDataURL(blob);
-          });
-          bgImg.removeAttribute("crossorigin");
-          bgImg.src = dataUrlBg;
-          // 새 src 디코드 대기
-          if (!bgImg.complete) {
-            await new Promise<void>((resolve) => {
-              bgImg.onload = () => resolve();
-              bgImg.onerror = () => resolve();
-            });
-          }
-        } catch (e) {
-          console.warn("배경 이미지 사전 변환 실패, 원본 src로 계속 진행:", e);
-        }
+      // 2) 배경 이미지 로드 & 그리기 (cover 방식 — 카드를 꽉 채움)
+      const bgImage = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new window.Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("배경 이미지 로드 실패"));
+        img.src = selectedTemplate.src;
+      });
+      // object-fit: cover 흉내
+      const imgRatio = bgImage.naturalWidth / bgImage.naturalHeight;
+      const cardRatio = CARD_W / CARD_H;
+      let dw: number, dh: number, dx: number, dy: number;
+      if (imgRatio > cardRatio) {
+        dh = CARD_H;
+        dw = CARD_H * imgRatio;
+        dx = (CARD_W - dw) / 2;
+        dy = 0;
+      } else {
+        dw = CARD_W;
+        dh = CARD_W / imgRatio;
+        dx = 0;
+        dy = (CARD_H - dh) / 2;
       }
+      // 둥근 모서리 클리핑
+      const radius = 32;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(CARD_W - radius, 0);
+      ctx.quadraticCurveTo(CARD_W, 0, CARD_W, radius);
+      ctx.lineTo(CARD_W, CARD_H - radius);
+      ctx.quadraticCurveTo(CARD_W, CARD_H, CARD_W - radius, CARD_H);
+      ctx.lineTo(radius, CARD_H);
+      ctx.quadraticCurveTo(0, CARD_H, 0, CARD_H - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.clip();
 
-      // 3) 브라우저가 화면을 페인팅할 물리적 시간 확보 — 모바일에서 이게 중요
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      ctx.drawImage(bgImage, dx, dy, dw, dh);
 
-      // 4) html-to-image로 원본 카드를 그대로 캡처. 복제/wrapper 없이 직접.
-      const { toPng } = await import("html-to-image");
-      let dataUrl: string;
-      try {
-        dataUrl = await toPng(shareCardRef.current, {
-          cacheBust: true,
-          pixelRatio: 2.5,
-          backgroundColor: "#06101e",
-          width: 270,
-          height: 480,
-          canvasWidth: 270,
-          canvasHeight: 480,
-          style: {
-            opacity: "1",
-            visibility: "visible",
-            transform: "scale(1)",
-            transformOrigin: "top left",
-            margin: "0",
-            width: "270px",
-            height: "480px"
-          }
-        });
-      } finally {
-        // 캡처 끝나면 원본 src로 복원 (미리보기 정상화)
-        if (bgImg && originalSrc) {
-          bgImg.src = originalSrc;
-        }
-      }
+      // 3) 어두운 그라데이션 오버레이
+      const gradient = ctx.createLinearGradient(0, 0, 0, CARD_H);
+      gradient.addColorStop(0, "rgba(0, 0, 0, 0.22)");
+      gradient.addColorStop(1, "rgba(0, 0, 0, 0.55)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, CARD_W, CARD_H);
 
-      if (!dataUrl || dataUrl === "data:,") throw new Error("이미지 변환 실패");
+      // 4) 텍스트 렌더링 — 카드 가운데 묶음
+      const fontStack = "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
-      // 4) Data URL을 File로 변환
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
+      // "내 직관 승률" (라벨)
+      ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+      ctx.font = `700 22px ${fontStack}`;
+      ctx.fillText("내 직관 승률", CARD_W / 2, 380);
+
+      // ".667" (승률 — 크게)
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `900 104px ${fontStack}`;
+      ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 4;
+      ctx.fillText(profile.winRate, CARD_W / 2, 470);
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+
+      // "6승 3패 0무"
+      ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
+      ctx.font = `700 22px ${fontStack}`;
+      ctx.fillText(`${profile.wins}승 ${profile.losses}패 ${profile.draws}무`, CARD_W / 2, 555);
+
+      // 팀 pill — 검정 반투명 라운드 박스 + 팀 색 원 + 팀명
+      const team = getTeam(profile.mainTeamId);
+      const pillTextFont = `700 22px ${fontStack}`;
+      ctx.font = pillTextFont;
+      const teamName = team.name;
+      const teamNameWidth = ctx.measureText(teamName).width;
+      const pillH = 56;
+      const pillPadX = 24;
+      const badgeSize = 36;
+      const badgeGap = 12;
+      const pillW = pillPadX + badgeSize + badgeGap + teamNameWidth + pillPadX;
+      const pillX = (CARD_W - pillW) / 2;
+      const pillY = 590;
+
+      // pill 배경
+      ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+      ctx.beginPath();
+      const pillR = pillH / 2;
+      ctx.moveTo(pillX + pillR, pillY);
+      ctx.lineTo(pillX + pillW - pillR, pillY);
+      ctx.arc(pillX + pillW - pillR, pillY + pillR, pillR, -Math.PI / 2, Math.PI / 2);
+      ctx.lineTo(pillX + pillR, pillY + pillH);
+      ctx.arc(pillX + pillR, pillY + pillR, pillR, Math.PI / 2, -Math.PI / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.18)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 팀 배지 원
+      const badgeCx = pillX + pillPadX + badgeSize / 2;
+      const badgeCy = pillY + pillH / 2;
+      ctx.fillStyle = team.color;
+      ctx.beginPath();
+      ctx.arc(badgeCx, badgeCy, badgeSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 팀 이니셜
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `900 20px ${fontStack}`;
+      ctx.fillText(team.initial, badgeCx, badgeCy + 1);
+
+      // 팀명 (pill 안 우측)
+      ctx.fillStyle = "#ffffff";
+      ctx.font = pillTextFont;
+      ctx.textAlign = "left";
+      ctx.fillText(teamName, badgeCx + badgeSize / 2 + badgeGap, badgeCy);
+      ctx.textAlign = "center";
+
+      // 5) "오늘은 승요 ⚾" — 카드 하단
+      const brandY = CARD_H - 96;
+      ctx.fillStyle = "#ff6a2b";
+      ctx.font = `800 34px ${fontStack}`;
+      ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 2;
+      const brandText = "오늘은 승요";
+      const brandTextWidth = ctx.measureText(brandText).width;
+      const ballSize = 38;
+      const brandGap = 10;
+      const totalBrandW = brandTextWidth + brandGap + ballSize;
+      const brandStartX = (CARD_W - totalBrandW) / 2;
+      ctx.textAlign = "left";
+      ctx.fillText(brandText, brandStartX, brandY);
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.textAlign = "center";
+
+      // 야구공 SVG를 Canvas로 — 흰 원 + 빨간 곡선 2개
+      const ballCx = brandStartX + brandTextWidth + brandGap + ballSize / 2;
+      const ballCy = brandY;
+      const ballR = ballSize / 2;
+      // 흰 공
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#1a2640";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(ballCx, ballCy, ballR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      // 빨간 곡선
+      ctx.strokeStyle = "#ff2a2a";
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = "round";
+      // 좌측 곡선
+      ctx.beginPath();
+      const sx = ballCx - ballR * 0.58;
+      const sy = ballCy - ballR * 0.5;
+      ctx.moveTo(sx, sy);
+      ctx.quadraticCurveTo(ballCx - ballR * 0.25, ballCy, ballCx - ballR * 0.5, ballCy + ballR * 0.5);
+      ctx.stroke();
+      // 우측 곡선
+      ctx.beginPath();
+      const sx2 = ballCx + ballR * 0.58;
+      ctx.moveTo(sx2, sy);
+      ctx.quadraticCurveTo(ballCx + ballR * 0.25, ballCy, ballCx + ballR * 0.5, ballCy + ballR * 0.5);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // 6) Canvas → Blob
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((b) => resolve(b), "image/png");
+      });
+      if (!blob) throw new Error("이미지 변환 실패");
       const file = new File([blob], filename, { type: "image/png" });
 
       const isMobileShare =
