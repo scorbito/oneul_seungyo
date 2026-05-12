@@ -40,7 +40,13 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#06101e",
-        logging: false
+        logging: false,
+        // 카드 크기를 CSS와 동일하게 명시 — html2canvas가 부모 레이아웃 영향으로
+        // 다른 크기로 렌더하지 않도록 강제.
+        width: 270,
+        height: 480,
+        windowWidth: 270,
+        windowHeight: 480
       });
 
       const dataUrl = canvas.toDataURL("image/png");

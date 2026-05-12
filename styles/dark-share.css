@@ -43,13 +43,13 @@
   gap: 10px;
 }
 
-/* Share card preview — match background image ratio (9:16 story) */
-/* 공유 카드 — 배경 이미지(9:16)와 동일한 비율. 이미지 잘림 없음. */
+/* Share card preview — 픽셀 고정 크기 (270x480, 9:16) */
+/* html2canvas는 aspect-ratio / gap을 제대로 못 다뤄서 명시적 width/height + margin 사용.
+   미리보기 = 캡처 결과 1:1 매칭. 캡처 시 scale 1.5로 405x720 PNG 생성. */
 .phone-frame-dark .share-modal-panel .share-card-preview {
   position: relative;
-  width: 100%;
-  max-width: 250px;
-  aspect-ratio: 9 / 16;
+  width: 270px;
+  height: 480px;
   margin: 0 auto;
   border-radius: 16px;
   overflow: hidden;
@@ -61,7 +61,8 @@
 
 .phone-frame-dark .share-modal-panel .share-card-preview > img {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -70,20 +71,23 @@
 
 .phone-frame-dark .share-modal-panel .share-card-overlay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   text-align: center;
   padding: 26px 18px;
+  box-sizing: border-box;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.22) 0%, rgba(0, 0, 0, 0.55) 100%);
 }
 
 .phone-frame-dark .share-modal-panel .share-card-label {
-  margin: 0;
+  margin: 0 0 8px;
   font-size: 12px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.85);
@@ -91,6 +95,8 @@
 }
 
 .phone-frame-dark .share-modal-panel .share-card-rate {
+  display: block;
+  margin: 0 0 8px;
   font-size: 64px;
   font-weight: 900;
   color: #ffffff;
@@ -100,6 +106,8 @@
 }
 
 .phone-frame-dark .share-modal-panel .share-card-stats {
+  display: block;
+  margin: 0 0 8px;
   font-size: 12px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.82);
@@ -108,8 +116,7 @@
 .phone-frame-dark .share-modal-panel .share-card-team {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
+  margin: 6px 0 8px;
   padding: 4px 12px;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -123,14 +130,14 @@
 .phone-frame-dark .share-modal-panel .share-card-team .team-badge {
   width: 22px;
   height: 22px;
+  margin-right: 6px;
   font-size: 11px;
 }
 
 .phone-frame-dark .share-modal-panel .share-card-brand {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 8px;
+  margin: 8px 0 0;
   font-style: normal;
   font-size: 16px;
   font-weight: 800;
@@ -140,6 +147,7 @@
 }
 
 .phone-frame-dark .share-modal-panel .share-card-ball {
+  margin-left: 4px;
   font-size: 18px;
 }
 
