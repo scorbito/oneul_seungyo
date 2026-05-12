@@ -53,29 +53,66 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
         }
       }
 
-      // 2) 브라우저가 화면을 페인팅할 물리적 시간 확보 — 모바일에서 이게 중요
+      // 2) 배경 이미지를 미리 data URL로 변환 — 모바일에서 html-to-image가
+      //    외부 이미지를 fetch하지 못해 배경이 빈 채로 캡처되는 문제 회피.
+      const bgImg = shareCardRef.current.querySelector("img");
+      let originalSrc: string | null = null;
+      if (bgImg) {
+        originalSrc = bgImg.getAttribute("src");
+        try {
+          const response = await fetch(selectedTemplate.src);
+          const blob = await response.blob();
+          const dataUrlBg = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error("배경 이미지 로드 실패"));
+            reader.readAsDataURL(blob);
+          });
+          bgImg.removeAttribute("crossorigin");
+          bgImg.src = dataUrlBg;
+          // 새 src 디코드 대기
+          if (!bgImg.complete) {
+            await new Promise<void>((resolve) => {
+              bgImg.onload = () => resolve();
+              bgImg.onerror = () => resolve();
+            });
+          }
+        } catch (e) {
+          console.warn("배경 이미지 사전 변환 실패, 원본 src로 계속 진행:", e);
+        }
+      }
+
+      // 3) 브라우저가 화면을 페인팅할 물리적 시간 확보 — 모바일에서 이게 중요
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // 3) html-to-image로 원본 카드를 그대로 캡처. 복제/wrapper 없이 직접.
+      // 4) html-to-image로 원본 카드를 그대로 캡처. 복제/wrapper 없이 직접.
       const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(shareCardRef.current, {
-        cacheBust: true,
-        pixelRatio: 2.5,
-        backgroundColor: "#06101e",
-        width: 270,
-        height: 480,
-        canvasWidth: 270,
-        canvasHeight: 480,
-        style: {
-          opacity: "1",
-          visibility: "visible",
-          transform: "scale(1)",
-          transformOrigin: "top left",
-          margin: "0",
-          width: "270px",
-          height: "480px"
+      let dataUrl: string;
+      try {
+        dataUrl = await toPng(shareCardRef.current, {
+          cacheBust: true,
+          pixelRatio: 2.5,
+          backgroundColor: "#06101e",
+          width: 270,
+          height: 480,
+          canvasWidth: 270,
+          canvasHeight: 480,
+          style: {
+            opacity: "1",
+            visibility: "visible",
+            transform: "scale(1)",
+            transformOrigin: "top left",
+            margin: "0",
+            width: "270px",
+            height: "480px"
+          }
+        });
+      } finally {
+        // 캡처 끝나면 원본 src로 복원 (미리보기 정상화)
+        if (bgImg && originalSrc) {
+          bgImg.src = originalSrc;
         }
-      });
+      }
 
       if (!dataUrl || dataUrl === "data:,") throw new Error("이미지 변환 실패");
 
