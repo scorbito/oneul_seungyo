@@ -46,15 +46,30 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
     try {
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // html-to-image — flex/gap/aspect-ratio를 정확히 처리.
-      // 부모 레이아웃 영향을 차단하기 위해 카드를 화면 밖에 복제 후 캡처.
-      // 단, CSS 셀렉터(.phone-frame-dark .share-modal-panel ...)가 매칭되도록
-      // 같은 부모 클래스 체인을 가진 wrapper로 감싼다.
+      // 1) 배경 이미지를 미리 fetch해서 data URL로 변환.
+      //    모바일 사파리에서 crossOrigin 이미지가 캡처 시 빈 화면으로 나오는 문제 회피.
+      const bgResponse = await fetch(selectedTemplate.src);
+      const bgBlob = await bgResponse.blob();
+      const bgDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("배경 이미지 로드 실패"));
+        reader.readAsDataURL(bgBlob);
+      });
+
+      // 2) html-to-image로 카드 캡처. 카드를 화면 밖에 복제하되 부모 클래스 체인
+      //    (.phone-frame-dark > .share-modal-panel)을 재현해 CSS 셀렉터가 매칭되도록 함.
       const { toPng } = await import("html-to-image");
       const original = shareCardRef.current;
       const clone = original.cloneNode(true) as HTMLDivElement;
 
-      // .phone-frame-dark > .share-modal-panel > clone 구조 재현
+      // 복제본 안의 배경 <img> src를 data URL로 교체
+      const cloneImg = clone.querySelector("img");
+      if (cloneImg) {
+        cloneImg.removeAttribute("crossorigin");
+        cloneImg.src = bgDataUrl;
+      }
+
       const frameWrap = document.createElement("div");
       frameWrap.className = "phone-frame-dark";
       frameWrap.style.cssText = "position: fixed; left: -10000px; top: 0; z-index: -1; pointer-events: none;";
@@ -65,13 +80,21 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
       frameWrap.appendChild(panelWrap);
       document.body.appendChild(frameWrap);
 
+      // 복제된 <img>가 새 src(data URL)로 디코드 완료될 때까지 대기
+      if (cloneImg && !cloneImg.complete) {
+        await new Promise<void>((resolve) => {
+          cloneImg.onload = () => resolve();
+          cloneImg.onerror = () => resolve();
+        });
+      }
+
       let dataUrl: string;
       try {
         dataUrl = await toPng(clone, {
           pixelRatio: 2,
           width: 270,
           height: 480,
-          cacheBust: true,
+          cacheBust: false,
           backgroundColor: "#06101e"
         });
       } finally {
