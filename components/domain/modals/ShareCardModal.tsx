@@ -44,84 +44,36 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
     setShareStatus("");
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // 1) 웹 폰트 로딩 완료까지 대기 — 캡처 시 폰트가 빠진 채로 그려지는 것 방지
+      if (typeof document !== "undefined" && "fonts" in document) {
+        try {
+          await (document as Document & { fonts: { ready: Promise<unknown> } }).fonts.ready;
+        } catch {
+          // 폰트 API 미지원이면 무시
+        }
+      }
 
-      // 1) 배경 이미지를 JS Image 객체로 로드 후 canvas로 data URL 변환.
-      //    fetch + crossOrigin 의존도 없이 same-origin 이미지를 안전하게 가져옴.
-      //    모바일 사파리/PWA에서 html-to-image가 빈 이미지로 캡처하는 문제 회피.
-      const bgDataUrl = await new Promise<string>((resolve, reject) => {
-        const img = new window.Image();
-        img.onload = () => {
-          try {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            const ctx = canvas.getContext("2d");
-            if (!ctx) {
-              reject(new Error("canvas context 생성 실패"));
-              return;
-            }
-            ctx.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL("image/png"));
-          } catch (err) {
-            reject(err);
-          }
-        };
-        img.onerror = () => reject(new Error("배경 이미지 로드 실패"));
-        img.src = selectedTemplate.src;
-      });
+      // 2) 브라우저가 화면을 페인팅할 물리적 시간 확보 — 모바일에서 이게 중요
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // 2) html-to-image로 카드 캡처. 카드를 화면 밖에 복제하되 부모 클래스 체인
-      //    (.phone-frame-dark > .share-modal-panel)을 재현해 CSS 셀렉터가 매칭되도록 함.
+      // 3) html-to-image로 원본 카드를 그대로 캡처. 복제/wrapper 없이 직접.
       const { toPng } = await import("html-to-image");
-      const original = shareCardRef.current;
-      const clone = original.cloneNode(true) as HTMLDivElement;
-
-      // 복제본 안의 배경 <img> src를 data URL로 교체
-      const cloneImg = clone.querySelector("img");
-      if (cloneImg) {
-        cloneImg.removeAttribute("crossorigin");
-        cloneImg.src = bgDataUrl;
-      }
-
-      const frameWrap = document.createElement("div");
-      frameWrap.className = "phone-frame-dark";
-      frameWrap.style.cssText = "position: fixed; left: -10000px; top: 0; z-index: -1; pointer-events: none;";
-
-      const panelWrap = document.createElement("div");
-      panelWrap.className = "share-modal-panel";
-      panelWrap.appendChild(clone);
-      frameWrap.appendChild(panelWrap);
-      document.body.appendChild(frameWrap);
-
-      // 복제된 <img>가 새 src(data URL)로 디코드 완료될 때까지 대기
-      if (cloneImg && !cloneImg.complete) {
-        await new Promise<void>((resolve) => {
-          cloneImg.onload = () => resolve();
-          cloneImg.onerror = () => resolve();
-        });
-      }
-
-      let dataUrl: string;
-      try {
-        dataUrl = await toPng(clone, {
-          pixelRatio: 2,
-          width: 270,
-          height: 480,
-          cacheBust: false,
-          backgroundColor: "#06101e"
-        });
-      } finally {
-        document.body.removeChild(frameWrap);
-      }
+      const dataUrl = await toPng(shareCardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2.5,
+        backgroundColor: "#06101e",
+        style: {
+          opacity: "1",
+          visibility: "visible",
+          transform: "scale(1)"
+        }
+      });
 
       if (!dataUrl || dataUrl === "data:,") throw new Error("이미지 변환 실패");
 
-      const byteString = atob(dataUrl.split(",")[1]);
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-      const blob = new Blob([ab], { type: "image/png" });
+      // 4) Data URL을 File로 변환
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
       const file = new File([blob], filename, { type: "image/png" });
 
       const isMobileShare =
@@ -130,6 +82,7 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
         (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
           (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
 
+      // 5) 1순위: 이미지 포함 Web Share
       if (isMobileShare && navigator.canShare?.({ files: [file] })) {
         try {
           await navigator.share({
@@ -140,16 +93,23 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
           setShareStatus("공유했어요!");
           return;
         } catch (err) {
-          if ((err as Error)?.name === "AbortError") return;
+          if ((err as Error)?.name === "AbortError") {
+            setIsSharing(false);
+            return;
+          }
+          // share 실패 시 다운로드 폴백으로 흘러감
         }
       }
 
+      // 6) 2순위: 다운로드 + 텍스트 클립보드
+      const objUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = dataUrl;
+      link.href = objUrl;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(objUrl);
 
       try {
         await navigator.clipboard.writeText(`${text}\n${url}`);
