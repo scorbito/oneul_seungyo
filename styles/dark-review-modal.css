@@ -43,6 +43,14 @@
 }
 
 /* Photo strip */
+.phone-frame-dark .review-modal-panel .photo-strip-hint {
+  margin: 0 0 -6px;
+  color: var(--hd-text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .phone-frame-dark .review-modal-panel .photo-strip {
   display: flex;
   gap: 10px;

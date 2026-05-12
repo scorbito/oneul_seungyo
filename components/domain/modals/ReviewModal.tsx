@@ -56,6 +56,7 @@ export function ReviewModal({
   return (
     <ModalShell open={open} title={editReview ? "후기 수정" : "후기 작성"} onClose={onClose} panelClassName="review-modal-panel">
       <div className="form-stack">
+        <p className="photo-strip-hint">사진은 최대 3장까지 추가할 수 있어요. ({reviewPhotos.length}/3)</p>
         <div className="photo-strip">
           {reviewPhotos.map((photo) => (
             <button
