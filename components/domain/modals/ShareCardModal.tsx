@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link2, Share2, Sparkles } from "lucide-react";
 import { ModalShell } from "@/components/common/ModalShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
@@ -21,6 +21,18 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
   const [isSharing, setIsSharing] = useState(false);
   const shareCardRef = useRef<HTMLDivElement | null>(null);
 
+  // 상태 메시지는 3.5초 후 자동 사라짐
+  useEffect(() => {
+    if (!shareStatus) return;
+    const t = window.setTimeout(() => setShareStatus(""), 3500);
+    return () => window.clearTimeout(t);
+  }, [shareStatus]);
+
+  // 모달이 닫히면 상태 메시지 초기화 — 다음 진입 시 깔끔하게 시작
+  useEffect(() => {
+    if (!open) setShareStatus("");
+  }, [open]);
+
   const shareCard = async () => {
     if (!shareCardRef.current || isSharing) return;
     const team = getTeam(profile.mainTeamId);
@@ -34,23 +46,39 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
     try {
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(shareCardRef.current, {
-        scale: 1.5,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#06101e",
-        logging: false,
-        // 카드 크기를 CSS와 동일하게 명시 — html2canvas가 부모 레이아웃 영향으로
-        // 다른 크기로 렌더하지 않도록 강제.
-        width: 270,
-        height: 480,
-        windowWidth: 270,
-        windowHeight: 480
-      });
+      // html-to-image — flex/gap/aspect-ratio를 정확히 처리.
+      // 부모 레이아웃 영향을 차단하기 위해 카드를 화면 밖에 복제 후 캡처.
+      // 단, CSS 셀렉터(.phone-frame-dark .share-modal-panel ...)가 매칭되도록
+      // 같은 부모 클래스 체인을 가진 wrapper로 감싼다.
+      const { toPng } = await import("html-to-image");
+      const original = shareCardRef.current;
+      const clone = original.cloneNode(true) as HTMLDivElement;
 
-      const dataUrl = canvas.toDataURL("image/png");
-      if (!dataUrl || dataUrl === "data:,") throw new Error("canvas 변환 실패");
+      // .phone-frame-dark > .share-modal-panel > clone 구조 재현
+      const frameWrap = document.createElement("div");
+      frameWrap.className = "phone-frame-dark";
+      frameWrap.style.cssText = "position: fixed; left: -10000px; top: 0; z-index: -1; pointer-events: none;";
+
+      const panelWrap = document.createElement("div");
+      panelWrap.className = "share-modal-panel";
+      panelWrap.appendChild(clone);
+      frameWrap.appendChild(panelWrap);
+      document.body.appendChild(frameWrap);
+
+      let dataUrl: string;
+      try {
+        dataUrl = await toPng(clone, {
+          pixelRatio: 2,
+          width: 270,
+          height: 480,
+          cacheBust: true,
+          backgroundColor: "#06101e"
+        });
+      } finally {
+        document.body.removeChild(frameWrap);
+      }
+
+      if (!dataUrl || dataUrl === "data:,") throw new Error("이미지 변환 실패");
 
       const byteString = atob(dataUrl.split(",")[1]);
       const ab = new ArrayBuffer(byteString.length);
@@ -114,15 +142,24 @@ export function ShareCardModal({ open, onClose, profile }: ShareCardModalProps) 
     <ModalShell open={open} title="공유하기" onClose={onClose} panelClassName="share-modal-panel">
       <div className="share-modal-content">
         <div className="share-card-preview" ref={shareCardRef}>
-          {/* html2canvas 호환을 위해 일반 <img> 사용 (next/image fill은 캡처가 안정적이지 않음) */}
+          {/* html-to-image 호환을 위해 일반 <img> 사용 (next/image의 wrapper가 캡처를 방해함) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt="공유 카드 배경" src={selectedTemplate.src} crossOrigin="anonymous" />
           <div className="share-card-overlay">
             <p className="share-card-label">내 직관 승률</p>
             <strong className="share-card-rate">{profile.winRate}</strong>
             <span className="share-card-stats">{profile.wins}승 {profile.losses}패 {profile.draws}무</span>
-            <b className="share-card-team"><TeamBadge teamId={profile.mainTeamId} size="md" /> {getTeam(profile.mainTeamId).name}</b>
-            <em className="share-card-brand">오늘은 승요 <span className="share-card-ball" aria-hidden="true">⚾</span></em>
+            <div className="share-card-team-row">
+              <b className="share-card-team-pill"><TeamBadge teamId={profile.mainTeamId} size="md" /> {getTeam(profile.mainTeamId).name}</b>
+            </div>
+            <em className="share-card-brand">
+              오늘은 승요
+              <svg className="share-card-ball" aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#1a2640" strokeWidth="0.5" />
+                <path d="M5 6 Q9 9 9.5 12 Q10 15 5.5 18" stroke="#ff2a2a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+                <path d="M19 6 Q15 9 14.5 12 Q14 15 18.5 18" stroke="#ff2a2a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+              </svg>
+            </em>
           </div>
         </div>
         <div className="template-picker">

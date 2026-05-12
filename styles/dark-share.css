@@ -80,6 +80,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   text-align: center;
   padding: 26px 18px;
   box-sizing: border-box;
@@ -87,7 +88,7 @@
 }
 
 .phone-frame-dark .share-modal-panel .share-card-label {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 12px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.85);
@@ -95,8 +96,7 @@
 }
 
 .phone-frame-dark .share-modal-panel .share-card-rate {
-  display: block;
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 64px;
   font-weight: 900;
   color: #ffffff;
@@ -106,17 +106,20 @@
 }
 
 .phone-frame-dark .share-modal-panel .share-card-stats {
-  display: block;
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 12px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.82);
 }
 
-.phone-frame-dark .share-modal-panel .share-card-team {
+.phone-frame-dark .share-modal-panel .share-card-team-row {
+  margin: 4px 0 0;
+}
+
+.phone-frame-dark .share-modal-panel .share-card-team-pill {
   display: inline-flex;
   align-items: center;
-  margin: 6px 0 8px;
+  gap: 6px;
   padding: 4px 12px;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -125,19 +128,20 @@
   font-weight: 700;
   color: #ffffff;
   font-style: normal;
+  white-space: nowrap;
 }
 
-.phone-frame-dark .share-modal-panel .share-card-team .team-badge {
+.phone-frame-dark .share-modal-panel .share-card-team-pill .team-badge {
   width: 22px;
   height: 22px;
-  margin-right: 6px;
   font-size: 11px;
 }
 
 .phone-frame-dark .share-modal-panel .share-card-brand {
   display: inline-flex;
   align-items: center;
-  margin: 8px 0 0;
+  gap: 4px;
+  margin: 4px 0 0;
   font-style: normal;
   font-size: 16px;
   font-weight: 800;
@@ -147,8 +151,7 @@
 }
 
 .phone-frame-dark .share-modal-panel .share-card-ball {
-  margin-left: 4px;
-  font-size: 18px;
+  display: inline-block;
 }
 
 /* Template picker — 작은 카드 3개를 독립적으로 배치. 공유카드 비율과 무관. */
