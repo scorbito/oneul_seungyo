@@ -390,6 +390,7 @@ export function AppModals({ open, setOpen, initialGames, initialGameId, initialD
         supportTeamId={supportTeamId}
         setSupportTeamId={setSupportTeamId}
         savingAttendance={savingAttendance}
+        mainTeamId={profile.mainTeamId}
         onTicketFileChange={handleTicketFileChange}
         onSelectGameAndTeam={selectGameAndTeam}
         onSubmit={submitAttendance}
