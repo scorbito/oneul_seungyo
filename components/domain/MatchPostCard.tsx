@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Heart, MessageCircle, MoreHorizontal, Trash2, Check } from "lucide-react";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { ModalShell } from "@/components/common/ModalShell";
@@ -120,37 +121,48 @@ export function MatchPostCard({ post, currentUserId, onToggleLike, onClickGameFi
         ) : null}
       </header>
 
-      <button
-        type="button"
-        className="match-post-game-context"
-        onClick={onClickGameFilter}
-        aria-label="이 경기 글만 보기"
-      >
-        <span className="match-post-score">{scoreLabel}</span>
-        {post.game.currentStatus === "canceled" ? (
-          <span className="match-post-canceled-badge">경기 취소됨</span>
-        ) : null}
-      </button>
-
-      <p className="match-post-body">{post.body}</p>
-
-      {post.photoUrl ? (
-        <div className="match-post-photo">
-          <Image
-            src={post.photoUrl}
-            alt=""
-            fill
-            sizes="(max-width: 480px) 100vw, 480px"
-            style={{ objectFit: "cover" }}
-          />
+      {onClickGameFilter ? (
+        <button
+          type="button"
+          className="match-post-game-context"
+          onClick={onClickGameFilter}
+          aria-label="이 경기 글만 보기"
+        >
+          <span className="match-post-score">{scoreLabel}</span>
+          {post.game.currentStatus === "canceled" ? (
+            <span className="match-post-canceled-badge">경기 취소됨</span>
+          ) : null}
+        </button>
+      ) : (
+        <div className="match-post-game-context match-post-game-context-static">
+          <span className="match-post-score">{scoreLabel}</span>
+          {post.game.currentStatus === "canceled" ? (
+            <span className="match-post-canceled-badge">경기 취소됨</span>
+          ) : null}
         </div>
-      ) : null}
+      )}
 
-      <div className="match-post-emotion-row">
-        <span className="match-post-emotion">
-          {emotion.emoji} {emotion.label}
-        </span>
-      </div>
+      <Link href={`/match-talk/${post.id}`} className="match-post-link">
+        <p className="match-post-body">{post.body}</p>
+
+        {post.photoUrl ? (
+          <div className="match-post-photo">
+            <Image
+              src={post.photoUrl}
+              alt=""
+              fill
+              sizes="(max-width: 480px) 100vw, 480px"
+              style={{ objectFit: "cover" }}
+            />
+          </div>
+        ) : null}
+
+        <div className="match-post-emotion-row">
+          <span className="match-post-emotion">
+            {emotion.emoji} {emotion.label}
+          </span>
+        </div>
+      </Link>
 
       <div className="match-post-actions">
         <button

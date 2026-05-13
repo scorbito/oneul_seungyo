@@ -191,6 +191,18 @@
   flex: 1;
 }
 
+.phone-frame-dark .match-post-game-context-static {
+  cursor: default;
+}
+
+.phone-frame-dark .match-post-link {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
 .phone-frame-dark .match-post-canceled-badge {
   padding: 2px 8px;
   background: rgba(148, 163, 184, 0.15);
