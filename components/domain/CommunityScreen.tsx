@@ -7,6 +7,7 @@ import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { AppShell } from "@/components/layout/AppShell";
 import { ReviewCard } from "@/components/domain/ReviewCard";
 import { MatchTalkFeed } from "@/components/domain/MatchTalkFeed";
+import { MatchTalkComposerModal } from "@/components/domain/modals/MatchTalkComposerModal";
 import { loadMoreReviewsAction } from "@/lib/actions/review";
 import { useAppState } from "@/lib/state/AppState";
 import type { MatchPost, Review } from "@/lib/types/domain";
@@ -54,6 +55,7 @@ export function CommunityScreen({
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [modal, setModal] = useState<ModalKind>(null);
   const [activeTab, setActiveTab] = useState<CommunityTab>(initialTab);
+  const [composerOpen, setComposerOpen] = useState(false);
 
   const switchTab = (tab: CommunityTab) => {
     setActiveTab(tab);
@@ -176,7 +178,13 @@ export function CommunityScreen({
           initialPosts={initialMatchPosts}
           currentUserId={currentUserId}
           initialGameId={initialMatchTalkGameId}
-          onWriteClick={() => showToast("경기톡 글쓰기는 곧 열릴 예정이에요.")}
+          onWriteClick={() => {
+            if (!currentUserId) {
+              showToast("로그인 후 글을 작성할 수 있어요.");
+              return;
+            }
+            setComposerOpen(true);
+          }}
         />
       ) : (
       <>
@@ -263,6 +271,12 @@ export function CommunityScreen({
       </>
       )}
       <AppModals open={modal} setOpen={setModal} />
+      <MatchTalkComposerModal
+        open={composerOpen}
+        onClose={() => setComposerOpen(false)}
+        initialGameId={initialMatchTalkGameId}
+        onCreated={() => router.refresh()}
+      />
     </AppShell>
   );
 }

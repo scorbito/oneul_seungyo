@@ -267,3 +267,236 @@
 .phone-frame-dark .match-post-action-static {
   cursor: default;
 }
+
+/* ---------- 작성 모달 ---------- */
+.match-talk-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.composer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.composer-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c0c5d0;
+}
+
+.composer-loading,
+.composer-empty {
+  font-size: 12px;
+  color: #8b91a0;
+  margin: 0;
+}
+
+.composer-date-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.composer-date-chip {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  color: #d5d9e1;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.composer-date-chip-active {
+  background: #ff6a2b;
+  border-color: #ff6a2b;
+  color: #fff;
+}
+
+.composer-date-chip-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.composer-game-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.composer-game-row {
+  display: grid;
+  grid-template-columns: 50px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #e6e8ee;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.composer-game-row-active {
+  background: rgba(255, 106, 43, 0.12);
+  border-color: rgba(255, 106, 43, 0.5);
+}
+
+.composer-game-time {
+  font-weight: 800;
+  color: #fff;
+}
+
+.composer-game-teams {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.composer-game-vs {
+  font-size: 11px;
+  color: #8b91a0;
+}
+
+.composer-game-stadium {
+  font-size: 11px;
+  color: #8b91a0;
+}
+
+.composer-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 96px;
+}
+
+.composer-textarea:focus {
+  outline: none;
+  border-color: rgba(255, 106, 43, 0.6);
+}
+
+.composer-counter {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 11px;
+  color: #8b91a0;
+}
+
+.composer-emotion-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.composer-emotion-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #d5d9e1;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.composer-emotion-chip > span:first-child {
+  font-size: 18px;
+}
+
+.composer-emotion-chip-active {
+  background: rgba(255, 106, 43, 0.18);
+  border-color: rgba(255, 106, 43, 0.6);
+  color: #fff;
+}
+
+.composer-photo-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #d5d9e1;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.composer-photo-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.composer-photo-frame {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1a2640;
+}
+
+.composer-photo-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #ff6a6a;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.composer-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.composer-cancel {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: #d5d9e1;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.composer-hint {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #8b91a0;
+  text-align: center;
+}

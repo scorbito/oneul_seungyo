@@ -17,6 +17,45 @@ import type {
 
 const EMOTION_TAGS = new Set<MatchPostEmotionTag>(["cheer", "support", "anger", "anxiety"]);
 
+export type WriteableGameOption = {
+  id: string;
+  date: string;
+  time: string | null;
+  stadium: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  status: "scheduled" | "in_progress" | "finished" | "canceled";
+};
+
+/**
+ * 작성 모달용: 이번 주 월~일 사이의 경기 목록을 한 번에 가져온다.
+ * 취소된 경기는 작성 선택지에서 제외(기획서 §3.1).
+ */
+export async function listWriteableGamesAction(): Promise<WriteableGameOption[]> {
+  const admin = createSupabaseAdminClient();
+  const { from, to } = getThisWeekRangeKst();
+  const { data, error } = await admin
+    .from("games")
+    .select("id, game_date, game_time, stadium, home_team_id, away_team_id, status")
+    .gte("game_date", from)
+    .lte("game_date", to)
+    .neq("status", "canceled")
+    .order("game_date", { ascending: true })
+    .order("game_time", { ascending: true });
+
+  if (error) throw new Error(`작성 가능 경기 조회 실패: ${error.message}`);
+
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    date: row.game_date as string,
+    time: (row.game_time as string | null) ?? null,
+    stadium: row.stadium as string,
+    homeTeamId: row.home_team_id as string,
+    awayTeamId: row.away_team_id as string,
+    status: row.status as WriteableGameOption["status"]
+  }));
+}
+
 export type CreateMatchPostInput = {
   gameId: string;
   body: string;
