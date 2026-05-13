@@ -14,6 +14,13 @@ export const publicScopeMap = {
 
 export type ShareTemplate = (typeof shareTemplates)[number];
 export type PrivacyLabel = keyof typeof publicScopeMap;
+export type PublicScopeValue = (typeof publicScopeMap)[PrivacyLabel];
+
+export function publicScopeToLabel(scope?: PublicScopeValue): PrivacyLabel {
+  if (scope === "friends") return "친구 공개";
+  if (scope === "private") return "나만 보기";
+  return "전체 공개";
+}
 
 export function extractHashtags(body: string): string[] {
   const matches = body.match(/#[가-힣ㄱ-ㆎa-zA-Z0-9_]+/g) ?? [];

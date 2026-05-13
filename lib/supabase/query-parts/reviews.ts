@@ -25,6 +25,46 @@ type ReviewAttendanceRow = {
   game_id: string;
 };
 
+function sortFriendPair(a: string, b: string) {
+  return a < b ? { userA: a, userB: b } : { userA: b, userB: a };
+}
+
+async function getCurrentUserId(): Promise<string | null> {
+  const supabase = createSupabaseServerClient();
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
+async function listFriendIds(userId: string): Promise<string[]> {
+  const admin = createSupabaseAdminClient();
+  const [asA, asB] = await Promise.all([
+    admin.from("friends").select("user_b_id").eq("user_a_id", userId),
+    admin.from("friends").select("user_a_id").eq("user_b_id", userId)
+  ]);
+  return [
+    ...(asA.data ?? []).map((row) => row.user_b_id),
+    ...(asB.data ?? []).map((row) => row.user_a_id)
+  ];
+}
+
+async function canViewReview(ownerId: string, publicScope: ReviewRow["public_scope"], viewerId: string | null) {
+  if (publicScope === "public") return true;
+  if (!viewerId) return false;
+  if (ownerId === viewerId) return true;
+  if (publicScope !== "friends") return false;
+
+  const admin = createSupabaseAdminClient();
+  const pair = sortFriendPair(ownerId, viewerId);
+  const { data } = await admin
+    .from("friends")
+    .select("user_a_id")
+    .eq("user_a_id", pair.userA)
+    .eq("user_b_id", pair.userB)
+    .maybeSingle();
+
+  return Boolean(data);
+}
+
 function getTimeAgo(createdAt: string) {
   const diff = Date.now() - new Date(createdAt).getTime();
   const minutes = Math.max(1, Math.floor(diff / 60000));
@@ -75,6 +115,7 @@ function toReview(row: ReviewRow, profile: ReviewProfileRow | undefined, attenda
   return {
     id: row.id,
     ownerId: row.user_id,
+    publicScope: row.public_scope,
     author: profile?.nickname ?? "승요팬",
     teamId: supportTeamId,
     timeAgo: getTimeAgo(row.created_at),
@@ -104,6 +145,7 @@ function toReview(row: ReviewRow, profile: ReviewProfileRow | undefined, attenda
 
 export async function listReviewsFromDb(params: { onlyMine?: boolean; cursor?: string; limit?: number } = {}): Promise<Review[]> {
   const admin = createSupabaseAdminClient();
+  const viewerId = await getCurrentUserId();
 
   let reviewQuery = admin
     .from("reviews")
@@ -116,13 +158,19 @@ export async function listReviewsFromDb(params: { onlyMine?: boolean; cursor?: s
   }
 
   if (params.onlyMine) {
-    const ssr = createSupabaseServerClient();
-    const { data: authData } = await ssr.auth.getUser();
-
-    if (!authData.user) {
+    if (!viewerId) {
       return [];
     }
-    reviewQuery = reviewQuery.eq("user_id", authData.user.id);
+    reviewQuery = reviewQuery.eq("user_id", viewerId);
+  } else if (viewerId) {
+    const friendIds = await listFriendIds(viewerId);
+    const visibleFilters = [`public_scope.eq.public`, `user_id.eq.${viewerId}`];
+    if (friendIds.length > 0) {
+      visibleFilters.push(`and(public_scope.eq.friends,user_id.in.(${friendIds.join(",")}))`);
+    }
+    reviewQuery = reviewQuery.or(visibleFilters.join(","));
+  } else {
+    reviewQuery = reviewQuery.eq("public_scope", "public");
   }
 
   const { data: reviews, error: reviewError } = await reviewQuery;
@@ -196,6 +244,7 @@ export async function listReviewsFromDb(params: { onlyMine?: boolean; cursor?: s
 
 export async function getReviewByIdFromDb(id: string): Promise<Review | null> {
   const admin = createSupabaseAdminClient();
+  const viewerId = await getCurrentUserId();
   const { data: review, error } = await admin
     .from("reviews")
     .select("id,user_id,attendance_id,body,photos,public_scope,created_at")
@@ -203,6 +252,7 @@ export async function getReviewByIdFromDb(id: string): Promise<Review | null> {
     .maybeSingle();
   if (error) throw new Error(`Failed to load review: ${error.message}`);
   if (!review) return null;
+  if (!(await canViewReview(review.user_id, review.public_scope, viewerId))) return null;
 
   const [{ data: profile }, { data: attendance }, { count: commentCount }, { count: likeCount }] = await Promise.all([
     admin.from("profiles").select("id,nickname,main_team_id,avatar_image_url").eq("id", review.user_id).maybeSingle(),

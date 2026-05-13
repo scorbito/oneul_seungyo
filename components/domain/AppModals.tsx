@@ -10,7 +10,7 @@ import { loadAttendanceModalGamesAction } from "@/lib/actions/initialData";
 import { AttendanceModal } from "@/components/domain/modals/AttendanceModal";
 import { ReviewModal } from "@/components/domain/modals/ReviewModal";
 import { ShareCardModal } from "@/components/domain/modals/ShareCardModal";
-import { extractHashtags, getAttendanceResult, publicScopeMap, type PrivacyLabel } from "@/components/domain/modals/modalHelpers";
+import { extractHashtags, getAttendanceResult, publicScopeMap, publicScopeToLabel, type PrivacyLabel } from "@/components/domain/modals/modalHelpers";
 import { useDragScroll } from "@/components/domain/modals/useDragScroll";
 import { useAppState } from "@/lib/state/AppState";
 import { uploadUserFile } from "@/lib/supabase/storage-client";
@@ -31,7 +31,7 @@ type AppModalsProps = {
 };
 
 export function AppModals({ open, setOpen, initialGames, initialGameId, initialDate, initialAttendanceId, editReview = null }: AppModalsProps) {
-  const { addAttendance, addReview, attendances, reviews, profile, isAnonymous, showToast } = useAppState();
+  const { addAttendance, addReview, attendances, reviews, profile, publicScope: defaultPublicScope, isAnonymous, showToast } = useAppState();
   const router = useRouter();
   // games는 모달 열 때 lazy fetch (홈 SSR에서 빼서 첫 진입 시간 단축).
   // initialGames가 있으면 그대로 사용, 없으면 모달 열릴 때 한 번만 server action 호출.
@@ -233,7 +233,14 @@ export function AppModals({ open, setOpen, initialGames, initialGameId, initialD
     const photos = editReview.images && editReview.images.length > 0 ? editReview.images : [editReview.image];
     setReviewPhotos(photos);
     setReviewPhotoFiles([]);
+    setPrivacy(publicScopeToLabel(editReview.publicScope));
   }, [open, editReview]);
+
+  // 작성 모드: 사용자 설정의 기본 공개 범위를 초기값으로 사용
+  useEffect(() => {
+    if (open !== "review" || editReview) return;
+    setPrivacy(defaultPublicScope as PrivacyLabel);
+  }, [defaultPublicScope, editReview, open]);
 
   const submitAttendance = async () => {
     if (!selectedGame) {
@@ -310,6 +317,7 @@ export function AppModals({ open, setOpen, initialGames, initialGameId, initialD
     const review = {
       author: profile.nickname,
       teamId: reviewTeamId,
+      publicScope: publicScopeMap[privacy as keyof typeof publicScopeMap] ?? "public",
       title: "",
       body: trimmedBody,
       gameLabel: `${selectedReviewAttendance.date} · ${getTeam(selectedReviewAttendance.homeTeamId).shortName} ${selectedReviewAttendance.score} ${getTeam(selectedReviewAttendance.awayTeamId).shortName}`,
