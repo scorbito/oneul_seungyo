@@ -105,9 +105,11 @@ type HomeScreenProps = {
   weekGames?: Game[];
   weekStart?: string;
   latestNoticeAt?: string | null;
+  /** 경기톡 글 개수 (game_id → count). 홈 카드 뱃지에 사용. */
+  matchPostCounts?: Record<string, number>;
 };
 
-export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }: HomeScreenProps) {
+export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null, matchPostCounts = {} }: HomeScreenProps) {
   const { attendances, profile, showToast, markAttendanceResult, acknowledgeAttendanceResult } = useAppState();
   const router = useRouter();
   const [modal, setModal] = useState<ModalKind>(null);
@@ -570,6 +572,7 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }:
                 statusClass = "hd-text-info";
               }
 
+              const postCount = d.game ? matchPostCounts[d.game.id] ?? 0 : 0;
               return (
                 <article
                   className={`hd-week-cell${d.isToday ? " hd-week-cell-today" : ""}`}
@@ -583,6 +586,16 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }:
                     <span className="hd-week-rest" aria-label="휴식" />
                   )}
                   {statusLabel ? <p className={`hd-week-status ${statusClass}`}>{statusLabel}</p> : null}
+                  {postCount > 0 ? (
+                    <Link
+                      href={`/community?tab=match-talk&gameId=${d.game!.id}`}
+                      className="hd-week-talk-badge"
+                      aria-label={`경기톡 ${postCount}개 보기`}
+                      prefetch={false}
+                    >
+                      💬 {postCount}
+                    </Link>
+                  ) : null}
                 </article>
               );
             })}

@@ -280,6 +280,49 @@
   cursor: default;
 }
 
+/* 일정 화면 — 경기톡 보기 링크 */
+.phone-frame-dark .sched-game-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.phone-frame-dark .sched-game-talk-link {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--hd-accent-orange);
+  text-decoration: none;
+  padding: 2px 6px;
+  background: rgba(255, 106, 43, 0.1);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.phone-frame-dark .sched-game-talk-link:hover {
+  background: rgba(255, 106, 43, 0.18);
+}
+
+/* 홈 카드 — 경기톡 글 개수 뱃지 */
+.phone-frame-dark .hd-week-talk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 106, 43, 0.15);
+  color: var(--hd-accent-orange);
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+  line-height: 1.2;
+}
+
+.phone-frame-dark .hd-week-talk-badge:hover {
+  background: rgba(255, 106, 43, 0.25);
+}
+
 /* ---------- 작성 모달 ---------- */
 .match-talk-composer {
   display: flex;
