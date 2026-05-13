@@ -3,7 +3,7 @@ import { SkeletonBox, SkeletonLine, SkeletonList } from "@/components/common/Ske
 
 export default function MyLoading() {
   return (
-    <AppShell activeTab="my" title="마이" theme="dark">
+    <AppShell activeTab="my" title="마이" theme="dark" hideHeader>
       <div className="skeleton-page">
         {/* 프로필 카드 */}
         <SkeletonBox height={210} radius={16} />

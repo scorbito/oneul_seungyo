@@ -1,6 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { HomeScreen } from "@/components/domain/HomeScreen";
 import { listGamesFromDb, listNoticesFromDb, listStandingsFromDb } from "@/lib/supabase/queries";
+import { countMatchPostsByGameIds } from "@/lib/supabase/query-parts/matchPosts";
 import type { Game } from "@/lib/types/domain";
 
 const fmt = (d: Date) =>
@@ -44,12 +45,16 @@ export default async function HomePage() {
   ]);
   const latestNoticeAt = notices[0]?.publishedAt ?? null;
 
+  // 이번주 경기들의 경기톡 글 개수 (홈 카드 뱃지용)
+  const matchPostCounts = await countMatchPostsByGameIds(weekGames.map((g) => g.id)).catch(() => ({}));
+
   return (
     <HomeScreen
       standings={standings}
       weekGames={weekGames}
       weekStart={fmt(monday)}
       latestNoticeAt={latestNoticeAt}
+      matchPostCounts={matchPostCounts}
     />
   );
 }

@@ -3,7 +3,7 @@ import { SkeletonBox, SkeletonLine } from "@/components/common/Skeleton";
 
 export default function CommunityLoading() {
   return (
-    <AppShell activeTab="community" title="커뮤니티" theme="dark">
+    <AppShell activeTab="community" title="커뮤니티" theme="dark" hideHeader>
       <div className="skeleton-page">
         {/* 필터 칩 */}
         <SkeletonBox height={36} radius={999} />

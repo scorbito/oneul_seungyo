@@ -92,7 +92,7 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
   };
 
   return (
-    <AppShell activeTab="my" title="마이" theme="dark">
+    <AppShell activeTab="my" title="마이" theme="dark" hideHeader>
       <Card className="profile-card">
         <div className="profile-card-bg" aria-hidden="true" />
         <div className="profile-hero">
@@ -170,7 +170,12 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
           </span>
         </div>
       </Card>
-      <ModalShell open={editing} title="프로필 편집" onClose={() => setEditing(false)} panelClassName="profile-modal-panel">
+      <ModalShell
+        open={editing}
+        title="프로필 편집"
+        onClose={() => setEditing(false)}
+        panelClassName="profile-modal-panel"
+      >
         <div className="form-stack">
           <div className="profile-avatar-edit">
             <div className="profile-avatar-preview">

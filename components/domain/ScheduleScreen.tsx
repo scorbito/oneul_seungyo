@@ -273,7 +273,7 @@ export function ScheduleScreen({ games = [] }: ScheduleScreenProps) {
   };
 
   return (
-    <AppShell activeTab="schedule" title="일정" theme="dark">
+    <AppShell activeTab="schedule" title="일정" theme="dark" hideHeader>
       <div className="sched-view-switch">
         <button
           type="button"

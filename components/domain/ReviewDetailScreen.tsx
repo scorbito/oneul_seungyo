@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Bookmark, ChevronLeft, ChevronRight, Heart, MoreHorizontal, PenSquare, Send, Trash2 } from "lucide-react";
@@ -13,6 +13,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/common/Button";
 import { ModalShell } from "@/components/common/ModalShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
+import { CommentThread } from "@/components/common/CommentThread";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { createCommentAction, deleteCommentAction } from "@/lib/actions/comment";
 import { deleteReviewAction } from "@/lib/actions/review";
@@ -31,8 +32,6 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   const { reviews, profile, likedReviewIds, savedReviewIds, toggleLike, toggleSave, showToast } = useAppState();
   const router = useRouter();
   const [comments, setComments] = useState<ReviewComment[]>(initialComments);
-  const [input, setInput] = useState("");
-  const [isPending, startTransition] = useTransition();
   const [imageIndex, setImageIndex] = useState(0);
   // 첫 사진의 가로:세로 비율 — 캐러셀 컨테이너 높이를 첫 사진 기준으로 고정해 본문이 출렁이지 않게 함
   const [firstImageRatio, setFirstImageRatio] = useState<number | null>(null);
@@ -43,7 +42,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const carouselDragStartRef = useRef<{ x: number; y: number } | null>(null);
-  const commentsSectionRef = useRef<HTMLElement | null>(null);
+  const commentsSectionRef = useRef<HTMLDivElement | null>(null);
   const review = dbReview ?? reviews.find((item) => item.id === id);
 
   const isReviewOwner = Boolean(currentUserId && review?.ownerId && currentUserId === review.ownerId);
@@ -100,52 +99,44 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   const detailGameType = detailTeam && detailVenueSide ? `${detailTeam} ${detailVenueSide}` : "";
   const detailMeta = `${[detailDate, detailGameType].filter(Boolean).join(" ")}${detailStadium ? `(${detailStadium})` : ""}`;
 
-  const submitComment = () => {
-    const body = input.trim();
-    if (!body) {
-      showToast("댓글을 입력해주세요.");
-      return;
-    }
+  const handleCommentSubmit = async (body: string) => {
     if (!currentUserId) {
       showToast("로그인이 필요합니다.");
-      return;
+      throw new Error("not signed in");
     }
-    startTransition(async () => {
-      try {
-        const result = await createCommentAction({ reviewId: review.id, body });
-        // 낙관적으로 추가 (refresh 시 서버 데이터로 교체됨)
-        setComments((current) => [
-          ...current,
-          {
-            id: result.id,
-            reviewId: review.id,
-            userId: currentUserId,
-            authorNickname: profile.nickname || "나",
-            authorTeamId: profile.mainTeamId,
-            authorAvatarUrl: profile.avatarUrl ?? null,
-            body,
-            createdAt: new Date().toISOString(),
-            timeAgo: "방금 전"
-          }
-        ]);
-        setInput("");
-        router.refresh();
-      } catch (err) {
-        showToast(err instanceof Error ? err.message : "댓글 등록 실패");
-      }
-    });
+    try {
+      const result = await createCommentAction({ reviewId: review.id, body });
+      // 낙관적으로 추가 (refresh 시 서버 데이터로 교체됨)
+      setComments((current) => [
+        ...current,
+        {
+          id: result.id,
+          reviewId: review.id,
+          userId: currentUserId,
+          authorNickname: profile.nickname || "나",
+          authorTeamId: profile.mainTeamId,
+          authorAvatarUrl: profile.avatarUrl ?? null,
+          body,
+          createdAt: new Date().toISOString(),
+          timeAgo: "방금 전"
+        }
+      ]);
+      router.refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "댓글 등록 실패");
+      throw err;
+    }
   };
 
-  const handleDelete = (commentId: string) => {
-    startTransition(async () => {
-      try {
-        await deleteCommentAction(commentId);
-        setComments((current) => current.filter((c) => c.id !== commentId));
-        router.refresh();
-      } catch (err) {
-        showToast(err instanceof Error ? err.message : "댓글 삭제 실패");
-      }
-    });
+  const handleCommentDelete = async (commentId: string) => {
+    try {
+      await deleteCommentAction(commentId);
+      setComments((current) => current.filter((c) => c.id !== commentId));
+      router.refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "댓글 삭제 실패");
+      throw err;
+    }
   };
 
   const confirmDeleteReview = async () => {
@@ -361,73 +352,22 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
         </div>
       </article>
 
-      <section ref={commentsSectionRef} id="comments" className="comments-section">
-        <h2 className="comments-heading">댓글 ({comments.length})</h2>
-        <ul className="comments-list">
-          {comments.length === 0 ? (
-            <li className="comments-empty">첫 댓글을 남겨보세요!</li>
-          ) : (
-            comments.map((c) => {
-              const canDelete = currentUserId && (c.userId === currentUserId || isReviewOwner);
-              return (
-                <li className="comment-item" key={c.id}>
-                  {c.authorAvatarUrl ? (
-                    <span className="comment-avatar">
-                      <Image alt="" src={c.authorAvatarUrl} fill sizes="26px" style={{ objectFit: "cover" }} />
-                    </span>
-                  ) : (
-                    <span className="comment-avatar comment-avatar-initial">
-                      {(c.authorNickname || "?").slice(0, 1)}
-                    </span>
-                  )}
-                  <div className="comment-body">
-                    <div className="comment-meta">
-                      <strong>{c.authorNickname}</strong>
-                      <span>{c.timeAgo}</span>
-                    </div>
-                    <p>{c.body}</p>
-                  </div>
-                  {canDelete ? (
-                    <button
-                      type="button"
-                      className="comment-delete"
-                      aria-label="댓글 삭제"
-                      disabled={isPending}
-                      onClick={() => handleDelete(c.id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  ) : null}
-                </li>
-              );
-            })
-          )}
-        </ul>
-
-        {currentUserId ? (
-          <div className="comment-input-row">
-            <input
-              type="text"
-              placeholder="댓글을 입력하세요"
-              value={input}
-              maxLength={500}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  submitComment();
-                }
-              }}
-              disabled={isPending}
-            />
-            <button type="button" onClick={submitComment} disabled={isPending || !input.trim()}>
-              등록
-            </button>
-          </div>
-        ) : (
-          <p className="comments-empty">로그인 후 댓글을 작성할 수 있어요.</p>
-        )}
-      </section>
+      <div ref={commentsSectionRef}>
+        <CommentThread
+          comments={comments.map((c) => ({
+            id: c.id,
+            userId: c.userId,
+            authorNickname: c.authorNickname,
+            authorAvatarUrl: c.authorAvatarUrl,
+            body: c.body,
+            timeAgo: c.timeAgo
+          }))}
+          currentUserId={currentUserId}
+          canDeleteAsOwner={isReviewOwner}
+          onSubmit={handleCommentSubmit}
+          onDelete={handleCommentDelete}
+        />
+      </div>
 
       <AppModals
         open={appModalOpen}

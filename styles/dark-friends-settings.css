@@ -280,8 +280,10 @@
   color: var(--hd-text-primary);
   border: 2px solid rgba(255, 255, 255, 0.22);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  min-height: 78%;
-  max-height: 92%;
+  /* 다른 모달(후기/직관 등)과 동일 패턴 — phone-frame을 거의 가득 채우고
+   * 콘텐츠가 넘치면 body 안에서 스크롤. */
+  min-height: 92%;
+  max-height: 96%;
 }
 
 .phone-frame-dark .profile-modal-panel .modal-header {
@@ -304,6 +306,10 @@
 .phone-frame-dark .profile-modal-panel .modal-body {
   background: #0d1a30;
   scrollbar-width: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 16px;
 }
 
 .phone-frame-dark .profile-modal-panel .modal-body::-webkit-scrollbar {
@@ -314,6 +320,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 100%;
 }
 
 /* Avatar upload */
@@ -462,8 +469,11 @@
 
 /* Save button */
 .phone-frame-dark .profile-modal-panel .button.button-primary {
+  position: sticky;
+  bottom: 0;
   width: 100%;
   height: 50px;
+  min-height: 50px;
   border: 0;
   border-radius: 12px;
   background: var(--hd-accent-orange);

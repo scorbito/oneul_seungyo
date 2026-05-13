@@ -105,9 +105,11 @@ type HomeScreenProps = {
   weekGames?: Game[];
   weekStart?: string;
   latestNoticeAt?: string | null;
+  /** 경기톡 글 개수 (game_id → count). 홈 카드 뱃지에 사용. */
+  matchPostCounts?: Record<string, number>;
 };
 
-export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }: HomeScreenProps) {
+export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null, matchPostCounts = {} }: HomeScreenProps) {
   const { attendances, profile, showToast, markAttendanceResult, acknowledgeAttendanceResult } = useAppState();
   const router = useRouter();
   const [modal, setModal] = useState<ModalKind>(null);
@@ -225,7 +227,7 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }:
       dateObj: parseDotDate(g.date)
     }));
 
-  const weekDays = monday
+  const weekDaysAll = monday
     ? Array.from({ length: 7 }, (_, i) => {
         const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
         const game = myWeekGames.find((g) => g.dateObj.getTime() === d.getTime());
@@ -233,6 +235,15 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }:
         return { date: d, label: WEEK_LABELS_MON[i], dayNum: d.getDate(), isToday, game, dayIndex: i };
       })
     : [];
+
+  // KBO는 보통 월요일이 휴식일이라 우리팀 월요일 경기가 없는 경우가 대부분.
+  // 월요일 경기가 없으면 화~일 6개만 표시해 각 카드의 가로 공간을 넓힌다.
+  // 단, 오늘이 월요일이면 사용자 위치 파악을 위해 그대로 7개 유지.
+  const mondayHasGame = Boolean(weekDaysAll[0]?.game);
+  const todayIsMonday = todayDateOnly.getDay() === 1;
+  const weekDays = weekDaysAll.length === 0 || mondayHasGame || todayIsMonday
+    ? weekDaysAll
+    : weekDaysAll.slice(1);
 
   const weekHomeCount = weekDays.filter((d) => d.game?.isHome).length;
   const weekAwayCount = weekDays.filter((d) => d.game && !d.game.isHome).length;
@@ -546,7 +557,10 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }:
             <Link href="/schedule" className="hd-text-link" prefetch>전체 일정 <ChevronRight size={14} /></Link>
           </div>
 
-          <div className="hd-week-list">
+          <div
+            className="hd-week-list"
+            style={{ gridTemplateColumns: `repeat(${weekDays.length}, minmax(0, 1fr))` }}
+          >
             {weekDays.map((d) => {
               const result = d.game ? getGameResult(d.game, profile.mainTeamId) : null;
               const dayClass = d.dayIndex === 6 ? "hd-week-day-sun" : d.dayIndex === 5 ? "hd-week-day-sat" : "";
@@ -570,11 +584,23 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null }:
                 statusClass = "hd-text-info";
               }
 
+              const postCount = d.game ? matchPostCounts[d.game.id] ?? 0 : 0;
+              const postCountLabel = postCount > 9 ? "9+" : String(postCount);
               return (
                 <article
                   className={`hd-week-cell${d.isToday ? " hd-week-cell-today" : ""}`}
                   key={d.date.toISOString()}
                 >
+                  {postCount > 0 && d.game ? (
+                    <Link
+                      href={`/community?tab=match-talk&gameId=${d.game.id}`}
+                      className="hd-week-talk-bubble"
+                      aria-label={`경기톡 ${postCount}개 보기`}
+                      prefetch={false}
+                    >
+                      {postCountLabel}
+                    </Link>
+                  ) : null}
                   <p className={`hd-week-day ${dayClass}`}>{d.label}</p>
                   <p className="hd-week-date">{formatMonthDay(d.date)}</p>
                   {d.game ? (
