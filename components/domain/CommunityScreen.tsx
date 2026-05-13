@@ -7,7 +7,6 @@ import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { AppShell } from "@/components/layout/AppShell";
 import { ReviewCard } from "@/components/domain/ReviewCard";
 import { MatchTalkFeed } from "@/components/domain/MatchTalkFeed";
-import { MatchTalkComposerModal } from "@/components/domain/modals/MatchTalkComposerModal";
 import { loadMoreReviewsAction } from "@/lib/actions/review";
 import { useAppState } from "@/lib/state/AppState";
 import type { MatchPost, Review } from "@/lib/types/domain";
@@ -49,13 +48,12 @@ export function CommunityScreen({
 }: CommunityScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { reviews: localReviews, profile, likedReviewIds, savedReviewIds, toggleLike, toggleSave, showToast } = useAppState();
+  const { reviews: localReviews, profile, likedReviewIds, savedReviewIds, toggleLike, toggleSave } = useAppState();
   const [activeFilter, setActiveFilter] = useState<FeedFilter>("all");
   const [sortMode, setSortMode] = useState<SortMode>("createdAt");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [modal, setModal] = useState<ModalKind>(null);
   const [activeTab, setActiveTab] = useState<CommunityTab>(initialTab);
-  const [composerOpen, setComposerOpen] = useState(false);
 
   const switchTab = (tab: CommunityTab) => {
     setActiveTab(tab);
@@ -151,7 +149,7 @@ export function CommunityScreen({
   }, [isDbMode, hasMore, loadingMore, feed]);
 
   return (
-    <AppShell activeTab="community" title="커뮤니티" theme="dark">
+    <AppShell activeTab="community" title="커뮤니티" theme="dark" hideHeader>
       <div className="community-tabs" role="tablist">
         <button
           type="button"
@@ -178,13 +176,6 @@ export function CommunityScreen({
           initialPosts={initialMatchPosts}
           currentUserId={currentUserId}
           initialGameId={initialMatchTalkGameId}
-          onWriteClick={() => {
-            if (!currentUserId) {
-              showToast("로그인 후 글을 작성할 수 있어요.");
-              return;
-            }
-            setComposerOpen(true);
-          }}
         />
       ) : (
       <>
@@ -271,12 +262,6 @@ export function CommunityScreen({
       </>
       )}
       <AppModals open={modal} setOpen={setModal} />
-      <MatchTalkComposerModal
-        open={composerOpen}
-        onClose={() => setComposerOpen(false)}
-        initialGameId={initialMatchTalkGameId}
-        onCreated={() => router.refresh()}
-      />
     </AppShell>
   );
 }

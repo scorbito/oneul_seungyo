@@ -273,7 +273,7 @@ export function ScheduleScreen({ games = [] }: ScheduleScreenProps) {
   };
 
   return (
-    <AppShell activeTab="schedule" title="일정" theme="dark">
+    <AppShell activeTab="schedule" title="일정" theme="dark" hideHeader>
       <div className="sched-view-switch">
         <button
           type="button"
@@ -414,18 +414,7 @@ export function ScheduleScreen({ games = [] }: ScheduleScreenProps) {
                       <TeamBadge teamId={game.homeTeamId} size="sm" />
                     </span>
                   </div>
-                  <div className="sched-game-meta">
-                    <span className={`sched-game-status ${statusClass}`}>{statusLabel}</span>
-                    {game.status !== "canceled" ? (
-                      <Link
-                        href={`/community?tab=match-talk&gameId=${game.id}`}
-                        className="sched-game-talk-link"
-                        prefetch={false}
-                      >
-                        💬 경기톡
-                      </Link>
-                    ) : null}
-                  </div>
+                  <span className={`sched-game-status ${statusClass}`}>{statusLabel}</span>
                 </div>
               );
             })

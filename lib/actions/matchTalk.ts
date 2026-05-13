@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { refreshGameLiveScore, toMatchPostSnapshotColumns } from "@/lib/server/kbo/liveScore";
 import {
+  getMatchPostByIdFromDb,
   listMatchPostsFromDb,
   listMatchPostCommentsFromDb,
   type ListMatchPostsParams
@@ -26,6 +27,31 @@ export type WriteableGameOption = {
   awayTeamId: string;
   status: "scheduled" | "in_progress" | "finished" | "canceled";
 };
+
+export type LiveScorePreview = {
+  gameId: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: "scheduled" | "in_progress" | "finished" | "canceled";
+  source: "cache" | "kbo" | "stale";
+};
+
+/**
+ * 작성 모달에서 선택된 경기의 현재 라이브 스코어를 미리 보여주기 위한 server action.
+ * 내부적으로 refreshGameLiveScore의 lazy refresh 로직을 그대로 사용한다 (TTL 2분).
+ */
+export async function getLiveScorePreviewAction(gameId: string): Promise<LiveScorePreview | null> {
+  if (!gameId) return null;
+  const snapshot = await refreshGameLiveScore(gameId);
+  if (!snapshot) return null;
+  return {
+    gameId: snapshot.gameId,
+    homeScore: snapshot.homeScore,
+    awayScore: snapshot.awayScore,
+    status: snapshot.status,
+    source: snapshot.source
+  };
+}
 
 /**
  * 작성 모달용: 이번 주 월~일 사이의 경기 목록을 한 번에 가져온다.
@@ -132,8 +158,49 @@ export async function listMatchPostsAction(params: ListMatchPostsParams = {}): P
   return listMatchPostsFromDb(params);
 }
 
-export async function loadMoreMatchPostsAction(cursor: string, limit = 20): Promise<MatchPost[]> {
-  return listMatchPostsFromDb({ cursor, limit });
+export async function loadMoreMatchPostsAction(
+  cursor: string,
+  limit = 20,
+  gameId?: string
+): Promise<MatchPost[]> {
+  return listMatchPostsFromDb({ cursor, limit, gameId });
+}
+
+/** 단건 조회 — 작성 직후 새 글을 화면 상단에 prepend하기 위한 server action */
+export async function getMatchPostByIdAction(id: string): Promise<MatchPost | null> {
+  return getMatchPostByIdFromDb(id);
+}
+
+export type GameContextInfo = {
+  id: string;
+  date: string;
+  stadium: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  status: "scheduled" | "in_progress" | "finished" | "canceled";
+};
+
+/**
+ * 경기톡 화면에서 특정 게임으로 필터 진입했지만 글이 한 건도 없는 경우를 위해
+ * 게임 정보만 가볍게 조회한다. 컨텍스트 헤더 표시와 "이번 주 여부" 판단에 사용.
+ */
+export async function getGameContextAction(gameId: string): Promise<GameContextInfo | null> {
+  if (!gameId) return null;
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("games")
+    .select("id, game_date, stadium, home_team_id, away_team_id, status")
+    .eq("id", gameId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return {
+    id: data.id as string,
+    date: data.game_date as string,
+    stadium: data.stadium as string,
+    homeTeamId: data.home_team_id as string,
+    awayTeamId: data.away_team_id as string,
+    status: data.status as GameContextInfo["status"]
+  };
 }
 
 export async function deleteMatchPostAction(postId: string): Promise<void> {
