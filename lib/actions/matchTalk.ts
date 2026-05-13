@@ -1,0 +1,289 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { refreshGameLiveScore, toMatchPostSnapshotColumns } from "@/lib/server/kbo/liveScore";
+import {
+  listMatchPostsFromDb,
+  listMatchPostCommentsFromDb,
+  type ListMatchPostsParams
+} from "@/lib/supabase/query-parts/matchPosts";
+import type {
+  MatchPost,
+  MatchPostComment,
+  MatchPostEmotionTag
+} from "@/lib/types/domain";
+
+const EMOTION_TAGS = new Set<MatchPostEmotionTag>(["cheer", "support", "anger", "anxiety"]);
+
+/**
+ * 이번 주 월~일(KST)의 범위를 YYYY-MM-DD로 반환.
+ * 기획서 §3.1: 월요일 00시 KST 기준으로 새 주차 시작.
+ */
+export function getThisWeekRangeKst(now: Date = new Date()): { from: string; to: string } {
+  const kst = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  const dayOfWeek = kst.getDay(); // 0=일, 1=월, ...
+  const daysSinceMonday = (dayOfWeek + 6) % 7; // 월요일이면 0
+  const monday = new Date(kst);
+  monday.setDate(kst.getDate() - daysSinceMonday);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return { from: fmt(monday), to: fmt(sunday) };
+}
+
+export type CreateMatchPostInput = {
+  gameId: string;
+  body: string;
+  emotionTag: MatchPostEmotionTag;
+  photoUrl?: string | null;
+};
+
+export async function createMatchPostAction(input: CreateMatchPostInput): Promise<{ id: string }> {
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const body = input.body.trim();
+  if (body.length === 0) {
+    throw new Error("내용을 입력해주세요.");
+  }
+  if (body.length > 300) {
+    throw new Error("내용은 300자 이내로 작성해주세요.");
+  }
+  if (!EMOTION_TAGS.has(input.emotionTag)) {
+    throw new Error("감정 태그를 선택해주세요.");
+  }
+
+  const admin = createSupabaseAdminClient();
+
+  // 1) 경기 존재 + 이번 주 월~일 + 취소 아닌지 검증
+  const { data: game, error: gameError } = await admin
+    .from("games")
+    .select("id, game_date, status")
+    .eq("id", input.gameId)
+    .maybeSingle();
+  if (gameError) throw new Error(`경기 조회 실패: ${gameError.message}`);
+  if (!game) throw new Error("경기를 찾을 수 없어요.");
+
+  const { from, to } = getThisWeekRangeKst();
+  if (game.game_date < from || game.game_date > to) {
+    throw new Error("이번 주 경기에만 글을 작성할 수 있어요.");
+  }
+  if (game.status === "canceled") {
+    throw new Error("취소된 경기에는 글을 작성할 수 없어요.");
+  }
+
+  // 2) 라이브 스코어 lazy refresh → 박제값 확정
+  const snapshot = await refreshGameLiveScore(input.gameId);
+  const snapshotCols = toMatchPostSnapshotColumns(snapshot);
+
+  // 3) insert
+  const { data: inserted, error: insertError } = await admin
+    .from("match_posts")
+    .insert({
+      user_id: authData.user.id,
+      game_id: input.gameId,
+      body,
+      photo_url: input.photoUrl ?? null,
+      emotion_tag: input.emotionTag,
+      ...snapshotCols
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !inserted) {
+    throw new Error(`경기톡 저장 실패: ${insertError?.message ?? "unknown"}`);
+  }
+
+  revalidatePath("/community");
+  revalidatePath("/");
+
+  return { id: inserted.id };
+}
+
+export async function listMatchPostsAction(params: ListMatchPostsParams = {}): Promise<MatchPost[]> {
+  return listMatchPostsFromDb(params);
+}
+
+export async function loadMoreMatchPostsAction(cursor: string, limit = 20): Promise<MatchPost[]> {
+  return listMatchPostsFromDb({ cursor, limit });
+}
+
+export async function deleteMatchPostAction(postId: string): Promise<void> {
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const admin = createSupabaseAdminClient();
+
+  // 소유 확인 후 soft delete
+  const { data: post, error: fetchError } = await admin
+    .from("match_posts")
+    .select("id, user_id")
+    .eq("id", postId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (fetchError) throw new Error(`글 조회 실패: ${fetchError.message}`);
+  if (!post) throw new Error("글을 찾을 수 없어요.");
+  if (post.user_id !== authData.user.id) {
+    throw new Error("본인 글만 삭제할 수 있어요.");
+  }
+
+  const { error: updateError } = await admin
+    .from("match_posts")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", postId)
+    .eq("user_id", authData.user.id);
+  if (updateError) throw new Error(`글 삭제 실패: ${updateError.message}`);
+
+  revalidatePath("/community");
+  revalidatePath("/");
+}
+
+export type ToggleMatchPostLikeResult = { liked: boolean; count: number };
+
+export async function toggleMatchPostLikeAction(postId: string): Promise<ToggleMatchPostLikeResult> {
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+  const me = authData.user.id;
+  const admin = createSupabaseAdminClient();
+
+  // 글 살아있는지 확인
+  const { data: post } = await admin
+    .from("match_posts")
+    .select("id")
+    .eq("id", postId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!post) throw new Error("글을 찾을 수 없어요.");
+
+  const { data: existing } = await admin
+    .from("match_post_likes")
+    .select("user_id")
+    .eq("match_post_id", postId)
+    .eq("user_id", me)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await admin
+      .from("match_post_likes")
+      .delete()
+      .eq("match_post_id", postId)
+      .eq("user_id", me);
+    if (error) throw new Error(`좋아요 취소 실패: ${error.message}`);
+  } else {
+    const { error } = await admin
+      .from("match_post_likes")
+      .insert({ match_post_id: postId, user_id: me });
+    if (error) throw new Error(`좋아요 실패: ${error.message}`);
+  }
+
+  const { count, error: countError } = await admin
+    .from("match_post_likes")
+    .select("user_id", { count: "exact", head: true })
+    .eq("match_post_id", postId);
+  if (countError) throw new Error(`카운트 조회 실패: ${countError.message}`);
+
+  revalidatePath("/community");
+
+  return { liked: !existing, count: count ?? 0 };
+}
+
+export async function listMatchPostCommentsAction(postId: string): Promise<MatchPostComment[]> {
+  return listMatchPostCommentsFromDb(postId);
+}
+
+export async function createMatchPostCommentAction(input: { postId: string; body: string }): Promise<{ id: string }> {
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const body = input.body.trim();
+  if (body.length === 0) {
+    throw new Error("댓글 내용을 입력해주세요.");
+  }
+  if (body.length > 500) {
+    throw new Error("댓글은 500자 이내로 작성해주세요.");
+  }
+
+  const admin = createSupabaseAdminClient();
+
+  // 살아있는 글에만 댓글 가능
+  const { data: post } = await admin
+    .from("match_posts")
+    .select("id")
+    .eq("id", input.postId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!post) throw new Error("글을 찾을 수 없어요.");
+
+  const { data: inserted, error } = await admin
+    .from("match_post_comments")
+    .insert({
+      match_post_id: input.postId,
+      user_id: authData.user.id,
+      body
+    })
+    .select("id")
+    .single();
+
+  if (error || !inserted) {
+    throw new Error(`댓글 저장 실패: ${error?.message ?? "unknown"}`);
+  }
+
+  revalidatePath("/community");
+
+  return { id: inserted.id };
+}
+
+export async function deleteMatchPostCommentAction(commentId: string): Promise<void> {
+  const ssr = createSupabaseServerClient();
+  const { data: authData, error: authError } = await ssr.auth.getUser();
+  if (authError || !authData.user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const admin = createSupabaseAdminClient();
+
+  // 본인 댓글 또는 글 작성자
+  const { data: comment, error: fetchError } = await admin
+    .from("match_post_comments")
+    .select("id, user_id, match_post_id")
+    .eq("id", commentId)
+    .maybeSingle();
+  if (fetchError) throw new Error(`댓글 조회 실패: ${fetchError.message}`);
+  if (!comment) throw new Error("댓글을 찾을 수 없어요.");
+
+  let canDelete = comment.user_id === authData.user.id;
+  if (!canDelete) {
+    const { data: post } = await admin
+      .from("match_posts")
+      .select("user_id")
+      .eq("id", comment.match_post_id)
+      .maybeSingle();
+    canDelete = post?.user_id === authData.user.id;
+  }
+  if (!canDelete) {
+    throw new Error("본인 댓글이거나 본인 글의 댓글만 삭제할 수 있어요.");
+  }
+
+  const { error: deleteError } = await admin
+    .from("match_post_comments")
+    .delete()
+    .eq("id", commentId);
+  if (deleteError) throw new Error(`댓글 삭제 실패: ${deleteError.message}`);
+
+  revalidatePath("/community");
+}

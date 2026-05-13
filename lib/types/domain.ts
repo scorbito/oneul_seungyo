@@ -94,3 +94,49 @@ export type ReviewComment = {
   createdAt: string;
   timeAgo: string;
 };
+
+export type MatchPostEmotionTag = "cheer" | "support" | "anger" | "anxiety";
+export type MatchPostStatusSnapshot = "scheduled" | "in_progress" | "finished";
+
+export type MatchPost = {
+  id: string;
+  userId: string;
+  gameId: string;
+  body: string;
+  photoUrl: string | null;
+  emotionTag: MatchPostEmotionTag;
+  scoreHomeAtPost: number | null;
+  scoreAwayAtPost: number | null;
+  statusAtPost: MatchPostStatusSnapshot;
+  createdAt: string;
+  timeAgo: string;
+  // 작성자 정보 (조인)
+  authorNickname: string;
+  authorTeamId: string;
+  authorAvatarUrl?: string | null;
+  authorAttended: boolean; // 같은 (user_id, game_id)에 attendance 존재 여부
+  // 경기 정보 (조인) — 글 카드 헤더에 필요
+  game: {
+    date: string;
+    homeTeamId: string;
+    awayTeamId: string;
+    stadium: string;
+    currentStatus: "scheduled" | "in_progress" | "finished" | "canceled";
+  };
+  // 집계
+  likeCount: number;
+  commentCount: number;
+  likedByMe: boolean;
+};
+
+export type MatchPostComment = {
+  id: string;
+  matchPostId: string;
+  userId: string;
+  authorNickname: string;
+  authorTeamId: string;
+  authorAvatarUrl?: string | null;
+  body: string;
+  createdAt: string;
+  timeAgo: string;
+};
