@@ -1,6 +1,6 @@
 # 오늘은 승요 Product Spec
 
-이 문서는 다른 작업자나 에이전트가 `WORKPLAN.md`의 긴 작업 이력을 읽기 전에 제품의 목적, 기능, 정책, 현재 구현 범위를 빠르게 파악하기 위한 요약 문서다. 작업 히스토리와 진행 로그는 `WORKPLAN.md`를 기준으로 보고, 이 문서는 제품/기능 기준의 현재 스펙으로 유지한다.
+이 문서는 다른 작업자나 에이전트가 `docs/WORKPLAN.md`의 작업 인덱스를 읽기 전에 제품의 목적, 기능, 정책, 현재 구현 범위를 빠르게 파악하기 위한 요약 문서다. 작업 히스토리와 진행 로그는 `docs/WORKPLAN.md`와 `docs/planning/*`를 기준으로 보고, 이 문서는 제품/기능 기준의 현재 스펙으로 유지한다.
 
 ## 1. 제품 요약
 
@@ -188,19 +188,19 @@
 - 네이버 스포츠: 일정/순위 fallback
 - Vercel Cron: KBO 일정/순위 갱신 route 호출
 
-## 8. 현재 알려진 보류/검증 항목
+## 8. 운영 단계 후속 항목
 
-- 익명 계정에서 이메일/OAuth 정식 계정 업그레이드 시 user.id와 기존 데이터 유지 검증이 추가로 필요하다.
-- Vercel Cron route는 운영 환경에서 최종 호출 QA가 필요하다.
-- Phase 9 잔여 QA가 필요하다: 360px/414px/768px/1024px 레이아웃, 색 대비, focus state, alt text, lazy loading, 최종 lint/build.
-- 공지 SQL 적용 후 운영 공지 등록/노출/unread badge 실측이 필요하다.
+- MVP 출시와 사용자 모집 단계 진입 기준으로 핵심 기능 검토는 완료됐다.
+- Vercel Cron, KBO/네이버 응답 변화, Supabase/Vercel 에러 로그는 운영 중 관측한다.
+- 접근성, 색대비, E2E 자동화는 출시 차단 항목이 아니라 운영 품질 개선 항목으로 관리한다.
+- 이용약관과 개인정보처리방침은 게시되어 있으며, 법무 검토와 회원가입 동의 체크박스는 운영 중 보강한다.
 - 경기 상세 페이지는 현재 보류 상태이며 `/schedule`로 redirect한다.
-- 약관과 개인정보처리방침은 출시 전 법무 검토가 필요하다.
 - 초기 Supabase 적용 문서는 삭제했으며, 현재 DB/운영 기준은 `supabase/*.sql`, `.env.example`, Vercel 환경변수, 실제 server action 코드를 기준으로 확인한다.
 
 ## 9. 관련 문서
 
-- `WORKPLAN.md`: 작업 이력, Phase 상태, 리뷰 로그, 의사결정 로그
+- `docs/WORKPLAN.md`: 작업 인덱스, 현재 상태, 다음 작업 후보
+- `docs/planning/*`: 기능 명세, Phase 히스토리, 운영 체크리스트, 리뷰 로그, 의사결정 로그
 - `data/design_brief.md`: 초기 디자인/기획 브리프
 - `data/oneul-seungyo-home-spec/`: 다크 리디자인 기준 시안과 토큰
 - `supabase/*.sql`: 실제 DB schema, RLS, seed, storage, 보정 SQL
