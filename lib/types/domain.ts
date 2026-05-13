@@ -27,7 +27,7 @@ export type Game = {
   awayTeamId: string;
   homeScore?: number;
   awayScore?: number;
-  status: "scheduled" | "finished";
+  status: "scheduled" | "finished" | "canceled";
   attended?: boolean;
   verified?: boolean;
   result?: "win" | "lose" | "draw";
@@ -48,6 +48,7 @@ export type UserProfile = {
 export type Review = {
   id: string;
   ownerId?: string;     // DB 후기일 때만 채워짐. UI에서 본인 여부 체크에 사용.
+  publicScope?: "public" | "friends" | "private";
   author: string;
   teamId: string;
   timeAgo: string;

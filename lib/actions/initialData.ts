@@ -36,6 +36,6 @@ export async function loadAttendanceModalGamesAction(): Promise<Game[]> {
     awayTeamId: game.awayTeamId,
     homeScore: game.homeScore,
     awayScore: game.awayScore,
-    status: game.status === "finished" ? "finished" : "scheduled"
+    status: game.status === "finished" || game.status === "canceled" ? game.status : "scheduled"
   }));
 }

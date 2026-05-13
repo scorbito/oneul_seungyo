@@ -58,6 +58,7 @@ type DayMark = {
   isHome: boolean;
   attended: boolean;
   result: "win" | "lose" | "draw" | null;
+  canceled: boolean;
 };
 
 const getDayMark = (games: Game[], mainTeamId: string, attendedKeys: Set<string>): DayMark | null => {
@@ -68,7 +69,8 @@ const getDayMark = (games: Game[], mainTeamId: string, attendedKeys: Set<string>
     opponentId: isHome ? myGame.awayTeamId : myGame.homeTeamId,
     isHome,
     attended: attendedKeys.has(myGame.date),
-    result: getMainTeamResult(myGame, mainTeamId)
+    result: getMainTeamResult(myGame, mainTeamId),
+    canceled: myGame.status === "canceled"
   };
 };
 
@@ -248,7 +250,7 @@ export function ScheduleScreen({ games = [] }: ScheduleScreenProps) {
       >
         <span className="sched-date">{date.getDate()}</span>
         {mark ? <TeamBadge teamId={mark.opponentId} size="sm" /> : null}
-        {mark && (mark.attended || mark.result) ? (
+        {mark && (mark.attended || mark.result || mark.canceled) ? (
           <span className="sched-marks">
             {mark.attended ? (
               <span className="sched-mark sched-mark-attended" aria-label="직관">
@@ -260,6 +262,9 @@ export function ScheduleScreen({ games = [] }: ScheduleScreenProps) {
                 className={`sched-mark-dot sched-mark-${mark.result === "lose" ? "loss" : mark.result}`}
                 aria-label={mark.result}
               />
+            ) : null}
+            {mark.canceled ? (
+              <span className="sched-mark-dot sched-mark-canceled" aria-label="경기취소" />
             ) : null}
           </span>
         ) : null}
@@ -377,10 +382,20 @@ export function ScheduleScreen({ games = [] }: ScheduleScreenProps) {
               const isMine = game.homeTeamId === profile.mainTeamId || game.awayTeamId === profile.mainTeamId;
               const center = game.status === "finished"
                 ? <span className="sched-game-score">{game.homeScore} : {game.awayScore}</span>
-                : <span className="sched-game-vs">VS</span>;
+                : game.status === "canceled"
+                  ? <span className="sched-game-vs">취소</span>
+                  : <span className="sched-game-vs">VS</span>;
 
-              const statusLabel = game.status === "finished" ? "경기종료" : "경기전";
-              const statusClass = game.status === "finished" ? "sched-game-status-done" : "sched-game-status-pre";
+              const statusLabel = game.status === "finished"
+                ? "경기종료"
+                : game.status === "canceled"
+                  ? "경기취소"
+                  : "경기전";
+              const statusClass = game.status === "finished"
+                ? "sched-game-status-done"
+                : game.status === "canceled"
+                  ? "sched-game-status-canceled"
+                  : "sched-game-status-pre";
 
               return (
                 <div

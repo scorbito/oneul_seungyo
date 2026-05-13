@@ -16,7 +16,7 @@ function toDomainGame(game: Awaited<ReturnType<typeof listGamesFromDb>>[number])
     awayTeamId: game.awayTeamId,
     homeScore: game.homeScore,
     awayScore: game.awayScore,
-    status: game.status === "finished" ? "finished" : "scheduled"
+    status: game.status === "finished" || game.status === "canceled" ? game.status : "scheduled"
   };
 }
 

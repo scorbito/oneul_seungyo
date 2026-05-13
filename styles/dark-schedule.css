@@ -143,7 +143,8 @@
 
 .phone-frame-dark .sched-mark-win { background: var(--hd-success); }
 .phone-frame-dark .sched-mark-loss { background: var(--hd-danger); }
-.phone-frame-dark .sched-mark-draw { background: var(--hd-text-muted); }
+.phone-frame-dark .sched-mark-draw { background: #b98a2c; }
+.phone-frame-dark .sched-mark-canceled { background: #7b8493; }
 
 /* Day panel */
 .phone-frame-dark .sched-day-head {
@@ -297,6 +298,12 @@
   background: rgba(255, 255, 255, 0.06);
   border-color: var(--hd-border-soft);
   color: var(--hd-text-muted);
+}
+
+.phone-frame-dark .sched-game-status-canceled {
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #cbd5e1;
 }
 
 .phone-frame-dark .sched-game-empty {
