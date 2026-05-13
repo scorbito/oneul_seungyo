@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { syncGamesInRange } from "@/lib/server/kbo/syncGames";
 
-// Vercel 함수 시간 제한을 60초로 (기본 10초). 30일 × 200ms = 6초라 여유 충분.
 export const maxDuration = 60;
 
 function isAuthorized(request: NextRequest): boolean {
@@ -12,16 +11,13 @@ function isAuthorized(request: NextRequest): boolean {
 }
 
 function kstNow(): Date {
-  // Convert to KST regardless of host timezone
   return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
 }
 
-/**
- * KBO 일정/스코어 동기화 cron.
- * - scope=today (default): 어제 ~ 오늘 (자정 직후 어제 라이브 finalize 보장)
- * - scope=week: 어제 ~ +30일 (먼 미래 일정도 자동 백필 — 이름은 호환성 위해 유지)
- * - scope=range&from=YYYY-MM-DD&to=YYYY-MM-DD: 명시 범위
- */
+function formatDate(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
     return new NextResponse("Unauthorized", { status: 401 });
@@ -30,26 +26,25 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const scope = url.searchParams.get("scope") ?? "today";
 
-  let from: Date;
-  let to: Date;
+  let from: string;
+  let to: string;
 
   if (scope === "range") {
-    const fromStr = url.searchParams.get("from");
-    const toStr = url.searchParams.get("to");
-    if (!fromStr || !toStr) {
+    from = url.searchParams.get("from") ?? "";
+    to = url.searchParams.get("to") ?? "";
+    if (!from || !to) {
       return NextResponse.json({ ok: false, error: "from and to required for scope=range" }, { status: 400 });
     }
-    from = new Date(`${fromStr}T00:00:00+09:00`);
-    to = new Date(`${toStr}T00:00:00+09:00`);
   } else {
     const today = kstNow();
-    from = new Date(today);
-    from.setDate(today.getDate() - 1);
-    to = new Date(today);
+    const fromDate = new Date(today);
+    fromDate.setDate(today.getDate() - 1);
+    const toDate = new Date(today);
     if (scope === "week") {
-      // 어제 ~ +30일. KBO가 미래 일정을 추가 공개해도 한 달 안에 자동 흡수.
-      to.setDate(today.getDate() + 30);
+      toDate.setDate(today.getDate() + 30);
     }
+    from = formatDate(fromDate);
+    to = formatDate(toDate);
   }
 
   try {

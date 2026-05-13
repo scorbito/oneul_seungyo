@@ -14,11 +14,24 @@ export type RawGame = {
   innings: number | null;
 };
 
+type KboDateInput = Date | string;
+
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 function toExternalId(dateStr: string, awayTeamId: string, homeTeamId: string) {
   return `kbo-${dateStr.replaceAll("-", "")}-${awayTeamId}-${homeTeamId}`;
+}
+
+function formatKboDate(input: KboDateInput) {
+  if (typeof input === "string") {
+    return { yyyymmdd: input.replaceAll("-", ""), dateStr: input };
+  }
+
+  const yyyy = input.getFullYear();
+  const mm = String(input.getMonth() + 1).padStart(2, "0");
+  const dd = String(input.getDate()).padStart(2, "0");
+  return { yyyymmdd: `${yyyy}${mm}${dd}`, dateStr: `${yyyy}-${mm}-${dd}` };
 }
 
 function mapStatus(stateCode: string, stateName: string, isCancelled: boolean): RawGame["status"] {
@@ -29,12 +42,8 @@ function mapStatus(stateCode: string, stateName: string, isCancelled: boolean): 
 }
 
 /** KBO 공식 API 1순위 조회 */
-export async function fetchKboApiGames(date: Date): Promise<RawGame[]> {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const yyyymmdd = `${yyyy}${mm}${dd}`;
-  const dateStr = `${yyyy}-${mm}-${dd}`;
+export async function fetchKboApiGames(date: KboDateInput): Promise<RawGame[]> {
+  const { yyyymmdd, dateStr } = formatKboDate(date);
 
   const url = `https://www.koreabaseball.com/ws/Main.asmx/GetKboGameList?leId=1&srId=0&date=${yyyymmdd}&_t=${Date.now()}`;
   const response = await fetch(url, {
@@ -80,12 +89,8 @@ export async function fetchKboApiGames(date: Date): Promise<RawGame[]> {
 }
 
 /** 네이버 스포츠 HTML 폴백 */
-export async function fetchNaverGames(date: Date): Promise<RawGame[]> {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const yyyymmdd = `${yyyy}${mm}${dd}`;
-  const dateStr = `${yyyy}-${mm}-${dd}`;
+export async function fetchNaverGames(date: KboDateInput): Promise<RawGame[]> {
+  const { yyyymmdd, dateStr } = formatKboDate(date);
 
   const url = `https://sports.news.naver.com/kbaseball/schedule/index?date=${yyyymmdd}`;
   const response = await fetch(url, {
@@ -140,7 +145,7 @@ export async function fetchNaverGames(date: Date): Promise<RawGame[]> {
 }
 
 /** KBO API 우선, 실패 시 네이버 폴백 */
-export async function fetchGamesForDate(date: Date): Promise<{ games: RawGame[]; source: "kbo" | "naver" | "none" }> {
+export async function fetchGamesForDate(date: KboDateInput): Promise<{ games: RawGame[]; source: "kbo" | "naver" | "none" }> {
   try {
     const games = await fetchKboApiGames(date);
     return { games, source: "kbo" };

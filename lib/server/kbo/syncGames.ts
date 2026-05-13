@@ -1,6 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { fetchGamesForDate, type RawGame } from "./fetchGames";
 
+type KboDateInput = Date | string;
+
 export type SyncResult = {
   date: string;
   source: "kbo" | "naver" | "none";
@@ -24,10 +26,20 @@ function toRow(game: RawGame) {
   };
 }
 
-/** 한 날짜의 경기를 동기화 (idempotent upsert by external_id) */
-export async function syncGamesForDate(date: Date): Promise<SyncResult> {
-  const dateStr = date.toISOString().slice(0, 10);
-  const { games, source } = await fetchGamesForDate(date);
+function formatDateInput(input: KboDateInput) {
+  if (typeof input === "string") return input;
+  return `${input.getFullYear()}-${String(input.getMonth() + 1).padStart(2, "0")}-${String(input.getDate()).padStart(2, "0")}`;
+}
+
+function addDays(dateStr: string, days: number) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+}
+
+export async function syncGamesForDate(date: KboDateInput): Promise<SyncResult> {
+  const dateStr = formatDateInput(date);
+  const { games, source } = await fetchGamesForDate(dateStr);
 
   if (games.length === 0) {
     return { date: dateStr, source, inserted: 0, updated: 0, skipped: 0 };
@@ -79,23 +91,20 @@ export async function syncGamesForDate(date: Date): Promise<SyncResult> {
   return { date: dateStr, source, inserted, updated, skipped: 0 };
 }
 
-/** 날짜 범위 동기화. KBO 시즌 외 날짜는 자연히 0건. */
-export async function syncGamesInRange(fromDate: Date, toDate: Date, options?: { delayMs?: number }): Promise<SyncResult[]> {
+export async function syncGamesInRange(fromDate: KboDateInput, toDate: KboDateInput, options?: { delayMs?: number }): Promise<SyncResult[]> {
   const results: SyncResult[] = [];
-  const cursor = new Date(fromDate);
-  const end = new Date(toDate);
-  cursor.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
+  let cursor = formatDateInput(fromDate);
+  const end = formatDateInput(toDate);
 
-  while (cursor.getTime() <= end.getTime()) {
+  while (cursor <= end) {
     try {
-      const result = await syncGamesForDate(new Date(cursor));
+      const result = await syncGamesForDate(cursor);
       results.push(result);
     } catch (err) {
-      console.error(`[syncGames] ${cursor.toISOString().slice(0, 10)} failed:`, (err as Error).message);
-      results.push({ date: cursor.toISOString().slice(0, 10), source: "none", inserted: 0, updated: 0, skipped: 0 });
+      console.error(`[syncGames] ${cursor} failed:`, (err as Error).message);
+      results.push({ date: cursor, source: "none", inserted: 0, updated: 0, skipped: 0 });
     }
-    cursor.setDate(cursor.getDate() + 1);
+    cursor = addDays(cursor, 1);
     if (options?.delayMs) {
       await new Promise((resolve) => setTimeout(resolve, options.delayMs));
     }

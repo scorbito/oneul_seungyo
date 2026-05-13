@@ -290,7 +290,7 @@ export async function finalizeAttendanceAction(attendanceId: string): Promise<Fi
       .eq("id", game.id);
 
     try {
-      await syncGamesForDate(new Date(`${game.game_date}T00:00:00+09:00`));
+      await syncGamesForDate(game.game_date);
     } catch (err) {
       console.warn("[finalizeAttendance] KBO sync failed:", (err as Error).message);
     }
