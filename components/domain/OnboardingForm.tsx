@@ -9,6 +9,10 @@ import { completeOnboardingAction } from "@/lib/actions/onboarding";
 
 type OnboardingFormProps = {
   error?: string;
+  /** 서버에서 이미 부여된 디폴트 닉네임. 익명 가입 흐름이면 "불꽃홈런왕xxxxxx" 같은 값.
+   *  사용자가 그대로 가거나 수정해서 갈 수 있음. */
+  initialNickname?: string;
+  initialTeamId?: string;
 };
 
 const errorMessages: Record<string, string> = {
@@ -30,9 +34,9 @@ function SubmitButton({ disabled }: { disabled?: boolean }) {
   );
 }
 
-export function OnboardingForm({ error }: OnboardingFormProps) {
-  const [nickname, setNickname] = useState("승요맨");
-  const [mainTeamId, setMainTeamId] = useState("doosan");
+export function OnboardingForm({ error, initialNickname, initialTeamId }: OnboardingFormProps) {
+  const [nickname, setNickname] = useState(initialNickname ?? "승요팬");
+  const [mainTeamId, setMainTeamId] = useState(initialTeamId ?? "doosan");
 
   return (
     <form action={completeOnboardingAction} className="onboarding-card">

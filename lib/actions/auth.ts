@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { generateDefaultNickname } from "@/lib/constants/nicknames";
 
 type AuthMode = "sign-in" | "sign-up";
 type OAuthProvider = "google" | "kakao";
@@ -112,7 +113,7 @@ export async function signInAnonymouslyAction() {
   const admin = createSupabaseAdminClient();
   await admin.from("profiles").upsert({
     id: data!.user!.id,
-    nickname: `야구팬${data!.user!.id.slice(0, 5)}`,
+    nickname: generateDefaultNickname(data!.user!.id),
     main_team_id: "doosan",
     interest_team_ids: [],
     notifications_enabled: true,
