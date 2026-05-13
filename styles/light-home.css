@@ -444,12 +444,17 @@
 }
 
 .team-badge-initial {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
   line-height: 1;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .team-badge-initial {
+    transform: translateY(1px);
+  }
 }
 
 .team-badge-sm {

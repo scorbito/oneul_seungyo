@@ -506,6 +506,7 @@
 }
 
 .phone-frame-dark .comment-input-row input {
+  min-width: 0;
   height: 38px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--hd-border-soft);
@@ -527,6 +528,7 @@
 }
 
 .phone-frame-dark .comment-input-row button {
+  min-width: 56px;
   height: 38px;
   padding: 0 16px;
   background: var(--hd-accent-orange);
@@ -535,6 +537,7 @@
   color: #ffffff;
   font-size: 13px;
   font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -591,4 +594,3 @@
   padding-top: env(safe-area-inset-top, 0px) !important;
   padding-bottom: env(safe-area-inset-bottom, 0px) !important;
 }
-

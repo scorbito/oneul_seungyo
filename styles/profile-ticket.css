@@ -415,6 +415,7 @@
 }
 
 .comment-input-row input {
+  min-width: 0;
   flex: 1;
   padding: 10px 12px;
   border: 1px solid #e5e9ef;
@@ -428,6 +429,8 @@
 }
 
 .comment-input-row button {
+  flex: 0 0 auto;
+  min-width: 56px;
   padding: 10px 16px;
   border: 0;
   border-radius: 10px;
@@ -435,6 +438,7 @@
   color: #fff;
   font-weight: 800;
   font-size: 13px;
+  white-space: nowrap;
   cursor: pointer;
 }
 
