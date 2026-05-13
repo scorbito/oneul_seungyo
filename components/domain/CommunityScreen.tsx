@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpDown, Check, PenLine } from "lucide-react";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { AppShell } from "@/components/layout/AppShell";
 import { ReviewCard } from "@/components/domain/ReviewCard";
+import { MatchTalkFeed } from "@/components/domain/MatchTalkFeed";
 import { loadMoreReviewsAction } from "@/lib/actions/review";
 import { useAppState } from "@/lib/state/AppState";
-import type { Review } from "@/lib/types/domain";
+import type { MatchPost, Review } from "@/lib/types/domain";
+
+type CommunityTab = "review" | "match-talk";
 
 type FeedFilter = "all" | "myTeam" | "friends";
 type SortMode = "createdAt" | "gameDate";
@@ -28,14 +32,41 @@ const PAGE_SIZE = 20;
 type CommunityScreenProps = {
   dbReviews?: Review[];
   friendIds?: string[];
+  initialMatchPosts?: MatchPost[];
+  currentUserId?: string | null;
+  initialTab?: CommunityTab;
+  initialMatchTalkGameId?: string;
 };
 
-export function CommunityScreen({ dbReviews = [], friendIds = [] }: CommunityScreenProps) {
-  const { reviews: localReviews, profile, likedReviewIds, savedReviewIds, toggleLike, toggleSave } = useAppState();
+export function CommunityScreen({
+  dbReviews = [],
+  friendIds = [],
+  initialMatchPosts = [],
+  currentUserId = null,
+  initialTab = "review",
+  initialMatchTalkGameId
+}: CommunityScreenProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { reviews: localReviews, profile, likedReviewIds, savedReviewIds, toggleLike, toggleSave, showToast } = useAppState();
   const [activeFilter, setActiveFilter] = useState<FeedFilter>("all");
   const [sortMode, setSortMode] = useState<SortMode>("createdAt");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [modal, setModal] = useState<ModalKind>(null);
+  const [activeTab, setActiveTab] = useState<CommunityTab>(initialTab);
+
+  const switchTab = (tab: CommunityTab) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    if (tab === "review") {
+      params.delete("tab");
+      params.delete("gameId");
+    } else {
+      params.set("tab", "match-talk");
+    }
+    const qs = params.toString();
+    router.replace(qs ? `/community?${qs}` : "/community", { scroll: false });
+  };
 
   // dbReviews가 있으면 DB 모드(무한 스크롤). 없으면 mock 모드.
   const isDbMode = dbReviews.length > 0;
@@ -119,6 +150,36 @@ export function CommunityScreen({ dbReviews = [], friendIds = [] }: CommunityScr
 
   return (
     <AppShell activeTab="community" title="커뮤니티" theme="dark">
+      <div className="community-tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "review"}
+          className={activeTab === "review" ? "community-tab community-tab-active" : "community-tab"}
+          onClick={() => switchTab("review")}
+        >
+          후기
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "match-talk"}
+          className={activeTab === "match-talk" ? "community-tab community-tab-active" : "community-tab"}
+          onClick={() => switchTab("match-talk")}
+        >
+          경기톡
+        </button>
+      </div>
+
+      {activeTab === "match-talk" ? (
+        <MatchTalkFeed
+          initialPosts={initialMatchPosts}
+          currentUserId={currentUserId}
+          initialGameId={initialMatchTalkGameId}
+          onWriteClick={() => showToast("경기톡 글쓰기는 곧 열릴 예정이에요.")}
+        />
+      ) : (
+      <>
       <div className="community-head">
         <div className="filter-chips">
           {filters.map((filter) => (
@@ -199,6 +260,8 @@ export function CommunityScreen({ dbReviews = [], friendIds = [] }: CommunityScr
           </div>
         ) : null}
       </div>
+      </>
+      )}
       <AppModals open={modal} setOpen={setModal} />
     </AppShell>
   );
