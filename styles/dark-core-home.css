@@ -178,11 +178,9 @@
 }
 
 /* AppShell의 헤더(타이틀바)를 숨긴 페이지용.
- * 헤더 자리(64px)를 회수하되, 상단 안전영역(노치/상태바) + 일관된 여백을 확보한다.
- * 일정/커뮤니티/마이 세 페이지의 첫 요소가 자체 상단 패딩을 갖지 않으므로
- * 여기서 전체 여백을 책임진다. */
+ * 모바일 안전영역은 .app-scroll에서 한 번 처리하므로 여기서는 화면 내부 여백만 둔다. */
 .phone-frame-dark .app-content-no-header {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 24px);
+  padding-top: 24px;
 }
 
 .phone-frame-dark .bottom-tab {
