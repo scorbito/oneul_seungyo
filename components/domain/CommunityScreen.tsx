@@ -36,6 +36,7 @@ type CommunityScreenProps = {
   currentUserId?: string | null;
   initialTab?: CommunityTab;
   initialMatchTalkGameId?: string;
+  initialMatchTalkDate?: string;
 };
 
 export function CommunityScreen({
@@ -44,7 +45,8 @@ export function CommunityScreen({
   initialMatchPosts = [],
   currentUserId = null,
   initialTab = "review",
-  initialMatchTalkGameId
+  initialMatchTalkGameId,
+  initialMatchTalkDate
 }: CommunityScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,6 +63,7 @@ export function CommunityScreen({
     if (tab === "review") {
       params.delete("tab");
       params.delete("gameId");
+      params.delete("date");
     } else {
       params.set("tab", "match-talk");
     }
@@ -176,6 +179,7 @@ export function CommunityScreen({
           initialPosts={initialMatchPosts}
           currentUserId={currentUserId}
           initialGameId={initialMatchTalkGameId}
+          initialDate={initialMatchTalkDate}
         />
       ) : (
       <>

@@ -161,9 +161,9 @@ export async function listMatchPostsAction(params: ListMatchPostsParams = {}): P
 export async function loadMoreMatchPostsAction(
   cursor: string,
   limit = 20,
-  gameId?: string
+  filters: Pick<ListMatchPostsParams, "gameId" | "date"> = {}
 ): Promise<MatchPost[]> {
-  return listMatchPostsFromDb({ cursor, limit, gameId });
+  return listMatchPostsFromDb({ cursor, limit, ...filters });
 }
 
 /** 단건 조회 — 작성 직후 새 글을 화면 상단에 prepend하기 위한 server action */

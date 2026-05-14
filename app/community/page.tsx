@@ -7,12 +7,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 type CommunityPageProps = {
-  searchParams?: { tab?: string; gameId?: string };
+  searchParams?: { tab?: string; gameId?: string; date?: string };
 };
 
 export default async function CommunityPage({ searchParams }: CommunityPageProps) {
   const tab = searchParams?.tab === "match-talk" ? "match-talk" : "review";
   const matchTalkGameId = searchParams?.gameId;
+  const matchTalkDate = searchParams?.date;
 
   const ssr = createSupabaseServerClient();
   const { data: authData } = await ssr.auth.getUser();
@@ -21,7 +22,7 @@ export default async function CommunityPage({ searchParams }: CommunityPageProps
   const [dbReviews, friends, initialMatchPosts] = await Promise.all([
     listReviewsFromDb({ limit: 20 }).catch(() => []),
     listAcceptedFriendsFromDb().catch(() => []),
-    listMatchPostsFromDb({ limit: 20, gameId: matchTalkGameId }).catch(() => [])
+    listMatchPostsFromDb({ limit: 20, gameId: matchTalkGameId, date: matchTalkDate }).catch(() => [])
   ]);
   const friendIds = friends.map((f) => f.userId);
 
@@ -33,6 +34,7 @@ export default async function CommunityPage({ searchParams }: CommunityPageProps
       currentUserId={currentUserId}
       initialTab={tab}
       initialMatchTalkGameId={matchTalkGameId}
+      initialMatchTalkDate={matchTalkDate}
     />
   );
 }
