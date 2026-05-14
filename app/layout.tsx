@@ -59,6 +59,9 @@ export const metadata: Metadata = {
     "야구팬 커뮤니티"
   ],
   authors: [{ name: "오늘은 승요" }],
+  verification: {
+    google: "google1e378a810eb97892.html"
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
