@@ -14,7 +14,9 @@
 
 .profile-popover-panel {
   width: auto;
-  max-width: 320px;
+  /* 큰 화면에서는 380px로 카드 폭 확보, 좁은 화면(iPhone SE 등)에서는
+     자동 축소되어 잘리지 않도록 fluid 처리 */
+  max-width: min(380px, calc(100% - 32px));
   max-height: calc(100% - 32px);
   background: #0d1a30;
   color: #f7f9fc;
@@ -185,7 +187,7 @@
 }
 
 .profile-popover-stat-value {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 900;
   color: #f7f9fc;
   letter-spacing: -0.02em;
@@ -193,7 +195,7 @@
 }
 
 .profile-popover-stat-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: rgba(247, 249, 252, 0.55);
 }
