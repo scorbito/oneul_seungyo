@@ -12,11 +12,12 @@
   padding: 16px;
 }
 
-.profile-popover-panel {
-  width: auto;
-  /* 큰 화면에서는 380px로 카드 폭 확보, 좁은 화면(iPhone SE 등)에서는
-     자동 축소되어 잘리지 않도록 fluid 처리 */
-  max-width: min(380px, calc(100% - 32px));
+.modal-panel.profile-popover-panel {
+  /* width: auto면 콘텐츠 폭에 맞춰 좁아져서 한참 작게 보임.
+     phone-frame 폭의 - 32px(좌우 16px 여백)까지 가득 채우되 380px 상한.
+     .modal-panel 더 구체적인 셀렉터로 PC 미디어쿼리(390px) 덮어쓰기. */
+  width: calc(100% - 32px);
+  max-width: 380px;
   max-height: calc(100% - 32px);
   background: #0d1a30;
   color: #f7f9fc;
