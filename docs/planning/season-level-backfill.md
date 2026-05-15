@@ -49,10 +49,10 @@ reviews.attendance_id IS NOT NULL
 → review_created +70
 ```
 
-사진 포함 후기 XP는 `reviews.photos` 배열에 사용자 업로드 사진이 있는지 기준으로 백필합니다. 시스템 기본 이미지나 플레이스홀더 이미지는 보너스 대상으로 보지 않습니다.
+사진 포함 후기 XP는 `reviews.photos`에 사진이 있는지 기준으로 백필합니다. 시스템 기본 이미지를 사용하지 않으므로 `photos.length > 0`이면 모두 사용자 업로드입니다.
 
 ```text
-reviews.photos 안에 사용자 업로드 이미지가 1장 이상 있음
+reviews.photos 배열 길이 > 0
 → review_photo_bonus +20
 ```
 

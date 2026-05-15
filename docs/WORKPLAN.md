@@ -15,6 +15,7 @@
 | [planning/season-level.md](./planning/season-level.md) | 시즌 레벨/XP/칭호 기능 기획 |
 | [planning/match-talk.md](./planning/match-talk.md) | 경기톡 게시판(커뮤니티 2번째 탭) 기획 |
 | [planning/season-level-backfill.md](./planning/season-level-backfill.md) | 시즌 레벨 백필 정책 |
+| [planning/profile-modal.md](./planning/profile-modal.md) | 프로필 모달/자기소개 기획 |
 | [development/season-level-implementation.md](./development/season-level-implementation.md) | 시즌 레벨 단계별 개발 계획 |
 | [planning/phase-history.md](./planning/phase-history.md) | Phase별 구현 히스토리 요약 |
 | [planning/progress-log.md](./planning/progress-log.md) | 병렬 작업 전략, 단계 완료 기준, 리뷰어 검수 결과(개발 프로세스) |
@@ -34,7 +35,7 @@
 2. **운영 관측성** — Vercel Cron 실행 로그 추적, 동기화 실패 알림 — [qa-checklist.md § 2.3](./planning/qa-checklist.md)
 3. **법무/동의 보강** — 약관 법무 검토 + 회원가입 동의 체크박스 — [qa-checklist.md § 2.4](./planning/qa-checklist.md)
 4. **운영 문서화** — 환경변수표, seed/SQL 적용 순서, README 보강 — [qa-checklist.md § 2.5](./planning/qa-checklist.md)
-5. **다음 라운드 후보** — Supabase Realtime, 직관 경험치 시스템, 푸시 알림, 유입 분석, **경기톡 게시판([기획서](./planning/match-talk.md))** — [qa-checklist.md § 2.7](./planning/qa-checklist.md)
+5. **다음 라운드 후보** — Supabase Realtime, 프로필 모달 + 자기소개([기획](./planning/season-level.md#12-프로필-모달과-자기소개)·[개발](./development/season-level-implementation.md) Step 0), 직관 경험치 시스템([기획](./planning/season-level.md)·[개발](./development/season-level-implementation.md)), 경기톡 게시판([기획](./planning/match-talk.md)) ✅ 출시, 푸시 알림, 유입 분석 — [qa-checklist.md § 2.7](./planning/qa-checklist.md)
 
 ## 작업 워크플로
 
