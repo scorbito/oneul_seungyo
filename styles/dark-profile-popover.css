@@ -2,13 +2,25 @@
  * 프로필 모달 (작성자 닉네임/사진 탭 시 열림)
  * 작은 카드형 — 시즌 레벨/자기소개/활동 지표/친구 액션을 한 번에 표시.
  * .profile-popover-panel 은 phone-frame-dark 컨텍스트 안팎 어디서든 동작.
+ * 다른 풀시트 모달과 달리 PC/모바일 모두 화면 가운데에 작은 카드로 표시한다.
  * ============================================================ */
+
+/* 모바일 기본은 modal-backdrop이 align-items: flex-end (바텀시트)이지만,
+   프로필 모달은 가운데로 강제 — :has() 셀렉터로 자기 자신만 적용 */
+.modal-backdrop:has(.profile-popover-panel) {
+  align-items: center;
+  padding: 16px;
+}
+
 .profile-popover-panel {
+  width: auto;
+  max-width: 320px;
+  max-height: calc(100% - 32px);
   background: #0d1a30;
   color: #f7f9fc;
   border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 20px; /* 모든 모서리 둥글게 (바텀시트가 아닌 카드형) */
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-  max-width: 320px;
 }
 
 .profile-popover-panel .modal-header {

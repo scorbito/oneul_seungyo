@@ -78,29 +78,37 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
               {(review.author || "?").slice(0, 1)}
             </span>
           );
-          const meta = (
-            <div>
-              <strong>{review.author}</strong>
-              <span>{review.timeAgo}</span>
-            </div>
-          );
-          if (onAuthorClick && review.ownerId) {
+          const clickable = Boolean(onAuthorClick && review.ownerId);
+          if (clickable) {
             return (
-              <button
-                type="button"
-                className="profile-author-trigger review-author-trigger"
-                aria-label={`${review.author}님의 프로필 보기`}
-                onClick={() => onAuthorClick(review.ownerId!)}
-              >
-                {avatar}
-                {meta}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="profile-author-trigger"
+                  aria-label={`${review.author}님의 프로필 보기`}
+                  onClick={() => onAuthorClick!(review.ownerId!)}
+                >
+                  {avatar}
+                </button>
+                <button
+                  type="button"
+                  className="profile-author-trigger review-author-name"
+                  aria-label={`${review.author}님의 프로필 보기`}
+                  onClick={() => onAuthorClick!(review.ownerId!)}
+                >
+                  <strong>{review.author}</strong>
+                  <span>{review.timeAgo}</span>
+                </button>
+              </>
             );
           }
           return (
             <>
               {avatar}
-              {meta}
+              <div>
+                <strong>{review.author}</strong>
+                <span>{review.timeAgo}</span>
+              </div>
             </>
           );
         })()}

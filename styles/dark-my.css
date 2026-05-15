@@ -78,9 +78,38 @@
   font-weight: 600;
 }
 
+.phone-frame-dark .profile-card .profile-bio {
+  margin: 12px 14px 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: rgba(247, 249, 252, 0.85);
+  text-align: center;
+  word-break: break-word;
+}
+
+.phone-frame-dark .profile-card .profile-bio-empty {
+  display: block;
+  margin: 12px auto 0;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: rgba(247, 249, 252, 0.55);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.phone-frame-dark .profile-card .profile-bio-empty:hover {
+  border-color: rgba(255, 106, 43, 0.55);
+  color: var(--hd-accent-orange);
+}
+
 .phone-frame-dark .profile-card .profile-rate {
   display: block;
-  margin: 0 auto;
+  margin: 14px auto 0;
   font-size: 64px;
   font-weight: 800;
   line-height: 1;

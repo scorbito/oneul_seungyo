@@ -110,6 +110,13 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
             <p>내 팀 {profileTeam.name}</p>
           </div>
         </div>
+        {profile.bio ? (
+          <p className="profile-bio">{profile.bio}</p>
+        ) : (
+          <button type="button" className="profile-bio profile-bio-empty" onClick={() => setEditing(true)}>
+            + 자기소개 추가하기
+          </button>
+        )}
         <strong className="profile-rate">{profile.winRate}</strong>
         <span className="profile-record">{profile.wins}승 {profile.losses}패 {profile.draws}무</span>
         {isAnonymous ? (
