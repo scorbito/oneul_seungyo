@@ -17,6 +17,8 @@ export type UserProfileRecord = {
   notificationsEnabled: boolean;
   defaultPublicScope: PublicScope;
   avatarImageUrl: string | null;
+  /** 자기소개 (최대 150자, 한 줄). null이면 미입력 상태. */
+  bio: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -110,6 +112,8 @@ export type UpdateProfileInput = {
   notificationsEnabled?: boolean;
   defaultPublicScope?: PublicScope;
   avatarImageFile?: File;
+  /** 자기소개 (최대 150자, 한 줄). null/빈 문자열이면 비움. */
+  bio?: string | null;
 };
 
 export type CommunityFeedFilter = "all" | "myTeam" | "friends";

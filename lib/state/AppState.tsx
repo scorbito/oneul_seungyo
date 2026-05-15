@@ -33,7 +33,7 @@ type Toast = {
   message: string;
 };
 
-type ProfileSettings = Pick<UserProfile, "nickname" | "mainTeamId" | "interestTeamIds" | "avatarUrl">;
+type ProfileSettings = Pick<UserProfile, "nickname" | "mainTeamId" | "interestTeamIds" | "avatarUrl" | "bio">;
 
 type AppState = {
   attendances: AttendanceRecord[];
@@ -117,7 +117,8 @@ const emptyProfileSettings: ProfileSettings = {
   nickname: "",
   mainTeamId: "lg",
   interestTeamIds: [],
-  avatarUrl: null
+  avatarUrl: null,
+  bio: null
 };
 
 type AppStateProviderProps = {
@@ -145,7 +146,8 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
           nickname: initialProfile.nickname,
           mainTeamId: initialProfile.mainTeamId,
           interestTeamIds: initialProfile.interestTeamIds ?? [],
-          avatarUrl: initialProfile.avatarImageUrl ?? null
+          avatarUrl: initialProfile.avatarImageUrl ?? null,
+          bio: initialProfile.bio ?? null
         }
       : emptyProfileSettings
   );
@@ -178,9 +180,10 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
       nickname: initialProfile.nickname,
       mainTeamId: initialProfile.mainTeamId,
       interestTeamIds: initialProfile.interestTeamIds ?? [],
-      avatarUrl: initialProfile.avatarImageUrl ?? null
+      avatarUrl: initialProfile.avatarImageUrl ?? null,
+      bio: initialProfile.bio ?? null
     });
-  }, [initialProfile?.nickname, initialProfile?.mainTeamId, initialProfile?.avatarImageUrl]);
+  }, [initialProfile?.nickname, initialProfile?.mainTeamId, initialProfile?.avatarImageUrl, initialProfile?.bio]);
 
   // React 콘텐츠가 마운트되면 initial-loader 페이드아웃 신호.
   useEffect(() => {

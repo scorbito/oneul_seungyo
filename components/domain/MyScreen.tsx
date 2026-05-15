@@ -55,6 +55,7 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
   const [nickname, setNickname] = useState(profile.nickname);
   const [selectedTeamId, setSelectedTeamId] = useState(profile.mainTeamId);
   const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(profile.avatarUrl);
+  const [bio, setBio] = useState(profile.bio ?? "");
   const [uploading, startUpload] = useTransition();
   const [savingProfile, startSaveProfile] = useTransition();
   const profileTeam = getTeam(profile.mainTeamId);
@@ -67,7 +68,8 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
     setNickname(profile.nickname);
     setSelectedTeamId(profile.mainTeamId);
     setAvatarUrl(profile.avatarUrl);
-  }, [editing, profile.mainTeamId, profile.nickname, profile.avatarUrl]);
+    setBio(profile.bio ?? "");
+  }, [editing, profile.mainTeamId, profile.nickname, profile.avatarUrl, profile.bio]);
 
   const handleAvatarPick = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -201,6 +203,21 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
               onChange={(event) => setNickname(event.target.value)}
             />
           </label>
+          <label className="field-row">
+            <span>자기소개</span>
+            <input
+              className="plain-input"
+              value={bio}
+              maxLength={150}
+              placeholder="한 줄로 나를 소개해보세요 (선택)"
+              onChange={(event) => {
+                // 줄바꿈 차단 — 한 줄로만 입력
+                const next = event.target.value.replace(/[\r\n]+/g, " ");
+                setBio(next);
+              }}
+            />
+            <p className="field-hint">{bio.length}/150</p>
+          </label>
           <div className="field-group">
             <span>내 팀</span>
             <div className="profile-team-grid">
@@ -224,10 +241,12 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
           </div>
           <Button disabled={savingProfile} onClick={() => {
             const nextNickname = nickname.trim() || profile.nickname;
+            const trimmedBio = bio.replace(/[\r\n]+/g, " ").trim().slice(0, 150);
+            const nextBio = trimmedBio.length > 0 ? trimmedBio : null;
             startSaveProfile(async () => {
               try {
-                await updateProfileAction({ nickname: nextNickname, mainTeamId: selectedTeamId });
-                updateProfile({ nickname: nextNickname, mainTeamId: selectedTeamId });
+                await updateProfileAction({ nickname: nextNickname, mainTeamId: selectedTeamId, bio: nextBio });
+                updateProfile({ nickname: nextNickname, mainTeamId: selectedTeamId, bio: nextBio });
                 setEditing(false);
                 router.refresh();
               } catch (err) {

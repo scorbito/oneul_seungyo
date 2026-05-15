@@ -32,9 +32,11 @@ type MatchPostCardProps = {
   onClickGameFilter?: () => void;
   /** 삭제 성공 후 호출. 부모(목록)가 feed state에서 해당 글을 제거할 때 사용. */
   onDeleted?: (postId: string) => void;
+  /** 작성자 아바타/닉네임 탭 시 프로필 모달 열기 핸들러. 없으면 클릭 비활성. */
+  onAuthorClick?: (userId: string) => void;
 };
 
-export function MatchPostCard({ post, currentUserId, onToggleLike, onClickGameFilter, onDeleted }: MatchPostCardProps) {
+export function MatchPostCard({ post, currentUserId, onToggleLike, onClickGameFilter, onDeleted, onAuthorClick }: MatchPostCardProps) {
   const { profile, showToast } = useAppState();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -161,8 +163,8 @@ export function MatchPostCard({ post, currentUserId, onToggleLike, onClickGameFi
   return (
     <article className="match-post-card">
       <header className="match-post-header">
-        <div className="match-post-author">
-          {post.authorAvatarUrl ? (
+        {(() => {
+          const avatar = post.authorAvatarUrl ? (
             <span className="match-post-avatar">
               <Image alt="" src={post.authorAvatarUrl} fill sizes="32px" style={{ objectFit: "cover" }} />
             </span>
@@ -170,19 +172,40 @@ export function MatchPostCard({ post, currentUserId, onToggleLike, onClickGameFi
             <span className="match-post-avatar match-post-avatar-initial">
               {(post.authorNickname || "?").slice(0, 1)}
             </span>
-          )}
-          <div className="match-post-author-meta">
-            <div className="match-post-author-name">
-              <strong>{post.authorNickname}</strong>
-              {post.authorAttended ? (
-                <span className="match-post-attended-badge" title="직관 인증">
-                  <Check size={11} strokeWidth={3} /> 직관
-                </span>
-              ) : null}
+          );
+          const meta = (
+            <div className="match-post-author-meta">
+              <div className="match-post-author-name">
+                <strong>{post.authorNickname}</strong>
+                {post.authorAttended ? (
+                  <span className="match-post-attended-badge" title="직관 인증">
+                    <Check size={11} strokeWidth={3} /> 직관
+                  </span>
+                ) : null}
+              </div>
+              <span className="match-post-time">{post.timeAgo}</span>
             </div>
-            <span className="match-post-time">{post.timeAgo}</span>
-          </div>
-        </div>
+          );
+          if (onAuthorClick && post.userId) {
+            return (
+              <button
+                type="button"
+                className="match-post-author profile-author-trigger"
+                aria-label={`${post.authorNickname}님의 프로필 보기`}
+                onClick={() => onAuthorClick(post.userId)}
+              >
+                {avatar}
+                {meta}
+              </button>
+            );
+          }
+          return (
+            <div className="match-post-author">
+              {avatar}
+              {meta}
+            </div>
+          );
+        })()}
 
         <div className="match-post-header-right">
           {post.authorTeamId ? <TeamBadge teamId={post.authorTeamId} size="sm" /> : null}
@@ -309,6 +332,7 @@ export function MatchPostCard({ post, currentUserId, onToggleLike, onClickGameFi
               canDeleteAsOwner={isOwner}
               onSubmit={handleCommentSubmit}
               onDelete={handleCommentDelete}
+              onAuthorClick={onAuthorClick}
             />
           )}
         </div>

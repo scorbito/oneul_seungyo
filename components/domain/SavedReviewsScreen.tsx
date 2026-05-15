@@ -3,6 +3,7 @@
 import { Bookmark } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { ReviewCard } from "@/components/domain/ReviewCard";
+import { ProfileModal, useProfileModal } from "@/components/domain/modals/ProfileModal";
 import { useAppState } from "@/lib/state/AppState";
 import type { Review } from "@/lib/types/domain";
 
@@ -12,6 +13,7 @@ type SavedReviewsScreenProps = {
 
 export function SavedReviewsScreen({ reviews }: SavedReviewsScreenProps) {
   const { likedReviewIds, savedReviewIds, toggleLike, toggleSave } = useAppState();
+  const profileModal = useProfileModal();
 
   // 사용자가 페이지에서 저장 토글을 다시 누르면 savedReviewIds 가 바뀌므로,
   // 표시 중인 목록에서 즉시 제거되도록 필터.
@@ -28,6 +30,7 @@ export function SavedReviewsScreen({ reviews }: SavedReviewsScreenProps) {
             saved={savedReviewIds.includes(review.id)}
             onToggleLike={() => toggleLike(review.id)}
             onToggleSave={() => toggleSave(review.id)}
+            onAuthorClick={profileModal.openProfile}
           />
         ))}
         {visibleReviews.length === 0 ? (
@@ -37,6 +40,7 @@ export function SavedReviewsScreen({ reviews }: SavedReviewsScreenProps) {
           </div>
         ) : null}
       </div>
+      <ProfileModal {...profileModal.modalProps} />
     </AppShell>
   );
 }

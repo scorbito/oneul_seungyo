@@ -15,6 +15,7 @@ import { ModalShell } from "@/components/common/ModalShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { CommentThread } from "@/components/common/CommentThread";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
+import { ProfileModal, useProfileModal } from "@/components/domain/modals/ProfileModal";
 import { createCommentAction, deleteCommentAction } from "@/lib/actions/comment";
 import { deleteReviewAction } from "@/lib/actions/review";
 import { getTeam } from "@/lib/constants/teams";
@@ -44,6 +45,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
   const carouselDragStartRef = useRef<{ x: number; y: number } | null>(null);
   const commentsSectionRef = useRef<HTMLDivElement | null>(null);
   const review = dbReview ?? reviews.find((item) => item.id === id);
+  const profileModal = useProfileModal();
 
   const isReviewOwner = Boolean(currentUserId && review?.ownerId && currentUserId === review.ownerId);
 
@@ -326,18 +328,38 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
             </div>
           );
         })() : null}
-        <div className="review-detail-author">
-          {review.authorAvatarUrl ? (
-            <span className="review-detail-author-avatar">
-              <Image alt="" src={review.authorAvatarUrl} fill sizes="34px" style={{ objectFit: "cover" }} />
-            </span>
-          ) : (
-            <span className="review-detail-author-avatar review-detail-author-avatar-initial">
-              {(review.author || "?").slice(0, 1)}
-            </span>
-          )}
-          <strong>{review.author}</strong>
-        </div>
+        {review.ownerId ? (
+          <button
+            type="button"
+            className="review-detail-author profile-author-trigger"
+            aria-label={`${review.author}님의 프로필 보기`}
+            onClick={() => profileModal.openProfile(review.ownerId!)}
+          >
+            {review.authorAvatarUrl ? (
+              <span className="review-detail-author-avatar">
+                <Image alt="" src={review.authorAvatarUrl} fill sizes="34px" style={{ objectFit: "cover" }} />
+              </span>
+            ) : (
+              <span className="review-detail-author-avatar review-detail-author-avatar-initial">
+                {(review.author || "?").slice(0, 1)}
+              </span>
+            )}
+            <strong>{review.author}</strong>
+          </button>
+        ) : (
+          <div className="review-detail-author">
+            {review.authorAvatarUrl ? (
+              <span className="review-detail-author-avatar">
+                <Image alt="" src={review.authorAvatarUrl} fill sizes="34px" style={{ objectFit: "cover" }} />
+              </span>
+            ) : (
+              <span className="review-detail-author-avatar review-detail-author-avatar-initial">
+                {(review.author || "?").slice(0, 1)}
+              </span>
+            )}
+            <strong>{review.author}</strong>
+          </div>
+        )}
         {review.title ? <h1>{review.title}</h1> : null}
         <p>{review.body}</p>
         {/* 해시태그 칩은 MVP에서 숨김 */}
@@ -366,6 +388,7 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
           canDeleteAsOwner={isReviewOwner}
           onSubmit={handleCommentSubmit}
           onDelete={handleCommentDelete}
+          onAuthorClick={profileModal.openProfile}
         />
       </div>
 
@@ -401,6 +424,8 @@ export function ReviewDetailScreen({ id, dbReview, initialComments = [], current
         controller={{ closeOnBackdropClick: true }}
         styles={{ container: { backgroundColor: "rgba(0, 0, 0, 0.95)" } }}
       />
+
+      <ProfileModal {...profileModal.modalProps} />
     </AppShell>
   );
 }
