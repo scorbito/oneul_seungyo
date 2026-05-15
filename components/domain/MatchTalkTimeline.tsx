@@ -24,7 +24,12 @@ const EMOTION_META: Record<MatchPostEmotionTag, { emoji: string; label: string }
   anxiety: { emoji: "😰", label: "불안" }
 };
 
-const STATUS_ORDER: MatchPostStatusSnapshot[] = ["scheduled", "in_progress", "finished"];
+const STATUS_ORDER: MatchPostStatusSnapshot[] = ["finished", "in_progress", "scheduled"];
+const STATUS_PRIORITY: Record<MatchPostStatusSnapshot, number> = {
+  finished: 3,
+  in_progress: 2,
+  scheduled: 1
+};
 
 type TimelineMode = "date" | "game";
 
@@ -38,6 +43,12 @@ type MatchTalkTimelineProps = {
 
 type GameGroup = {
   key: string;
+  label: string;
+  posts: MatchPost[];
+};
+
+type StatusGroup = {
+  status: MatchPostStatusSnapshot;
   label: string;
   posts: MatchPost[];
 };
@@ -58,18 +69,29 @@ export function MatchTalkTimeline({
           {mode === "date" ? <h3 className="match-talk-timeline-game-title">{gameGroup.label}</h3> : null}
           {groupByStatus(gameGroup.posts).map((statusGroup) => (
             <section className="match-talk-timeline-section" key={`${gameGroup.key}-${statusGroup.status}`}>
-              <h4 className="match-talk-timeline-status">{statusGroup.label}</h4>
-              <div className="match-talk-timeline-items">
-                {statusGroup.posts.map((post) => (
-                  <MatchTalkTimelineItem
-                    key={post.id}
-                    post={post}
-                    currentUserId={currentUserId}
-                    onToggleLike={() => onToggleLike(post.id)}
-                    onDeleted={onDeleted}
-                  />
-                ))}
-              </div>
+              {statusGroup.status !== "scheduled" ? (
+                <h4 className="match-talk-timeline-status">{statusGroup.label}</h4>
+              ) : null}
+              {statusGroup.posts.length > 0 ? (
+                <>
+                  <div className="match-talk-timeline-items">
+                    {statusGroup.posts.map((post) => (
+                      <MatchTalkTimelineItem
+                        key={post.id}
+                        post={post}
+                        currentUserId={currentUserId}
+                        onToggleLike={() => onToggleLike(post.id)}
+                        onDeleted={onDeleted}
+                      />
+                    ))}
+                  </div>
+                  {statusGroup.status === "scheduled" ? (
+                    <h4 className="match-talk-timeline-status">{statusGroup.label}</h4>
+                  ) : null}
+                </>
+              ) : statusGroup.status === "scheduled" ? (
+                <h4 className="match-talk-timeline-status">{statusGroup.label}</h4>
+              ) : null}
             </section>
           ))}
         </section>
@@ -99,17 +121,32 @@ function groupByGame(posts: MatchPost[], mode: TimelineMode): GameGroup[] {
 }
 
 function groupByStatus(posts: MatchPost[]) {
-  return STATUS_ORDER.map((status) => {
+  const referencePost = posts[0];
+  const currentStatus = referencePost?.game.currentStatus;
+  const groups = STATUS_ORDER.map((status) => {
     const list = posts
       .filter((post) => post.statusAtPost === status)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     if (list.length === 0) return null;
     return {
       status,
-      label: formatStatusLabel(status, list[list.length - 1]),
+      label: formatStatusLabel(status, list[0]),
       posts: list
     };
-  }).filter(Boolean) as Array<{ status: MatchPostStatusSnapshot; label: string; posts: MatchPost[] }>;
+  }).filter(Boolean) as StatusGroup[];
+
+  if (referencePost && currentStatus !== "scheduled" && currentStatus !== "canceled") {
+    const hasCurrentMarker = groups.some((group) => group.status === currentStatus);
+    if (!hasCurrentMarker) {
+      groups.push({
+        status: currentStatus,
+        label: formatStatusMarkerLabel(currentStatus),
+        posts: []
+      });
+    }
+  }
+
+  return groups.sort((a, b) => STATUS_PRIORITY[b.status] - STATUS_PRIORITY[a.status]);
 }
 
 function formatGameTitle(post?: MatchPost) {
@@ -129,6 +166,12 @@ function formatStatusLabel(status: MatchPostStatusSnapshot, post: MatchPost) {
   const homeScore = post.scoreHomeAtPost ?? "-";
   const prefix = status === "finished" ? "최종" : "진행 중";
   return `${prefix} · ${away} ${awayScore} : ${homeScore} ${home}`;
+}
+
+function formatStatusMarkerLabel(status: MatchPostStatusSnapshot) {
+  if (status === "finished") return "최종";
+  if (status === "in_progress") return "진행 중";
+  return "경기 전";
 }
 
 type MatchTalkTimelineItemProps = {

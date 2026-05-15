@@ -24,6 +24,17 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  position: relative;
+}
+
+.match-talk-timeline-game::before {
+  background: rgba(148, 163, 184, 0.24);
+  bottom: 0;
+  content: "";
+  left: 10px;
+  position: absolute;
+  top: 0;
+  width: 1px;
 }
 
 .match-talk-timeline-game-title {
@@ -35,12 +46,12 @@
 }
 
 .match-talk-timeline-section {
-  border-left: 1px solid rgba(148, 163, 184, 0.24);
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-left: 10px;
   padding-left: 16px;
+  position: relative;
 }
 
 .match-talk-timeline-status {
@@ -78,7 +89,9 @@
   height: 12px;
   margin-left: -23px;
   margin-top: 20px;
+  position: relative;
   width: 12px;
+  z-index: 1;
 }
 
 .match-talk-timeline-card {
@@ -283,6 +296,10 @@
   .match-talk-timeline-section {
     margin-left: 8px;
     padding-left: 13px;
+  }
+
+  .match-talk-timeline-game::before {
+    left: 8px;
   }
 
   .match-talk-timeline-card {
