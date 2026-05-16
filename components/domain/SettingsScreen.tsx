@@ -71,12 +71,13 @@ export function SettingsScreen({ accountInfo = null }: SettingsScreenProps) {
 
   return (
     <AppShell activeTab="my" title="설정" theme="dark" backHref="/my">
-      {/* 연동 계정 정보 — 마이 프로필 영역에서 옮겨옴 */}
-      {accountLabel ? (
-        <section className="settings-account-section" aria-label="연동 계정">
-          <header className="settings-section-head">
-            <UserCircle size={14} /> 연동 계정
-          </header>
+      {/* 연동 계정 정보 — 마이 프로필 영역에서 옮겨옴.
+          익명 로그인 사용자는 연동 정보가 없으므로 "익명 로그인" 안내 + 로그아웃 노출. */}
+      <section className="settings-account-section" aria-label="연동 계정">
+        <header className="settings-section-head">
+          <UserCircle size={14} /> 연동 계정
+        </header>
+        {accountLabel ? (
           <div className={`settings-account-card settings-account-${accountInfo?.provider ?? "unknown"}`}>
             <div className="settings-account-main">
               <span className={`settings-account-provider settings-account-provider-${accountInfo?.provider}`}>
@@ -88,8 +89,18 @@ export function SettingsScreen({ accountInfo = null }: SettingsScreenProps) {
               <LogOut size={14} /> 로그아웃
             </button>
           </div>
-        </section>
-      ) : null}
+        ) : (
+          <div className="settings-account-card settings-account-anonymous">
+            <div className="settings-account-main">
+              <span className="settings-account-provider settings-account-provider-anonymous">익명</span>
+              <span className="settings-account-id">아직 계정을 연동하지 않았어요</span>
+            </div>
+            <button className="settings-account-logout" type="button" onClick={() => setLogoutConfirmOpen(true)}>
+              <LogOut size={14} /> 로그아웃
+            </button>
+          </div>
+        )}
+      </section>
 
       <section className="menu-list settings-list">
         <button className="settings-row" type="button" onClick={() => setNotificationsEnabled(!notificationsEnabled)}>
@@ -161,7 +172,11 @@ export function SettingsScreen({ accountInfo = null }: SettingsScreenProps) {
         <form action={signOutAction}>
           <div className="confirm-stack">
             <p>로그아웃 할까요?</p>
-            <span className="confirm-hint">다시 로그인하려면 이메일·비밀번호가 필요해요.</span>
+            <span className="confirm-hint">
+              {isAnonymous
+                ? "익명 로그인은 같은 기기에서만 유지돼요. 로그아웃하면 지금까지 활동에 다시 접근할 수 없을 수 있어요."
+                : "다시 로그인하려면 이메일·비밀번호가 필요해요."}
+            </span>
             <div className="confirm-actions">
               <button type="button" className="confirm-cancel" onClick={() => setLogoutConfirmOpen(false)}>취소</button>
               <Button type="submit">로그아웃</Button>
