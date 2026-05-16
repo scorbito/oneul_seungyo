@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Bookmark, CalendarDays, Camera, Check, ChevronRight, Download, ListChecks, MessageSquareText, Pencil, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
+import { Bookmark, CalendarDays, Camera, Check, ChevronRight, Download, ListChecks, MessageSquareText, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Card } from "@/components/common/Card";
@@ -93,18 +93,16 @@ export function MyScreen({ friendsCount = 0 }: MyScreenProps) {
           <div>
             <h1>{profile.nickname}</h1>
             <p className="profile-hero-team">
-              내 팀
+              내 팀 {profileTeam.name}
               <TeamBadge teamId={profile.mainTeamId} size="sm" />
-              {profileTeam.name}
             </p>
           </div>
           <button
             type="button"
-            className="profile-edit-icon-btn"
-            aria-label="프로필 편집"
+            className="profile-edit-mini-btn"
             onClick={() => setEditing(true)}
           >
-            <Pencil size={14} />
+            편집
           </button>
         </div>
         {profile.bio ? (
