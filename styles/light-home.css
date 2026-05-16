@@ -447,14 +447,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* 부모(.team-badge) 박스를 꽉 채워서 글자가 박스 정중앙에 오도록 강제.
+     이전엔 inline-flex가 글자 크기만큼만 잡혀서 폰트 baseline 차이로 위/아래 어긋남. */
+  width: 100%;
+  height: 100%;
   color: #fff;
   line-height: 1;
-}
-
-@supports (-webkit-touch-callout: none) {
-  .team-badge-initial {
-    transform: translateY(1px);
-  }
+  /* 일부 폰트(특히 한글+영문 혼합)에서 baseline이 살짝 위로 떠 보이는 걸 보정.
+     기존엔 iOS @supports에만 있었지만 데스크탑 Chrome 등에서도 동일 현상이 보고됨. */
+  padding-top: 1px;
 }
 
 .team-badge-sm {
