@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Bookmark, CalendarDays, Camera, Check, ChevronRight, Download, ListChecks, MessageSquareText, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
+import { Bookmark, Camera, Check, ChevronRight, Download, ListChecks, MessageSquareText, Settings, Ticket, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Card } from "@/components/common/Card";
@@ -46,6 +46,7 @@ export function MyScreen({ friendsCount = 0, seasonLevel = null }: MyScreenProps
   const [uploading, startUpload] = useTransition();
   const [savingProfile, startSaveProfile] = useTransition();
   const profileTeam = getTeam(profile.mainTeamId);
+  const verifiedAttendanceCount = attendances.filter((item) => item.verified).length;
 
   useEffect(() => {
     if (!editing) {
@@ -121,6 +122,23 @@ export function MyScreen({ friendsCount = 0, seasonLevel = null }: MyScreenProps
           <span className="hd-text-loss">{profile.losses}패</span>
           <span className="hd-text-draw">{profile.draws}무</span>
         </p>
+        <div className="profile-stat-grid" aria-label="내 직관 통계">
+          <span>
+            <em>직관</em>
+            <b>{profile.attendanceCount}</b>
+            <i>인증 {verifiedAttendanceCount}</i>
+          </span>
+          <span>
+            <em>승리</em>
+            <b>{profile.wins}</b>
+            <i>{profile.losses}패 {profile.draws}무</i>
+          </span>
+          <span>
+            <em>승률</em>
+            <b>{profile.winRate}</b>
+            <i>시즌 기준</i>
+          </span>
+        </div>
         {isAnonymous ? (
           <Link className="profile-anon-cta" href="/login" prefetch>
             정식 계정으로 전환하면 다른 기기에서도 볼 수 있어요 →
@@ -156,24 +174,6 @@ export function MyScreen({ friendsCount = 0, seasonLevel = null }: MyScreenProps
           </button>
         ) : null}
       </section>
-      <Card className="stats-card">
-        <h2>내 직관 통계</h2>
-        <div className="stat-grid">
-          <span>
-            <em><CalendarDays size={14} />직관 경기</em>
-            <b>{attendances.length}경기</b>
-            <i>(인증 {attendances.filter((item) => item.verified).length})</i>
-          </span>
-          <span>
-            <em><Trophy size={14} />승리</em>
-            <b>{profile.wins}경기</b>
-          </span>
-          <span>
-            <em><TrendingUp size={14} />승률</em>
-            <b>{profile.winRate}</b>
-          </span>
-        </div>
-      </Card>
       <ModalShell
         open={editing}
         title="프로필 편집"

@@ -114,6 +114,7 @@
 .profile-popover-team {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   font-size: 12px;
   font-weight: 700;
@@ -124,6 +125,18 @@
   width: 20px;
   height: 20px;
   font-size: 11px;
+}
+
+.profile-popover-team-separator {
+  color: rgba(247, 249, 252, 0.38);
+  font-weight: 800;
+}
+
+.profile-popover-level-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
 }
 
 /* 시즌 레벨 */
@@ -183,7 +196,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 5px;
   text-align: center;
 }
 
@@ -196,9 +209,9 @@
 }
 
 .profile-popover-stat-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(247, 249, 252, 0.55);
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(247, 249, 252, 0.5);
 }
 
 /* 친구 액션 */

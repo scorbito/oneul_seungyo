@@ -12,11 +12,17 @@
   gap: 12px;
   margin: 14px 0 0;
   padding: 18px 18px 20px;
+  position: relative;
+  z-index: 10;
   /* 다른 다크 카드와 통일된 단색 배경. 강조는 테두리 + 진행 바로만. */
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 106, 43, 0.28);
   border-radius: 18px;
   color: var(--hd-text-primary);
+}
+
+.phone-frame-dark .profile-card > .season-level-card {
+  z-index: 100;
 }
 
 .phone-frame-dark .season-level-head {
@@ -36,10 +42,115 @@
   letter-spacing: 0.2px;
 }
 
-.phone-frame-dark .season-level-head-xp {
+.phone-frame-dark .season-level-info-button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  color: rgba(247, 249, 252, 0.68);
+  cursor: pointer;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  margin: -4px -2px -4px 0;
+  padding: 0;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.08s ease;
+  width: 28px;
+}
+
+.phone-frame-dark .season-level-info-button:active {
+  transform: scale(0.94);
+}
+
+.phone-frame-dark .season-level-info-button:hover {
+  background: rgba(255, 106, 43, 0.14);
+  color: #ffffff;
+}
+
+.phone-frame-dark .season-level-info-popover {
+  background: rgb(8, 17, 33);
+  border: 1px solid rgba(255, 106, 43, 0.32);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32);
+  color: rgba(247, 249, 252, 0.88);
+  padding: 12px 14px 13px;
+  position: absolute;
+  right: 14px;
+  top: 50px;
+  width: min(250px, calc(100% - 28px));
+  z-index: 100;
+}
+
+.phone-frame-dark .season-level-info-popover-head {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 9px;
+}
+
+.phone-frame-dark .season-level-info-popover strong {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  padding-right: 30px;
+}
+
+.phone-frame-dark .season-level-info-close {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: rgba(247, 249, 252, 0.7);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 24px;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 24px;
+  z-index: 1;
+}
+
+.phone-frame-dark .season-level-info-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.phone-frame-dark .season-level-info-popover dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.phone-frame-dark .season-level-info-popover dl > div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.phone-frame-dark .season-level-info-popover dt,
+.phone-frame-dark .season-level-info-popover dd {
+  margin: 0;
+}
+
+.phone-frame-dark .season-level-info-popover dt {
+  color: rgba(247, 249, 252, 0.68);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.phone-frame-dark .season-level-info-popover dd {
+  color: var(--hd-accent-orange);
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
-  font-weight: 800;
-  color: rgba(247, 249, 252, 0.55);
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .phone-frame-dark .season-level-title-row {

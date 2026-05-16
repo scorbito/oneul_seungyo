@@ -103,7 +103,13 @@ export function ProfileModal({ open, onClose, targetUserId }: ProfileModalProps)
   };
 
   return (
-    <ModalShell open={open} title="프로필" onClose={onClose} panelClassName="profile-popover-panel">
+    <ModalShell
+      open={open}
+      title="프로필"
+      onClose={onClose}
+      panelClassName="profile-popover-panel"
+      closeOnBackdrop
+    >
       {loading ? (
         <div className="profile-popover-state">불러오는 중...</div>
       ) : error ? (
@@ -124,17 +130,18 @@ export function ProfileModal({ open, onClose, targetUserId }: ProfileModalProps)
               <span className="profile-popover-team">
                 <TeamBadge teamId={data.mainTeamId} size="sm" />
                 <span>{getTeam(data.mainTeamId).shortName}</span>
+                {data.seasonLevel ? (
+                  <>
+                    <span className="profile-popover-team-separator" aria-hidden="true">·</span>
+                    <span className="profile-popover-level-inline">
+                      <span className="profile-popover-level-badge">Lv.{data.seasonLevel.level}</span>
+                      <span className="profile-popover-level-title">{data.seasonLevel.title}</span>
+                    </span>
+                  </>
+                ) : null}
               </span>
             </div>
           </div>
-
-          {/* 시즌 레벨 — Step 0에서는 placeholder */}
-          {data.seasonLevel ? (
-            <div className="profile-popover-level">
-              <span className="profile-popover-level-badge">Lv.{data.seasonLevel.level}</span>
-              <span className="profile-popover-level-title">{data.seasonLevel.title}</span>
-            </div>
-          ) : null}
 
           {/* 자기소개 */}
           <p className={`profile-popover-bio ${data.bio ? "" : "profile-popover-bio-empty"}`}>
@@ -144,16 +151,16 @@ export function ProfileModal({ open, onClose, targetUserId }: ProfileModalProps)
           {/* 시즌 활동 지표 */}
           <div className="profile-popover-stats">
             <div className="profile-popover-stat">
-              <span className="profile-popover-stat-value">{data.seasonStats.attended}</span>
               <span className="profile-popover-stat-label">직관</span>
+              <span className="profile-popover-stat-value">{data.seasonStats.attended}</span>
             </div>
             <div className="profile-popover-stat">
-              <span className="profile-popover-stat-value">{data.seasonStats.winRate}</span>
               <span className="profile-popover-stat-label">승률</span>
+              <span className="profile-popover-stat-value">{data.seasonStats.winRate}</span>
             </div>
             <div className="profile-popover-stat">
-              <span className="profile-popover-stat-value">{data.seasonStats.reviewCount}</span>
               <span className="profile-popover-stat-label">후기</span>
+              <span className="profile-popover-stat-value">{data.seasonStats.reviewCount}</span>
             </div>
           </div>
 
@@ -223,4 +230,3 @@ export function useProfileModal(): ProfileModalControls {
     }
   };
 }
-

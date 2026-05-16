@@ -78,10 +78,15 @@ export function SettingsScreen({ accountInfo = null }: SettingsScreenProps) {
             <UserCircle size={14} /> 연동 계정
           </header>
           <div className={`settings-account-card settings-account-${accountInfo?.provider ?? "unknown"}`}>
-            <span className={`settings-account-provider settings-account-provider-${accountInfo?.provider}`}>
-              {accountLabel.provider}
-            </span>
-            <span className="settings-account-id">{accountLabel.label}</span>
+            <div className="settings-account-main">
+              <span className={`settings-account-provider settings-account-provider-${accountInfo?.provider}`}>
+                {accountLabel.provider}
+              </span>
+              <span className="settings-account-id">{accountLabel.label}</span>
+            </div>
+            <button className="settings-account-logout" type="button" onClick={() => setLogoutConfirmOpen(true)}>
+              <LogOut size={14} /> 로그아웃
+            </button>
           </div>
         </section>
       ) : null}
@@ -130,10 +135,6 @@ export function SettingsScreen({ accountInfo = null }: SettingsScreenProps) {
           <ChevronRight size={18} />
         </Link>
       </section>
-
-      <button className="logout-button" type="button" onClick={() => setLogoutConfirmOpen(true)}>
-        <LogOut size={17} /> 로그아웃
-      </button>
 
       <ModalShell open={scopeOpen} title="후기 공개 범위 기본값" onClose={() => setScopeOpen(false)} panelClassName="dark-confirm-panel">
         <div className="confirm-stack scope-options">
