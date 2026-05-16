@@ -4,19 +4,20 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Bookmark, CalendarDays, Camera, Check, ChevronRight, Download, ListChecks, MessageSquareText, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
+import { Bookmark, Camera, Check, ChevronRight, Download, ListChecks, MessageSquareText, Settings, Ticket, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Card } from "@/components/common/Card";
 import { ModalShell } from "@/components/common/ModalShell";
 import { Button } from "@/components/common/Button";
 import { InstallAppModal } from "@/components/domain/InstallAppModal";
+import { SeasonLevelCard } from "@/components/domain/SeasonLevelCard";
+import type { SeasonLevelState } from "@/lib/season-level/types";
 import { getTeam, teams } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 import { updateAvatarAction, updateProfileAction } from "@/lib/actions/profile";
 import { uploadUserFile } from "@/lib/supabase/storage-client";
-import type { AuthAccountInfo } from "@/lib/supabase/queries";
 
 const menuItems = [
   { label: "내 직관 리스트", href: "/my/attendances", icon: ListChecks },
@@ -29,24 +30,10 @@ const menuItems = [
 
 type MyScreenProps = {
   friendsCount?: number;
-  accountInfo?: AuthAccountInfo | null;
+  seasonLevel?: SeasonLevelState | null;
 };
 
-function formatAccountLabel(info: AuthAccountInfo | null | undefined): { label: string; provider: string } | null {
-  if (!info || info.isAnonymous) return null;
-  if (info.provider === "google") {
-    return { label: info.identifier ?? "Google 계정", provider: "Google" };
-  }
-  if (info.provider === "kakao") {
-    return { label: info.identifier ?? "카카오 계정", provider: "Kakao" };
-  }
-  if (info.provider === "email") {
-    return { label: info.identifier ?? "이메일 계정", provider: "이메일" };
-  }
-  return null;
-}
-
-export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps) {
+export function MyScreen({ friendsCount = 0, seasonLevel = null }: MyScreenProps) {
   const { profile, attendances, reviews, savedReviewIds, isAnonymous, updateProfile, showToast } = useAppState();
   const { isStandalone } = useInstallPrompt();
   const router = useRouter();
@@ -55,10 +42,11 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
   const [nickname, setNickname] = useState(profile.nickname);
   const [selectedTeamId, setSelectedTeamId] = useState(profile.mainTeamId);
   const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(profile.avatarUrl);
+  const [bio, setBio] = useState(profile.bio ?? "");
   const [uploading, startUpload] = useTransition();
   const [savingProfile, startSaveProfile] = useTransition();
   const profileTeam = getTeam(profile.mainTeamId);
-  const accountLabel = formatAccountLabel(accountInfo);
+  const verifiedAttendanceCount = attendances.filter((item) => item.verified).length;
 
   useEffect(() => {
     if (!editing) {
@@ -67,7 +55,8 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
     setNickname(profile.nickname);
     setSelectedTeamId(profile.mainTeamId);
     setAvatarUrl(profile.avatarUrl);
-  }, [editing, profile.mainTeamId, profile.nickname, profile.avatarUrl]);
+    setBio(profile.bio ?? "");
+  }, [editing, profile.mainTeamId, profile.nickname, profile.avatarUrl, profile.bio]);
 
   const handleAvatarPick = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -105,23 +94,49 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
           )}
           <div>
             <h1>{profile.nickname}</h1>
-            <p>내 팀 {profileTeam.name}</p>
+            <span className="profile-hero-team">
+              <span className="profile-hero-team-text">내 팀 {profileTeam.name}</span>
+              <TeamBadge teamId={profile.mainTeamId} size="sm" />
+            </span>
           </div>
+          <button
+            type="button"
+            className="profile-edit-mini-btn"
+            onClick={() => setEditing(true)}
+          >
+            편집
+          </button>
         </div>
-        <strong className="profile-rate">{profile.winRate}</strong>
-        <span className="profile-record">{profile.wins}승 {profile.losses}패 {profile.draws}무</span>
+        {profile.bio ? (
+          <p className="profile-bio">{profile.bio}</p>
+        ) : (
+          <button type="button" className="profile-bio profile-bio-empty" onClick={() => setEditing(true)}>
+            + 자기소개 추가하기
+          </button>
+        )}
+        {seasonLevel ? <SeasonLevelCard state={seasonLevel} /> : null}
+        <div className="profile-stat-grid" aria-label="내 직관 통계">
+          <span>
+            <em>직관</em>
+            <b>{profile.attendanceCount}</b>
+            <i>인증 {verifiedAttendanceCount}</i>
+          </span>
+          <span>
+            <em>승리</em>
+            <b>{profile.wins}</b>
+            <i>{profile.losses}패 {profile.draws}무</i>
+          </span>
+          <span>
+            <em>승률</em>
+            <b>{profile.winRate}</b>
+            <i>시즌 기준</i>
+          </span>
+        </div>
         {isAnonymous ? (
           <Link className="profile-anon-cta" href="/login" prefetch>
             정식 계정으로 전환하면 다른 기기에서도 볼 수 있어요 →
           </Link>
         ) : null}
-        {accountLabel ? (
-          <p className="profile-account-chip" aria-label={`로그인 계정: ${accountLabel.provider}`}>
-            <span className={`profile-account-provider profile-account-provider-${accountInfo?.provider}`}>{accountLabel.provider}</span>
-            <span className="profile-account-id">{accountLabel.label}</span>
-          </p>
-        ) : null}
-        <button type="button" className="profile-edit-btn" onClick={() => setEditing(true)}>프로필 편집</button>
       </Card>
       <section className="menu-list">
         {menuItems.map((item) => {
@@ -152,24 +167,6 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
           </button>
         ) : null}
       </section>
-      <Card className="stats-card">
-        <h2>내 직관 통계</h2>
-        <div className="stat-grid">
-          <span>
-            <em><CalendarDays size={14} />직관 경기</em>
-            <b>{attendances.length}경기</b>
-            <i>(인증 {attendances.filter((item) => item.verified).length})</i>
-          </span>
-          <span>
-            <em><Trophy size={14} />승리</em>
-            <b>{profile.wins}경기</b>
-          </span>
-          <span>
-            <em><TrendingUp size={14} />승률</em>
-            <b>{profile.winRate}</b>
-          </span>
-        </div>
-      </Card>
       <ModalShell
         open={editing}
         title="프로필 편집"
@@ -201,6 +198,21 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
               onChange={(event) => setNickname(event.target.value)}
             />
           </label>
+          <label className="field-row">
+            <span>자기소개</span>
+            <input
+              className="plain-input"
+              value={bio}
+              maxLength={150}
+              placeholder="한 줄로 나를 소개해보세요 (선택)"
+              onChange={(event) => {
+                // 줄바꿈 차단 — 한 줄로만 입력
+                const next = event.target.value.replace(/[\r\n]+/g, " ");
+                setBio(next);
+              }}
+            />
+            <p className="field-hint">{bio.length}/150</p>
+          </label>
           <div className="field-group">
             <span>내 팀</span>
             <div className="profile-team-grid">
@@ -224,10 +236,12 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
           </div>
           <Button disabled={savingProfile} onClick={() => {
             const nextNickname = nickname.trim() || profile.nickname;
+            const trimmedBio = bio.replace(/[\r\n]+/g, " ").trim().slice(0, 150);
+            const nextBio = trimmedBio.length > 0 ? trimmedBio : null;
             startSaveProfile(async () => {
               try {
-                await updateProfileAction({ nickname: nextNickname, mainTeamId: selectedTeamId });
-                updateProfile({ nickname: nextNickname, mainTeamId: selectedTeamId });
+                await updateProfileAction({ nickname: nextNickname, mainTeamId: selectedTeamId, bio: nextBio });
+                updateProfile({ nickname: nextNickname, mainTeamId: selectedTeamId, bio: nextBio });
                 setEditing(false);
                 router.refresh();
               } catch (err) {

@@ -470,6 +470,50 @@ Step 0은 시즌 레벨과 독립적으로 가치가 있으므로 먼저 단독 
 - **1일 1직관은 trigger 방식**: `attendances`에 별도 날짜 컬럼을 추가하지 않고 `check_one_attendance_per_day()` trigger로 검증. 우천 연기로 `games.game_date`가 바뀌어도 자동 반영(동기화 부담 없음). 기존 `unique(user_id, game_id)` 제약은 그대로 유지.
 - **XP 백필 실행 방식**: 단발 스크립트 `scripts/backfill-season-xp.ts` + dry-run 옵션으로 시작. 운영자가 환경변수로 실행. 어드민 콘솔은 Phase 2로.
 
+## 5.2. 진행 상태 (2026-05-16 기준)
+
+Step 0 ~ 11 모두 구현 완료. `feature/season-level` 브랜치에 커밋되어 있고 master 머지 대기 상태.
+
+| Step | 상태 | 핵심 변경 |
+|---|---|---|
+| Step 0 — 프로필 모달 + 자기소개 | ✅ 완료 | `profiles.bio`, `<ProfileModal />`, 5곳 작성자 영역 연결 |
+| Step 1 — 디자인 목업 | ✅ 완료 | `SeasonLevelCard` + `SeasonLevelMiniChip`, mock 데이터 |
+| Step 2 — 레벨 계산 유틸 | ✅ 완료 | `lib/season-level/levels.ts` `getSeasonLevel()` |
+| Step 3 — DB 설계 | ✅ 완료 | `supabase/season-level.sql` 작성 |
+| Step 4 — DB 마이그레이션 적용 | ✅ 완료 | Supabase SQL Editor 실행, trigger + `season_xp_events` + RLS/GRANT |
+| Step 5 — 1일 1직관 앱 로직 | ✅ 완료 | `createAttendanceAction`/`registerAttendanceFromTicket`에 사전 체크 + trigger 에러 분기 |
+| Step 6 — XP 이벤트 헬퍼 | ✅ 완료 | `lib/season-level/events.ts` (`grantXpEvent`/`revokeXpEvent`/`getUserSeasonXp`/`getUserSeasonLevel`) |
+| Step 7 — 실시간 XP 지급 | ✅ 완료 | 4개 server action(ack/티켓 등록/티켓 사후 인증/후기 작성)에 grant 호출 + 시스템 사진 fallback 제거 |
+| Step 8 — XP 회수 | ✅ 완료 | `deleteReviewAction`/`deleteAttendanceAction`에 revoke 호출 |
+| Step 9 — 백필 스크립트 | ✅ 완료 | `scripts/backfill-season-xp.mjs` dry-run/--apply, 멱등 |
+| Step 10 — 실데이터 UI | ✅ 완료 | `lib/season-level/queries.ts` SSR fetch + Home/My/ProfileModal mock 제거 |
+| Step 11 — 회귀 검증 | ✅ 완료 | `npx tsc --noEmit`/`npm run build` 통과 |
+
+### 사용자 실측 라운드 (2026-05-16)
+
+실측 중 발견된 버그 두 가지를 추가 fix로 처리:
+
+1. **acknowledgeAttendanceResult XP 누락**
+   - 원인: `.update().select("...games!inner(game_date)")` PostgREST 패턴이 빈 결과 반환 → XP 지급 블록 통과 실패
+   - 수정: UPDATE select는 본 테이블(`id, game_id`)만, `game_date`는 별도 쿼리 (커밋 `5ebb636`)
+
+2. **결과 보기 모달이 표시되지 않는 문제** (사용자 처리 — 커밋 `f41b057`)
+   - 원인 1: `addAttendance`가 mock ID(`att-{timestamp}`)로 client state 추가 → server UUID와 불일치 → ack/finalize 호출 시 DB에서 못 찾음
+   - 원인 2: `.result-modal { position: fixed }`인데 phone-frame `overflow:hidden` + `border-radius`로 클리핑되어 viewport에 떠도 안 보임
+   - 원인 3: `setResultPayload` 가드(`current?.attendanceId === payload.attendanceId ? current : payload`)로 같은 attendance 두 번째 클릭 시 모달 안 열림
+   - 수정:
+     - `createAttendanceAction`이 `{ attendanceId }` 반환, client `addAttendance`가 server UUID 사용
+     - `.result-modal { position: fixed → absolute }` (ModalShell과 동일 패턴, phone-frame 안에 풀스크린)
+     - 가드 제거 — `setResultPayload(payload)` 단순화
+     - `acknowledgeAttendanceResult`를 Promise 반환으로 변경, 실패 시 토스트 안내
+     - client state에 score/result가 비어있는 케이스에 `finalizeAttendanceAction` fallback 추가
+
+### 사용자 작업 (남은 단계)
+
+- [ ] `scripts/backfill-season-xp.mjs --apply` 실행 — 기존 직관·후기에 XP 소급 적용 (108개 이벤트 예정, 멱등)
+- [ ] master 머지 + 프로덕션 배포
+- [ ] 본 운영 환경에서 실측 검증
+
 ## 6. Phase 2 일괄 도입 예정 항목
 
 아래 항목들은 MVP에 포함하지 않고 Phase 2에서 한 번에 묶어 도입한다.

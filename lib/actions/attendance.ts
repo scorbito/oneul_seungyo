@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { syncGamesForDate } from "@/lib/server/kbo/syncGames";
+import { grantXpEvent, revokeXpEvent, XP_VALUES } from "@/lib/season-level/events";
 
 export type CreateAttendanceActionInput = {
   date: string;
@@ -17,7 +18,7 @@ function toIsoDate(date: string) {
   return date.includes(".") ? date.replaceAll(".", "-") : date;
 }
 
-export async function createAttendanceAction(input: CreateAttendanceActionInput) {
+export async function createAttendanceAction(input: CreateAttendanceActionInput): Promise<{ attendanceId: string }> {
   // Auth check via SSR client (auth.getUser is reliable through cookies).
   const ssr = createSupabaseServerClient();
   const { data: authData, error: authError } = await ssr.auth.getUser();
@@ -49,20 +50,42 @@ export async function createAttendanceAction(input: CreateAttendanceActionInput)
     throw new Error("선택한 경기 정보를 DB에서 찾지 못했습니다.");
   }
 
+  // 1일 1직관 사전 체크 — DB trigger가 막아주지만, 사용자에겐 친절한 안내를 먼저.
+  // 같은 user_id + 같은 game_date 직관이 이미 있는지 검사.
+  const { data: sameDay } = await admin
+    .from("attendances")
+    .select("id, games!inner(game_date)")
+    .eq("user_id", authData.user.id)
+    .eq("games.game_date", gameDate)
+    .limit(1)
+    .maybeSingle();
+
+  if (sameDay) {
+    throw new Error("이미 이 날짜에 등록한 직관이 있어요. 기존 기록을 수정해 주세요.");
+  }
+
   const verified = Boolean(input.ticketImageUrl);
-  const { error } = await admin.from("attendances").insert({
-    user_id: authData.user.id,
-    game_id: game.id,
-    support_team_id: input.supportTeamId,
-    ticket_image_url: input.ticketImageUrl || null,
-    verified,
-    verified_at: verified ? new Date().toISOString() : null,
-    verified_method: verified ? "mock" : null,
-    memo: input.memo || null
-  });
+  const { data: created, error } = await admin
+    .from("attendances")
+    .insert({
+      user_id: authData.user.id,
+      game_id: game.id,
+      support_team_id: input.supportTeamId,
+      ticket_image_url: input.ticketImageUrl || null,
+      verified,
+      verified_at: verified ? new Date().toISOString() : null,
+      verified_method: verified ? "mock" : null,
+      memo: input.memo || null
+    })
+    .select("id")
+    .single();
 
   if (error) {
     if (error.code === "23505") {
+      // trigger 메시지 키워드로 1일 1직관과 기존 unique(user_id, game_id)를 구분
+      if (error.message?.includes("하루에 하나")) {
+        throw new Error("하루에 하나의 직관만 기록할 수 있어요. 기존 기록을 수정해 주세요.");
+      }
       throw new Error("이미 등록한 직관 경기입니다.");
     }
     throw new Error(`직관 저장에 실패했습니다: ${error.message}`);
@@ -71,6 +94,8 @@ export async function createAttendanceAction(input: CreateAttendanceActionInput)
   revalidatePath("/");
   revalidatePath("/my");
   revalidatePath("/my/attendances");
+
+  return { attendanceId: created.id };
 }
 
 /** 인증 사진 공개 URL 또는 storage path에서 storage 경로만 추출 */
@@ -114,10 +139,10 @@ export async function deleteAttendanceAction(attendanceId: string) {
     }
   }
 
-  // 2) 티켓 이미지 path 미리 저장
+  // 2) 티켓 이미지 path + 게임 날짜 미리 저장 (XP 회수 시즌 계산)
   const { data: attendance, error: fetchErr } = await admin
     .from("attendances")
-    .select("ticket_image_url")
+    .select("ticket_image_url, games!inner(game_date)")
     .eq("id", attendanceId)
     .eq("user_id", authData.user.id)
     .maybeSingle();
@@ -144,6 +169,26 @@ export async function deleteAttendanceAction(attendanceId: string) {
     if (ticketPath) {
       const { error: tStErr } = await admin.storage.from("ticket-images").remove([ticketPath]);
       if (tStErr) console.warn(`[deleteAttendanceAction] ticket storage cleanup failed:`, tStErr.message);
+    }
+  }
+
+  // 5) 시즌 XP 회수 — 이 attendance에서 발생한 모든 XP (직관/티켓/후기/사진 보너스).
+  // 멱등이라 원본 지급이 없는 종류는 자동 스킵.
+  const games = attendance.games as unknown as { game_date: string } | null;
+  if (games?.game_date) {
+    const season = new Date(games.game_date).getFullYear();
+    const xpTypes = ["attendance_result_acknowledged", "ticket_verified", "review_created", "review_photo_bonus"] as const;
+    for (const sourceType of xpTypes) {
+      try {
+        await revokeXpEvent({
+          userId: authData.user.id,
+          season,
+          sourceType,
+          sourceId: attendanceId
+        });
+      } catch (xpErr) {
+        console.warn(`[deleteAttendanceAction] XP revoke ${sourceType} failed:`, xpErr);
+      }
     }
   }
 
@@ -348,18 +393,47 @@ export async function acknowledgeAttendanceResultAction(attendanceId: string): P
   const userId = authData.user.id;
 
   // 이미 ack된 행은 건드리지 않음 (멱등 + 첫 ack 시점 보존).
+  // .update().select()에 foreign table join(games!inner)을 같이 쓰면 PostgREST가
+  // 빈 결과를 반환하는 케이스가 있어 본 테이블만 select하고 games는 별도 쿼리로.
   const { data, error } = await admin
     .from("attendances")
     .update({ result_acknowledged_at: new Date().toISOString() })
     .eq("id", attendanceId)
     .eq("user_id", userId)
     .is("result_acknowledged_at", null)
-    .select("id")
+    .select("id, game_id")
     .maybeSingle();
 
   if (error) {
     return { ok: false, reason: `결과 확인 처리 실패: ${error.message}` };
   }
+
+  // 첫 ack 시점에 시즌 XP +30 지급 (이미 ack됐던 경우 data는 null이라 자동 스킵).
+  if (data?.game_id) {
+    // game_date는 별도 쿼리 (UPDATE + join select 한계 우회)
+    const { data: game } = await admin
+      .from("games")
+      .select("game_date")
+      .eq("id", data.game_id)
+      .maybeSingle();
+
+    if (game?.game_date) {
+      const season = new Date(game.game_date).getFullYear();
+      try {
+        await grantXpEvent({
+          userId,
+          season,
+          type: "attendance_result_acknowledged",
+          sourceId: attendanceId,
+          xp: XP_VALUES.attendance_result_acknowledged
+        });
+      } catch (xpErr) {
+        // XP 지급 실패는 ack 자체를 막지 않음. 로그만 남기고 진행.
+        console.warn("[acknowledgeAttendanceResult] XP grant failed:", xpErr);
+      }
+    }
+  }
+
   // data가 null이면 이미 ack됐거나 본인 직관이 아님 — 둘 다 사용자 입장에선 OK.
   return { ok: true };
 }

@@ -7,6 +7,7 @@ import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { AppShell } from "@/components/layout/AppShell";
 import { ReviewCard } from "@/components/domain/ReviewCard";
 import { MatchTalkFeed } from "@/components/domain/MatchTalkFeed";
+import { ProfileModal, useProfileModal } from "@/components/domain/modals/ProfileModal";
 import { loadMoreReviewsAction } from "@/lib/actions/review";
 import { useAppState } from "@/lib/state/AppState";
 import type { MatchPost, Review } from "@/lib/types/domain";
@@ -51,6 +52,7 @@ export function CommunityScreen({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { reviews: localReviews, profile, likedReviewIds, savedReviewIds, toggleLike, toggleSave } = useAppState();
+  const profileModal = useProfileModal();
   const [activeFilter, setActiveFilter] = useState<FeedFilter>("all");
   const [sortMode, setSortMode] = useState<SortMode>("createdAt");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
@@ -246,6 +248,7 @@ export function CommunityScreen({
             saved={savedReviewIds.includes(review.id)}
             onToggleLike={() => toggleLike(review.id)}
             onToggleSave={() => toggleSave(review.id)}
+            onAuthorClick={profileModal.openProfile}
           />
         ))}
         {filteredReviews.length === 0 ? (
@@ -266,6 +269,7 @@ export function CommunityScreen({
       </>
       )}
       <AppModals open={modal} setOpen={setModal} />
+      <ProfileModal {...profileModal.modalProps} />
     </AppShell>
   );
 }

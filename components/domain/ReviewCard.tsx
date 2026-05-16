@@ -17,9 +17,11 @@ type ReviewCardProps = {
   onToggleLike?: () => void;
   onToggleSave?: () => void;
   actionSlot?: ReactNode;
+  /** 작성자 아바타/닉네임 탭 시 프로필 모달 열기 핸들러. 없으면 클릭 비활성. */
+  onAuthorClick?: (userId: string) => void;
 };
 
-export function ReviewCard({ review, liked = false, saved = false, onToggleLike, onToggleSave, actionSlot }: ReviewCardProps) {
+export function ReviewCard({ review, liked = false, saved = false, onToggleLike, onToggleSave, actionSlot, onAuthorClick }: ReviewCardProps) {
   const { showToast } = useAppState();
   const [expanded, setExpanded] = useState(false);
   const [isClamped, setIsClamped] = useState(false);
@@ -66,19 +68,50 @@ export function ReviewCard({ review, liked = false, saved = false, onToggleLike,
   return (
     <article className="review-card">
       <div className="review-author">
-        {review.authorAvatarUrl ? (
-          <span className="review-avatar review-avatar-image" aria-hidden="true">
-            <Image alt="" src={review.authorAvatarUrl} fill sizes="32px" style={{ objectFit: "cover" }} />
-          </span>
-        ) : (
-          <span className="review-avatar review-avatar-initial" aria-hidden="true">
-            {(review.author || "?").slice(0, 1)}
-          </span>
-        )}
-        <div>
-          <strong>{review.author}</strong>
-          <span>{review.timeAgo}</span>
-        </div>
+        {(() => {
+          const avatar = review.authorAvatarUrl ? (
+            <span className="review-avatar review-avatar-image" aria-hidden="true">
+              <Image alt="" src={review.authorAvatarUrl} fill sizes="32px" style={{ objectFit: "cover" }} />
+            </span>
+          ) : (
+            <span className="review-avatar review-avatar-initial" aria-hidden="true">
+              {(review.author || "?").slice(0, 1)}
+            </span>
+          );
+          const clickable = Boolean(onAuthorClick && review.ownerId);
+          if (clickable) {
+            return (
+              <>
+                <button
+                  type="button"
+                  className="profile-author-trigger"
+                  aria-label={`${review.author}님의 프로필 보기`}
+                  onClick={() => onAuthorClick!(review.ownerId!)}
+                >
+                  {avatar}
+                </button>
+                <button
+                  type="button"
+                  className="profile-author-trigger review-author-name"
+                  aria-label={`${review.author}님의 프로필 보기`}
+                  onClick={() => onAuthorClick!(review.ownerId!)}
+                >
+                  <strong>{review.author}</strong>
+                  <span>{review.timeAgo}</span>
+                </button>
+              </>
+            );
+          }
+          return (
+            <>
+              {avatar}
+              <div>
+                <strong>{review.author}</strong>
+                <span>{review.timeAgo}</span>
+              </div>
+            </>
+          );
+        })()}
         {actionSlot ? <div className="review-author-action">{actionSlot}</div> : null}
         <TeamBadge teamId={review.teamId} size="sm" />
       </div>

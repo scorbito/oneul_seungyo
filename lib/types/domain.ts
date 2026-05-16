@@ -38,6 +38,8 @@ export type UserProfile = {
   mainTeamId: string;
   interestTeamIds: string[];
   avatarUrl?: string | null;
+  /** 자기소개 (최대 150자, 한 줄). null이면 미입력 상태. */
+  bio: string | null;
   attendanceCount: number;
   wins: number;
   losses: number;

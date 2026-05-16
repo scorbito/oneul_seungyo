@@ -44,6 +44,7 @@ export async function updateProfileAction(input: UpdateProfileInput) {
     interest_team_ids?: string[];
     notifications_enabled?: boolean;
     default_public_scope?: UpdateProfileInput["defaultPublicScope"];
+    bio?: string | null;
   } = {};
 
   if (input.nickname !== undefined) next.nickname = input.nickname;
@@ -55,6 +56,14 @@ export async function updateProfileAction(input: UpdateProfileInput) {
   }
   if (input.notificationsEnabled !== undefined) next.notifications_enabled = input.notificationsEnabled;
   if (input.defaultPublicScope !== undefined) next.default_public_scope = input.defaultPublicScope;
+  if (input.bio !== undefined) {
+    // 자기소개: 150자 제한 + 줄바꿈 제거 + 빈 문자열은 null로 저장
+    const sanitized = (input.bio ?? "")
+      .replace(/[\r\n]+/g, " ")
+      .trim()
+      .slice(0, 150);
+    next.bio = sanitized.length > 0 ? sanitized : null;
+  }
 
   if (input.mainTeamId !== undefined && input.mainTeamId !== current.main_team_id) {
     // MVP/테스트 단계: 하루 1회 제한 일시 해제 (실서비스 출시 전 다시 활성화)

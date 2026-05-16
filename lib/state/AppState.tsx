@@ -33,7 +33,7 @@ type Toast = {
   message: string;
 };
 
-type ProfileSettings = Pick<UserProfile, "nickname" | "mainTeamId" | "interestTeamIds" | "avatarUrl">;
+type ProfileSettings = Pick<UserProfile, "nickname" | "mainTeamId" | "interestTeamIds" | "avatarUrl" | "bio">;
 
 type AppState = {
   attendances: AttendanceRecord[];
@@ -45,11 +45,11 @@ type AppState = {
   profile: UserProfile;
   isAnonymous: boolean;
   toast: Toast | null;
-  addAttendance: (attendance: Omit<AttendanceRecord, "id">) => void;
+  addAttendance: (attendance: Omit<AttendanceRecord, "id"> & { id?: string }) => void;
   deleteAttendance: (id: string) => void;
   markAttendanceVerified: (id: string) => void;
   markAttendanceResult: (id: string, payload: { result: "win" | "lose" | "draw"; myScore: number; opponentScore: number; supportTeamId: string; homeTeamId: string }) => void;
-  acknowledgeAttendanceResult: (id: string) => void;
+  acknowledgeAttendanceResult: (id: string) => Promise<{ ok: boolean; reason?: string }>;
   updateProfile: (profile: Partial<ProfileSettings>) => void;
   addReview: (review: Omit<Review, "id" | "likes" | "comments" | "timeAgo">) => void;
   deleteReview: (id: string) => void;
@@ -117,7 +117,8 @@ const emptyProfileSettings: ProfileSettings = {
   nickname: "",
   mainTeamId: "lg",
   interestTeamIds: [],
-  avatarUrl: null
+  avatarUrl: null,
+  bio: null
 };
 
 type AppStateProviderProps = {
@@ -145,7 +146,8 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
           nickname: initialProfile.nickname,
           mainTeamId: initialProfile.mainTeamId,
           interestTeamIds: initialProfile.interestTeamIds ?? [],
-          avatarUrl: initialProfile.avatarImageUrl ?? null
+          avatarUrl: initialProfile.avatarImageUrl ?? null,
+          bio: initialProfile.bio ?? null
         }
       : emptyProfileSettings
   );
@@ -178,9 +180,10 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
       nickname: initialProfile.nickname,
       mainTeamId: initialProfile.mainTeamId,
       interestTeamIds: initialProfile.interestTeamIds ?? [],
-      avatarUrl: initialProfile.avatarImageUrl ?? null
+      avatarUrl: initialProfile.avatarImageUrl ?? null,
+      bio: initialProfile.bio ?? null
     });
-  }, [initialProfile?.nickname, initialProfile?.mainTeamId, initialProfile?.avatarImageUrl]);
+  }, [initialProfile?.nickname, initialProfile?.mainTeamId, initialProfile?.avatarImageUrl, initialProfile?.bio]);
 
   // React 콘텐츠가 마운트되면 initial-loader 페이드아웃 신호.
   useEffect(() => {
@@ -247,7 +250,7 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
       isAnonymous: initialIsAnonymous,
       toast,
       addAttendance: (attendance) => {
-        setAttendances((current) => [{ ...attendance, id: `att-${Date.now()}` }, ...current]);
+        setAttendances((current) => [{ ...attendance, id: attendance.id ?? `att-${Date.now()}` }, ...current]);
         showToast("직관이 등록됐어요.");
       },
       deleteAttendance: (id) => {
@@ -274,16 +277,17 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
           })
         );
       },
-      acknowledgeAttendanceResult: (id) => {
+      acknowledgeAttendanceResult: async (id) => {
         // 이미 ack된 직관이면 클라이언트/서버 둘 다 건너뜀 (멱등 + 첫 ack 시점 보존).
         const target = attendances.find((item) => item.id === id);
-        if (!target || target.resultAcknowledgedAt) return;
+        if (!target || target.resultAcknowledgedAt) return { ok: true };
 
         const optimisticTimestamp = new Date().toISOString();
         setAttendances((current) =>
           current.map((item) => (item.id === id ? { ...item, resultAcknowledgedAt: optimisticTimestamp } : item))
         );
-        acknowledgeAttendanceResultAction(id).then((res) => {
+        try {
+          const res = await acknowledgeAttendanceResultAction(id);
           if (!res.ok) {
             // 실패 시 롤백 — 다음 진입 때 다시 결과 보기 버튼 노출
             setAttendances((current) =>
@@ -291,11 +295,13 @@ export function AppStateProvider({ children, initialProfile, initialStats, initi
             );
             // 사용자에게 토스트로 알리진 않음 — UX상 결과 모달은 이미 보여줬고 다음 기회에 또 볼 수 있음.
           }
-        }).catch(() => {
+          return res;
+        } catch {
           setAttendances((current) =>
             current.map((item) => (item.id === id ? { ...item, resultAcknowledgedAt: undefined } : item))
           );
-        });
+          return { ok: false, reason: "결과 확인 처리 중 오류가 발생했어요." };
+        }
       },
       updateProfile: (nextProfile) => {
         setProfileSettings((current) => ({ ...current, ...nextProfile }));

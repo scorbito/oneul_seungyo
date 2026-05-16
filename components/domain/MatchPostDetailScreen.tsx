@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { CommentThread } from "@/components/common/CommentThread";
 import { MatchPostCard } from "@/components/domain/MatchPostCard";
+import { ProfileModal, useProfileModal } from "@/components/domain/modals/ProfileModal";
 import {
   createMatchPostCommentAction,
   deleteMatchPostCommentAction,
@@ -22,6 +23,7 @@ type MatchPostDetailScreenProps = {
 export function MatchPostDetailScreen({ post: initialPost, initialComments, currentUserId }: MatchPostDetailScreenProps) {
   const { profile, showToast } = useAppState();
   const router = useRouter();
+  const profileModal = useProfileModal();
   const [post, setPost] = useState<MatchPost>(initialPost);
   const [comments, setComments] = useState<MatchPostComment[]>(initialComments);
 
@@ -99,6 +101,7 @@ export function MatchPostDetailScreen({ post: initialPost, initialComments, curr
         post={post}
         currentUserId={currentUserId}
         onToggleLike={handleToggleLike}
+        onAuthorClick={profileModal.openProfile}
       />
 
       <div style={{ padding: "0 16px" }}>
@@ -115,8 +118,10 @@ export function MatchPostDetailScreen({ post: initialPost, initialComments, curr
           canDeleteAsOwner={isPostOwner}
           onSubmit={handleCommentSubmit}
           onDelete={handleCommentDelete}
+          onAuthorClick={profileModal.openProfile}
         />
       </div>
+      <ProfileModal {...profileModal.modalProps} />
     </AppShell>
   );
 }

@@ -36,6 +36,8 @@ import "@/styles/dark-contact-settings.css";
 import "@/styles/interactions-loading.css";
 import "@/styles/live-result.css";
 import "@/styles/dark-install.css";
+import "@/styles/dark-profile-popover.css";
+import "@/styles/dark-season-level.css";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oneul-seungyo.vercel.app";
 const SITE_TITLE = "오늘은 승요";

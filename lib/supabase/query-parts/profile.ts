@@ -57,7 +57,7 @@ export async function getCurrentProfileFromDb(): Promise<UserProfileRecord | nul
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,nickname,main_team_id,main_team_changed_at,interest_team_ids,notifications_enabled,default_public_scope,avatar_image_url,created_at,updated_at")
+    .select("id,nickname,main_team_id,main_team_changed_at,interest_team_ids,notifications_enabled,default_public_scope,avatar_image_url,bio,created_at,updated_at")
     .eq("id", authData.user.id)
     .maybeSingle();
 
@@ -78,6 +78,7 @@ export async function getCurrentProfileFromDb(): Promise<UserProfileRecord | nul
     notificationsEnabled: data.notifications_enabled,
     defaultPublicScope: data.default_public_scope,
     avatarImageUrl: data.avatar_image_url,
+    bio: data.bio ?? null,
     createdAt: data.created_at,
     updatedAt: data.updated_at
   };

@@ -2,6 +2,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import { HomeScreen } from "@/components/domain/HomeScreen";
 import { listGamesFromDb, listNoticesFromDb, listStandingsFromDb } from "@/lib/supabase/queries";
 import { countMatchPostsByGameIds } from "@/lib/supabase/query-parts/matchPosts";
+import { getCurrentUserSeasonLevel } from "@/lib/season-level/queries";
 import type { Game } from "@/lib/types/domain";
 
 const fmt = (d: Date) =>
@@ -36,12 +37,13 @@ export default async function HomePage() {
   const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
 
   // 홈 첫 화면은 이번주 경기만 SSR — 모달용 전체 시즌 경기 목록은 모달 열 때 lazy fetch.
-  const [standings, weekGames, notices] = await Promise.all([
+  const [standings, weekGames, notices, seasonLevel] = await Promise.all([
     listStandingsFromDb(today.getFullYear()).catch(() => []),
     listGamesFromDb({ from: fmt(monday), to: fmt(sunday) })
       .then((items) => items.map(toDomainGame))
       .catch(() => []),
-    listNoticesFromDb().catch(() => [])
+    listNoticesFromDb().catch(() => []),
+    getCurrentUserSeasonLevel().catch(() => null)
   ]);
   const latestNoticeAt = notices[0]?.publishedAt ?? null;
 
@@ -55,6 +57,7 @@ export default async function HomePage() {
       weekStart={fmt(monday)}
       latestNoticeAt={latestNoticeAt}
       matchPostCounts={matchPostCounts}
+      seasonLevel={seasonLevel}
     />
   );
 }

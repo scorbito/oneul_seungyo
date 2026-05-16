@@ -25,6 +25,8 @@ type CommentThreadProps = {
   signedOutHint?: string;
   /** input maxLength */
   maxLength?: number;
+  /** 댓글 작성자 아바타/닉네임 탭 시 프로필 모달 열기 핸들러. 없으면 클릭 불가. */
+  onAuthorClick?: (userId: string) => void;
 };
 
 export function CommentThread({
@@ -34,7 +36,8 @@ export function CommentThread({
   onSubmit,
   onDelete,
   signedOutHint = "로그인 후 댓글을 작성할 수 있어요.",
-  maxLength = 500
+  maxLength = 500,
+  onAuthorClick
 }: CommentThreadProps) {
   const [input, setInput] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -72,20 +75,43 @@ export function CommentThread({
         ) : (
           comments.map((c) => {
             const canDelete = Boolean(currentUserId && (c.userId === currentUserId || canDeleteAsOwner));
+            const avatar = c.authorAvatarUrl ? (
+              <span className="comment-avatar">
+                <Image alt="" src={c.authorAvatarUrl} fill sizes="26px" style={{ objectFit: "cover" }} />
+              </span>
+            ) : (
+              <span className="comment-avatar comment-avatar-initial">
+                {(c.authorNickname || "?").slice(0, 1)}
+              </span>
+            );
             return (
               <li className="comment-item" key={c.id}>
-                {c.authorAvatarUrl ? (
-                  <span className="comment-avatar">
-                    <Image alt="" src={c.authorAvatarUrl} fill sizes="26px" style={{ objectFit: "cover" }} />
-                  </span>
+                {onAuthorClick ? (
+                  <button
+                    type="button"
+                    className="profile-author-trigger comment-author-trigger"
+                    aria-label={`${c.authorNickname}님의 프로필 보기`}
+                    onClick={() => onAuthorClick(c.userId)}
+                  >
+                    {avatar}
+                  </button>
                 ) : (
-                  <span className="comment-avatar comment-avatar-initial">
-                    {(c.authorNickname || "?").slice(0, 1)}
-                  </span>
+                  avatar
                 )}
                 <div className="comment-body">
                   <div className="comment-meta">
-                    <strong>{c.authorNickname}</strong>
+                    {onAuthorClick ? (
+                      <button
+                        type="button"
+                        className="profile-author-trigger"
+                        aria-label={`${c.authorNickname}님의 프로필 보기`}
+                        onClick={() => onAuthorClick(c.userId)}
+                      >
+                        <strong>{c.authorNickname}</strong>
+                      </button>
+                    ) : (
+                      <strong>{c.authorNickname}</strong>
+                    )}
                     <span>{c.timeAgo}</span>
                   </div>
                   <p>{c.body}</p>

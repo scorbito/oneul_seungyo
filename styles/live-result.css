@@ -83,7 +83,10 @@
  * AttendanceResultModal — 풀스크린 결과 (승/패/무)
  * ============================================================ */
 .result-modal {
-  position: fixed;
+  /* phone-frame은 overflow:hidden + border-radius로 자식을 클리핑하므로
+     fixed가 viewport에 떠도 phone-frame 영역 밖에서 잘림.
+     ModalShell 등 다른 모달과 동일하게 absolute로 phone-frame 안에 배치. */
+  position: absolute;
   inset: 0;
   z-index: 1000;
   display: flex;

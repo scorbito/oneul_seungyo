@@ -5,6 +5,7 @@ import { LayoutList, PenLine, Rows3 } from "lucide-react";
 import { MatchPostCard } from "@/components/domain/MatchPostCard";
 import { MatchTalkTimeline } from "@/components/domain/MatchTalkTimeline";
 import { MatchTalkComposerModal } from "@/components/domain/modals/MatchTalkComposerModal";
+import { ProfileModal, useProfileModal } from "@/components/domain/modals/ProfileModal";
 import {
   getGameContextAction,
   getMatchPostByIdAction,
@@ -36,6 +37,7 @@ export function MatchTalkFeed({
   initialDate
 }: MatchTalkFeedProps) {
   const { showToast } = useAppState();
+  const profileModal = useProfileModal();
   const [feed, setFeed] = useState<MatchPost[]>(initialPosts);
   const [hasMore, setHasMore] = useState(initialPosts.length === PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -295,6 +297,7 @@ export function MatchTalkFeed({
             mode={gameFilter ? "game" : "date"}
             onToggleLike={handleToggleLike}
             onDeleted={handlePostDeleted}
+            onAuthorClick={profileModal.openProfile}
           />
         ) : (
           feed.map((post) => (
@@ -305,6 +308,7 @@ export function MatchTalkFeed({
               onToggleLike={() => handleToggleLike(post.id)}
               onClickGameFilter={() => handleGameFilter(post.gameId)}
               onDeleted={handlePostDeleted}
+              onAuthorClick={profileModal.openProfile}
             />
           ))
         )}
@@ -323,6 +327,7 @@ export function MatchTalkFeed({
         onCreated={handlePostCreated}
         initialGameId={gameFilter}
       />
+      <ProfileModal {...profileModal.modalProps} />
     </>
   );
 }

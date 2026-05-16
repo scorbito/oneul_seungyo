@@ -39,6 +39,8 @@ type MatchTalkTimelineProps = {
   mode: TimelineMode;
   onToggleLike: (postId: string) => void;
   onDeleted: (postId: string) => void;
+  /** 작성자 탭 시 프로필 모달 열기 핸들러 */
+  onAuthorClick?: (userId: string) => void;
 };
 
 type GameGroup = {
@@ -58,7 +60,8 @@ export function MatchTalkTimeline({
   currentUserId,
   mode,
   onToggleLike,
-  onDeleted
+  onDeleted,
+  onAuthorClick
 }: MatchTalkTimelineProps) {
   const gameGroups = useMemo(() => groupByGame(posts, mode), [posts, mode]);
 
@@ -82,6 +85,7 @@ export function MatchTalkTimeline({
                         currentUserId={currentUserId}
                         onToggleLike={() => onToggleLike(post.id)}
                         onDeleted={onDeleted}
+                        onAuthorClick={onAuthorClick}
                       />
                     ))}
                   </div>
@@ -179,9 +183,10 @@ type MatchTalkTimelineItemProps = {
   currentUserId: string | null;
   onToggleLike: () => void;
   onDeleted: (postId: string) => void;
+  onAuthorClick?: (userId: string) => void;
 };
 
-function MatchTalkTimelineItem({ post, currentUserId, onToggleLike, onDeleted }: MatchTalkTimelineItemProps) {
+function MatchTalkTimelineItem({ post, currentUserId, onToggleLike, onDeleted, onAuthorClick }: MatchTalkTimelineItemProps) {
   const { profile, showToast } = useAppState();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -273,8 +278,8 @@ function MatchTalkTimelineItem({ post, currentUserId, onToggleLike, onDeleted }:
       <span className="match-talk-timeline-dot" aria-hidden="true" />
       <div className="match-talk-timeline-card">
         <header className="match-talk-timeline-item-header">
-          <div className="match-talk-timeline-author">
-            {post.authorAvatarUrl ? (
+          {(() => {
+            const avatar = post.authorAvatarUrl ? (
               <span className="match-talk-timeline-avatar">
                 <Image alt="" src={post.authorAvatarUrl} fill sizes="30px" style={{ objectFit: "cover" }} />
               </span>
@@ -282,15 +287,36 @@ function MatchTalkTimelineItem({ post, currentUserId, onToggleLike, onDeleted }:
               <span className="match-talk-timeline-avatar match-talk-timeline-avatar-initial">
                 {(post.authorNickname || "?").slice(0, 1)}
               </span>
-            )}
-            <div>
-              <div className="match-talk-timeline-name-row">
-                <strong>{post.authorNickname}</strong>
-                {post.authorAttended ? <Check size={12} strokeWidth={3} /> : null}
+            );
+            const meta = (
+              <div>
+                <div className="match-talk-timeline-name-row">
+                  <strong>{post.authorNickname}</strong>
+                  {post.authorAttended ? <Check size={12} strokeWidth={3} /> : null}
+                </div>
+                <span>{post.timeAgo}</span>
               </div>
-              <span>{post.timeAgo}</span>
-            </div>
-          </div>
+            );
+            if (onAuthorClick && post.userId) {
+              return (
+                <button
+                  type="button"
+                  className="match-talk-timeline-author profile-author-trigger"
+                  aria-label={`${post.authorNickname}님의 프로필 보기`}
+                  onClick={() => onAuthorClick(post.userId)}
+                >
+                  {avatar}
+                  {meta}
+                </button>
+              );
+            }
+            return (
+              <div className="match-talk-timeline-author">
+                {avatar}
+                {meta}
+              </div>
+            );
+          })()}
           <div className="match-talk-timeline-meta">
             {post.authorTeamId ? <TeamBadge teamId={post.authorTeamId} size="sm" /> : null}
             {isOwner ? (
@@ -361,6 +387,7 @@ function MatchTalkTimelineItem({ post, currentUserId, onToggleLike, onDeleted }:
                 canDeleteAsOwner={isOwner}
                 onSubmit={handleCommentSubmit}
                 onDelete={handleCommentDelete}
+                onAuthorClick={onAuthorClick}
               />
             )}
           </div>

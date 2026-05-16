@@ -272,17 +272,17 @@ export function AppModals({ open, setOpen, initialGames, initialGameId, initialD
           setSavingAttendance(false);
           return;
         }
-        addAttendance({ ...attendance, verified: true });
+        addAttendance({ ...attendance, id: result.attendanceId, verified: true });
         showToast("티켓 인증 직관 등록 완료!");
       } else {
         // 수동 흐름
-        await createAttendanceAction({
+        const result = await createAttendanceAction({
           date: attendance.date,
           homeTeamId: attendance.homeTeamId,
           awayTeamId: attendance.awayTeamId,
           supportTeamId
         });
-        addAttendance(attendance);
+        addAttendance({ ...attendance, id: result.attendanceId });
         showToast("직관을 DB에 저장했어요.");
       }
     } catch (error) {
