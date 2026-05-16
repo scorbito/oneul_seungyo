@@ -15,6 +15,7 @@ type MatchPostRow = {
   emotion_tag: MatchPostEmotionTag;
   score_home_at_post: number | null;
   score_away_at_post: number | null;
+  inning_at_post: number | null;
   status_at_post: MatchPostStatusSnapshot;
   created_at: string;
 };
@@ -74,7 +75,7 @@ export async function listMatchPostsFromDb(params: ListMatchPostsParams = {}): P
 
   let query = admin
     .from("match_posts")
-    .select("id,user_id,game_id,body,photo_url,emotion_tag,score_home_at_post,score_away_at_post,status_at_post,created_at")
+    .select("id,user_id,game_id,body,photo_url,emotion_tag,score_home_at_post,score_away_at_post,inning_at_post,status_at_post,created_at")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -176,6 +177,7 @@ export async function listMatchPostsFromDb(params: ListMatchPostsParams = {}): P
       emotionTag: row.emotion_tag,
       scoreHomeAtPost: row.score_home_at_post,
       scoreAwayAtPost: row.score_away_at_post,
+      inningAtPost: row.inning_at_post,
       statusAtPost: row.status_at_post,
       createdAt: row.created_at,
       timeAgo: getTimeAgo(row.created_at),
@@ -207,7 +209,7 @@ export async function getMatchPostByIdFromDb(id: string): Promise<MatchPost | nu
   const admin = createSupabaseAdminClient();
   const { data: row, error } = await admin
     .from("match_posts")
-    .select("id,user_id,game_id,body,photo_url,emotion_tag,score_home_at_post,score_away_at_post,status_at_post,created_at")
+    .select("id,user_id,game_id,body,photo_url,emotion_tag,score_home_at_post,score_away_at_post,inning_at_post,status_at_post,created_at")
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle<MatchPostRow>();
@@ -262,6 +264,7 @@ export async function getMatchPostByIdFromDb(id: string): Promise<MatchPost | nu
     emotionTag: row.emotion_tag,
     scoreHomeAtPost: row.score_home_at_post,
     scoreAwayAtPost: row.score_away_at_post,
+    inningAtPost: row.inning_at_post,
     statusAtPost: row.status_at_post,
     createdAt: row.created_at,
     timeAgo: getTimeAgo(row.created_at),

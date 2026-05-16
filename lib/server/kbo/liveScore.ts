@@ -15,6 +15,7 @@ export type LiveScoreSnapshot = {
   gameDate: string;
   homeScore: number | null;
   awayScore: number | null;
+  innings: number | null;
   status: "scheduled" | "in_progress" | "finished" | "canceled";
   /** 'cache' = TTL 내 캐시 사용 / 'kbo' = 실시간 갱신 성공 / 'stale' = 갱신 실패해 기존 캐시 사용 */
   source: "cache" | "kbo" | "stale";
@@ -26,6 +27,7 @@ type GameRow = {
   game_date: string;
   home_score: number | null;
   away_score: number | null;
+  innings: number | null;
   status: LiveScoreSnapshot["status"];
   last_live_synced_at: string | null;
 };
@@ -43,6 +45,7 @@ function toSnapshot(row: GameRow, source: LiveScoreSnapshot["source"]): LiveScor
     gameDate: row.game_date,
     homeScore: row.home_score,
     awayScore: row.away_score,
+    innings: row.innings,
     status: row.status,
     source,
     lastSyncedAt: row.last_live_synced_at
@@ -62,7 +65,7 @@ export async function refreshGameLiveScore(gameId: string): Promise<LiveScoreSna
 
   const { data: game, error } = await admin
     .from("games")
-    .select("id, game_date, home_score, away_score, status, last_live_synced_at")
+    .select("id, game_date, home_score, away_score, innings, status, last_live_synced_at")
     .eq("id", gameId)
     .maybeSingle<GameRow>();
 
@@ -93,7 +96,7 @@ export async function refreshGameLiveScore(gameId: string): Promise<LiveScoreSna
 
     const { data: refreshed, error: refetchErr } = await admin
       .from("games")
-      .select("id, game_date, home_score, away_score, status, last_live_synced_at")
+      .select("id, game_date, home_score, away_score, innings, status, last_live_synced_at")
       .eq("id", gameId)
       .maybeSingle<GameRow>();
 
@@ -119,6 +122,7 @@ export function toMatchPostSnapshotColumns(snapshot: LiveScoreSnapshot | null) {
     return {
       score_home_at_post: null,
       score_away_at_post: null,
+      inning_at_post: null,
       // status_at_post는 NOT NULL이라 안전한 기본값으로 'scheduled' 사용
       status_at_post: "scheduled" as const
     };
@@ -134,13 +138,16 @@ export function toMatchPostSnapshotColumns(snapshot: LiveScoreSnapshot | null) {
     return {
       score_home_at_post: null,
       score_away_at_post: null,
+      inning_at_post: null,
       status_at_post
     };
   }
 
+  // finished는 9회 종료이므로 회차 박제는 in_progress에만 의미가 있음.
   return {
     score_home_at_post: snapshot.homeScore,
     score_away_at_post: snapshot.awayScore,
+    inning_at_post: snapshot.status === "in_progress" ? snapshot.innings : null,
     status_at_post
   };
 }

@@ -109,6 +109,7 @@ export type MatchPost = {
   emotionTag: MatchPostEmotionTag;
   scoreHomeAtPost: number | null;
   scoreAwayAtPost: number | null;
+  inningAtPost: number | null;
   statusAtPost: MatchPostStatusSnapshot;
   createdAt: string;
   timeAgo: string;

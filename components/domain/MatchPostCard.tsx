@@ -135,11 +135,15 @@ export function MatchPostCard({ post, currentUserId, onToggleLike, onClickGameFi
     }
     const h = post.scoreHomeAtPost ?? "-";
     const a = post.scoreAwayAtPost ?? "-";
+    const inningPrefix =
+      post.statusAtPost === "in_progress" && post.inningAtPost
+        ? `${post.inningAtPost}회 · `
+        : "";
     const statusSuffix =
       post.statusAtPost === "in_progress" ? " · 진행 중"
       : post.statusAtPost === "finished" ? " (최종)"
       : "";
-    return `${prefix}${away} ${a} : ${h} ${home}${statusSuffix}`;
+    return `${prefix}${inningPrefix}${away} ${a} : ${h} ${home}${statusSuffix}`;
   })();
 
   const confirmDelete = async () => {

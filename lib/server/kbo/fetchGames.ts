@@ -81,7 +81,12 @@ export async function fetchKboApiGames(date: KboDateInput): Promise<RawGame[]> {
       homeScore,
       awayScore,
       status,
-      innings: status === "finished" ? (inningRaw > 0 ? inningRaw : 9) : null
+      innings:
+        status === "finished"
+          ? (inningRaw > 0 ? inningRaw : 9)
+          : status === "in_progress" && inningRaw > 0
+            ? inningRaw
+            : null
     });
   }
 
@@ -127,6 +132,13 @@ export async function fetchNaverGames(date: KboDateInput): Promise<RawGame[]> {
       ? parseInt($row.find(".num_lft").text().trim() || "0", 10)
       : null;
 
+    // "3회초", "5회말" 등에서 회차 추출
+    let liveInnings: number | null = null;
+    if (status === "in_progress") {
+      const inningMatch = stateText.match(/(\d+)\s*회/);
+      if (inningMatch) liveInnings = parseInt(inningMatch[1], 10);
+    }
+
     games.push({
       externalId: toExternalId(dateStr, awayTeamId, homeTeamId),
       gameDate: dateStr,
@@ -137,7 +149,7 @@ export async function fetchNaverGames(date: KboDateInput): Promise<RawGame[]> {
       homeScore,
       awayScore,
       status,
-      innings: status === "finished" ? 9 : null
+      innings: status === "finished" ? 9 : liveInnings
     });
   });
 

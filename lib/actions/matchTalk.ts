@@ -32,6 +32,7 @@ export type LiveScorePreview = {
   gameId: string;
   homeScore: number | null;
   awayScore: number | null;
+  innings: number | null;
   status: "scheduled" | "in_progress" | "finished" | "canceled";
   source: "cache" | "kbo" | "stale";
 };
@@ -48,6 +49,7 @@ export async function getLiveScorePreviewAction(gameId: string): Promise<LiveSco
     gameId: snapshot.gameId,
     homeScore: snapshot.homeScore,
     awayScore: snapshot.awayScore,
+    innings: snapshot.innings,
     status: snapshot.status,
     source: snapshot.source
   };
