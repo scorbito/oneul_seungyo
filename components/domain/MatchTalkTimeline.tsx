@@ -215,7 +215,7 @@ function formatStatusLabel(status: MatchPostStatusSnapshot, post: MatchPost) {
   const homeScore = post.scoreHomeAtPost ?? "-";
   const prefix = status === "finished" ? "최종" : "진행 중";
   const inning =
-    status === "in_progress" && post.inningAtPost ? `${post.inningAtPost}회 · ` : "";
+    status === "in_progress" && post.inningAtPost ? `${post.inningAtPost}회 ` : "";
   return `${inning}${prefix} · ${away} ${awayScore} : ${homeScore} ${home}`;
 }
 

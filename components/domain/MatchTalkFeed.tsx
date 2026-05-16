@@ -244,7 +244,7 @@ export function MatchTalkFeed({
               </button>
               <button
                 type="button"
-                className={viewMode === "timeline" ? "chip chip-active" : "chip"}
+                className="chip"
                 onClick={() => setViewMode(viewMode === "timeline" ? "card" : "timeline")}
               >
                 {viewMode === "timeline" ? <LayoutList size={15} /> : <Rows3 size={15} />}

@@ -19,7 +19,8 @@ language sql immutable as $$
   end;
 $$;
 
-create or replace view public.verified_attendance_results as
+create or replace view public.verified_attendance_results
+with (security_invoker = on) as
 select
   a.id,
   a.user_id,
@@ -37,7 +38,8 @@ join public.games g on g.id = a.game_id
 where a.verified = true
   and g.status = 'finished';
 
-create or replace view public.profile_stats as
+create or replace view public.profile_stats
+with (security_invoker = on) as
 select
   p.id as user_id,
   count(r.id)::integer as attendance_count,
