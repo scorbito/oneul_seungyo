@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Bookmark, CalendarDays, Camera, Check, ChevronRight, Download, ListChecks, MessageSquareText, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
+import { Bookmark, CalendarDays, Camera, Check, ChevronRight, Download, ListChecks, MessageSquareText, Pencil, Settings, Ticket, TrendingUp, Trophy, UserPlus } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { TeamBadge } from "@/components/common/TeamBadge";
 import { Card } from "@/components/common/Card";
@@ -18,7 +18,6 @@ import { useAppState } from "@/lib/state/AppState";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 import { updateAvatarAction, updateProfileAction } from "@/lib/actions/profile";
 import { uploadUserFile } from "@/lib/supabase/storage-client";
-import type { AuthAccountInfo } from "@/lib/supabase/queries";
 
 const menuItems = [
   { label: "내 직관 리스트", href: "/my/attendances", icon: ListChecks },
@@ -31,24 +30,9 @@ const menuItems = [
 
 type MyScreenProps = {
   friendsCount?: number;
-  accountInfo?: AuthAccountInfo | null;
 };
 
-function formatAccountLabel(info: AuthAccountInfo | null | undefined): { label: string; provider: string } | null {
-  if (!info || info.isAnonymous) return null;
-  if (info.provider === "google") {
-    return { label: info.identifier ?? "Google 계정", provider: "Google" };
-  }
-  if (info.provider === "kakao") {
-    return { label: info.identifier ?? "카카오 계정", provider: "Kakao" };
-  }
-  if (info.provider === "email") {
-    return { label: info.identifier ?? "이메일 계정", provider: "이메일" };
-  }
-  return null;
-}
-
-export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps) {
+export function MyScreen({ friendsCount = 0 }: MyScreenProps) {
   const { profile, attendances, reviews, savedReviewIds, isAnonymous, updateProfile, showToast } = useAppState();
   const { isStandalone } = useInstallPrompt();
   const router = useRouter();
@@ -61,7 +45,6 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
   const [uploading, startUpload] = useTransition();
   const [savingProfile, startSaveProfile] = useTransition();
   const profileTeam = getTeam(profile.mainTeamId);
-  const accountLabel = formatAccountLabel(accountInfo);
 
   useEffect(() => {
     if (!editing) {
@@ -111,6 +94,14 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
             <h1>{profile.nickname}</h1>
             <p>내 팀 {profileTeam.name}</p>
           </div>
+          <button
+            type="button"
+            className="profile-edit-icon-btn"
+            aria-label="프로필 편집"
+            onClick={() => setEditing(true)}
+          >
+            <Pencil size={14} />
+          </button>
         </div>
         {profile.bio ? (
           <p className="profile-bio">{profile.bio}</p>
@@ -127,13 +118,6 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
             정식 계정으로 전환하면 다른 기기에서도 볼 수 있어요 →
           </Link>
         ) : null}
-        {accountLabel ? (
-          <p className="profile-account-chip" aria-label={`로그인 계정: ${accountLabel.provider}`}>
-            <span className={`profile-account-provider profile-account-provider-${accountInfo?.provider}`}>{accountLabel.provider}</span>
-            <span className="profile-account-id">{accountLabel.label}</span>
-          </p>
-        ) : null}
-        <button type="button" className="profile-edit-btn" onClick={() => setEditing(true)}>프로필 편집</button>
       </Card>
       <section className="menu-list">
         {menuItems.map((item) => {
