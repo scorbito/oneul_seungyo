@@ -126,29 +126,12 @@
   gap: 6px;
 }
 
+/* 후기 카드 .review-game-meta-match .team-badge 와 동일 형식. */
 .phone-frame-dark .profile-card .profile-hero-team .team-badge {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   font-size: 9px;
-  font-weight: 800;
-  line-height: 20px; /* 배지 높이와 동일하게 — 글자가 정확히 세로 가운데로 */
-  text-align: center;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 이니셜 자체도 명시적 가운데 정렬 — 작은 사이즈에서 정렬이 어긋나는 문제 해결.
-   light-home.css의 @supports iOS transform: translateY(1px) 보정도 무시. */
-.phone-frame-dark .profile-card .profile-hero-team .team-badge-initial {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  line-height: 1;
-  transform: none !important;
-  padding: 0;
+  flex-shrink: 0;
 }
 
 .phone-frame-dark .profile-card .profile-bio {
