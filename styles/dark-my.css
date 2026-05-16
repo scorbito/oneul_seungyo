@@ -129,6 +129,12 @@
   margin: 2px 0 0;
 }
 
+.phone-frame-dark .profile-card .profile-hero-team .team-badge-wrap,
+.phone-frame-dark .profile-card .profile-hero-team .team-badge,
+.phone-frame-dark .profile-card .profile-hero-team .team-badge-initial {
+  margin: 0;
+}
+
 .phone-frame-dark .profile-card .profile-hero-team-text {
   font-size: 12px;
   color: var(--hd-text-secondary);
@@ -136,11 +142,11 @@
   line-height: 1;
 }
 
-/* 후기 카드 .review-game-meta-match .team-badge 와 동일 형식. */
+/* 프로필 보조 텍스트 옆에서는 TeamBadge sm보다 살짝 작게 사용. */
 .phone-frame-dark .profile-card .profile-hero-team .team-badge {
-  width: 18px;
-  height: 18px;
-  font-size: 9px;
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
   flex-shrink: 0;
 }
 
