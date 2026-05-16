@@ -9,6 +9,8 @@ import { TeamBadge } from "@/components/common/TeamBadge";
 import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { AppGuideModal } from "@/components/domain/AppGuideModal";
 import { AttendanceResultModal, type AttendanceResultPayload } from "@/components/domain/AttendanceResultModal";
+import { SeasonLevelMiniChip } from "@/components/domain/SeasonLevelCard";
+import { MOCK_SEASON_LEVEL } from "@/lib/season-level/levels";
 import { getTeam } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
 import { finalizeAttendanceAction } from "@/lib/actions/attendance";
@@ -300,6 +302,7 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null, m
             <TeamBadge teamId={profile.mainTeamId} size="md" />
             <span className="hd-team-pill-text">내 팀 {myTeam.shortName}</span>
           </div>
+          <SeasonLevelMiniChip state={MOCK_SEASON_LEVEL} />
         </div>
 
         <div className="hd-hero-center">

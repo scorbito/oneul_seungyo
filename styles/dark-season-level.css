@@ -1,0 +1,136 @@
+/* ============================================================
+ * 시즌 레벨 카드 & 미니 칩
+ * - 마이페이지: 큰 카드 (현재 레벨 + 진행 바 + 다음 레벨까지 XP)
+ * - 홈: 작은 칩 (Lv.6 응원단골만)
+ * 다크 톤 기본. 라이트 테마는 별도 처리 필요 시 추가.
+ * ============================================================ */
+
+/* ---------- 마이페이지: 시즌 레벨 카드 ---------- */
+.phone-frame-dark .season-level-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 18px 18px 20px;
+  background: linear-gradient(135deg, rgba(255, 106, 43, 0.14), rgba(255, 106, 43, 0.04));
+  border: 1px solid rgba(255, 106, 43, 0.28);
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(255, 106, 43, 0.08);
+  color: var(--hd-text-primary);
+}
+
+.phone-frame-dark .season-level-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(247, 249, 252, 0.6);
+}
+
+.phone-frame-dark .season-level-head-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--hd-accent-orange);
+  letter-spacing: 0.2px;
+}
+
+.phone-frame-dark .season-level-head-xp {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  color: rgba(247, 249, 252, 0.55);
+}
+
+.phone-frame-dark .season-level-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.phone-frame-dark .season-level-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: var(--hd-accent-orange);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(255, 106, 43, 0.35);
+}
+
+.phone-frame-dark .season-level-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--hd-text-primary);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.phone-frame-dark .season-level-progress {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.phone-frame-dark .season-level-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6a2b, #ffb37a);
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.phone-frame-dark .season-level-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(247, 249, 252, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+
+.phone-frame-dark .season-level-progress-max {
+  width: 100%;
+  text-align: center;
+  color: var(--hd-accent-orange);
+  font-weight: 800;
+}
+
+/* ---------- 홈: 미니 칩 ---------- */
+.phone-frame-dark .season-level-mini-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 4px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 106, 43, 0.35);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(247, 249, 252, 0.92);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.phone-frame-dark .season-level-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  background: var(--hd-accent-orange);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  border-radius: 999px;
+}
+
+.phone-frame-dark .season-level-mini-title {
+  letter-spacing: -0.2px;
+}

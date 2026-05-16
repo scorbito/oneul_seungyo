@@ -11,6 +11,8 @@ import { Card } from "@/components/common/Card";
 import { ModalShell } from "@/components/common/ModalShell";
 import { Button } from "@/components/common/Button";
 import { InstallAppModal } from "@/components/domain/InstallAppModal";
+import { SeasonLevelCard } from "@/components/domain/SeasonLevelCard";
+import { MOCK_SEASON_LEVEL } from "@/lib/season-level/levels";
 import { getTeam, teams } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
@@ -117,6 +119,7 @@ export function MyScreen({ friendsCount = 0, accountInfo = null }: MyScreenProps
             + 자기소개 추가하기
           </button>
         )}
+        <SeasonLevelCard state={MOCK_SEASON_LEVEL} />
         <strong className="profile-rate">{profile.winRate}</strong>
         <span className="profile-record">{profile.wins}승 {profile.losses}패 {profile.draws}무</span>
         {isAnonymous ? (
