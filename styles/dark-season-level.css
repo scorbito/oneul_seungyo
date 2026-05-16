@@ -22,7 +22,7 @@
 }
 
 .phone-frame-dark .profile-card > .season-level-card {
-  z-index: 100;
+  z-index: 2;
 }
 
 .phone-frame-dark .season-level-head {
