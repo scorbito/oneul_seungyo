@@ -387,13 +387,15 @@ export async function acknowledgeAttendanceResultAction(attendanceId: string): P
   const userId = authData.user.id;
 
   // 이미 ack된 행은 건드리지 않음 (멱등 + 첫 ack 시점 보존).
+  // .update().select()에 foreign table join(games!inner)을 같이 쓰면 PostgREST가
+  // 빈 결과를 반환하는 케이스가 있어 본 테이블만 select하고 games는 별도 쿼리로.
   const { data, error } = await admin
     .from("attendances")
     .update({ result_acknowledged_at: new Date().toISOString() })
     .eq("id", attendanceId)
     .eq("user_id", userId)
     .is("result_acknowledged_at", null)
-    .select("id, game_id, games!inner(game_date)")
+    .select("id, game_id")
     .maybeSingle();
 
   if (error) {
@@ -402,9 +404,15 @@ export async function acknowledgeAttendanceResultAction(attendanceId: string): P
 
   // 첫 ack 시점에 시즌 XP +30 지급 (이미 ack됐던 경우 data는 null이라 자동 스킵).
   if (data?.game_id) {
-    const games = data.games as unknown as { game_date: string } | null;
-    if (games?.game_date) {
-      const season = new Date(games.game_date).getFullYear();
+    // game_date는 별도 쿼리 (UPDATE + join select 한계 우회)
+    const { data: game } = await admin
+      .from("games")
+      .select("game_date")
+      .eq("id", data.game_id)
+      .maybeSingle();
+
+    if (game?.game_date) {
+      const season = new Date(game.game_date).getFullYear();
       try {
         await grantXpEvent({
           userId,
