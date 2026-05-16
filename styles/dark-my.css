@@ -53,9 +53,14 @@
 }
 
 /* 프로필 편집 미니 버튼 — 프로필 사진/닉네임 라인 우측 끝에 작은 오렌지 pill.
-   기존 카드 하단의 큰 "프로필 편집" 버튼 디자인을 축소판으로 재현. */
+   기존 카드 하단의 큰 "프로필 편집" 버튼 디자인을 축소판으로 재현.
+   profile-ticket.css의 .profile-card button { width: 100%; height: 42px } 글로벌
+   리셋을 명시적으로 덮어써야 함 — width/height/margin 모두 강제 지정. */
 .phone-frame-dark .profile-card .profile-edit-mini-btn {
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -67,9 +72,11 @@
   font-size: 12px;
   font-weight: 800;
   letter-spacing: -0.2px;
+  line-height: 1;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(255, 106, 43, 0.32);
   transition: filter 0.18s ease, transform 0.08s ease;
+  white-space: nowrap;
 }
 
 .phone-frame-dark .profile-card .profile-edit-mini-btn:hover {
@@ -122,21 +129,26 @@
 .phone-frame-dark .profile-card .profile-hero-team .team-badge {
   width: 20px;
   height: 20px;
-  font-size: 10px;
-  line-height: 1;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 20px; /* 배지 높이와 동일하게 — 글자가 정확히 세로 가운데로 */
+  text-align: center;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-/* 이니셜 자체도 명시적 가운데 정렬 — 작은 사이즈에서 정렬이 어긋나는 문제 해결 */
+/* 이니셜 자체도 명시적 가운데 정렬 — 작은 사이즈에서 정렬이 어긋나는 문제 해결.
+   light-home.css의 @supports iOS transform: translateY(1px) 보정도 무시. */
 .phone-frame-dark .profile-card .profile-hero-team .team-badge-initial {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
   line-height: 1;
-  transform: none; /* light-home.css의 iOS transform: translateY(1px) 보정 무시 */
+  transform: none !important;
+  padding: 0;
 }
 
 .phone-frame-dark .profile-card .profile-bio {
