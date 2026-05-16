@@ -72,30 +72,52 @@ export function MatchTalkTimeline({
           {mode === "date" ? <h3 className="match-talk-timeline-game-title">{gameGroup.label}</h3> : null}
           {groupByStatus(gameGroup.posts).map((statusGroup) => (
             <section className="match-talk-timeline-section" key={`${gameGroup.key}-${statusGroup.status}`}>
-              {statusGroup.status !== "scheduled" ? (
-                <h4 className="match-talk-timeline-status">{statusGroup.label}</h4>
-              ) : null}
-              {statusGroup.posts.length > 0 ? (
-                <>
-                  <div className="match-talk-timeline-items">
-                    {statusGroup.posts.map((post) => (
-                      <MatchTalkTimelineItem
-                        key={post.id}
-                        post={post}
-                        currentUserId={currentUserId}
-                        onToggleLike={() => onToggleLike(post.id)}
-                        onDeleted={onDeleted}
-                        onAuthorClick={onAuthorClick}
-                      />
-                    ))}
+              {statusGroup.status === "in_progress" ? (
+                splitByScore(statusGroup.posts).map((scoreGroup, idx) => (
+                  <div key={`${gameGroup.key}-in-progress-${idx}`}>
+                    <h4 className="match-talk-timeline-status">{scoreGroup.label}</h4>
+                    <div className="match-talk-timeline-items">
+                      {scoreGroup.posts.map((post) => (
+                        <MatchTalkTimelineItem
+                          key={post.id}
+                          post={post}
+                          currentUserId={currentUserId}
+                          onToggleLike={() => onToggleLike(post.id)}
+                          onDeleted={onDeleted}
+                          onAuthorClick={onAuthorClick}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  {statusGroup.status === "scheduled" ? (
+                ))
+              ) : (
+                <>
+                  {statusGroup.status !== "scheduled" ? (
+                    <h4 className="match-talk-timeline-status">{statusGroup.label}</h4>
+                  ) : null}
+                  {statusGroup.posts.length > 0 ? (
+                    <>
+                      <div className="match-talk-timeline-items">
+                        {statusGroup.posts.map((post) => (
+                          <MatchTalkTimelineItem
+                            key={post.id}
+                            post={post}
+                            currentUserId={currentUserId}
+                            onToggleLike={() => onToggleLike(post.id)}
+                            onDeleted={onDeleted}
+                            onAuthorClick={onAuthorClick}
+                          />
+                        ))}
+                      </div>
+                      {statusGroup.status === "scheduled" ? (
+                        <h4 className="match-talk-timeline-status">{statusGroup.label}</h4>
+                      ) : null}
+                    </>
+                  ) : statusGroup.status === "scheduled" ? (
                     <h4 className="match-talk-timeline-status">{statusGroup.label}</h4>
                   ) : null}
                 </>
-              ) : statusGroup.status === "scheduled" ? (
-                <h4 className="match-talk-timeline-status">{statusGroup.label}</h4>
-              ) : null}
+              )}
             </section>
           ))}
         </section>
@@ -151,6 +173,27 @@ function groupByStatus(posts: MatchPost[]) {
   }
 
   return groups.sort((a, b) => STATUS_PRIORITY[b.status] - STATUS_PRIORITY[a.status]);
+}
+
+/**
+ * in_progress 글들을 동일 점수 스냅샷 연속 구간으로 분할.
+ * 글은 createdAt desc(최신 먼저)로 정렬돼 들어오므로,
+ * 위에서 아래로 갈수록 시간이 거꾸로 흐른다 — 점수가 바뀌면 새 라벨을 출력해
+ * 각 회차/점수의 마커를 글 사이에 보이게 한다.
+ */
+function splitByScore(posts: MatchPost[]): { label: string; posts: MatchPost[] }[] {
+  const result: { label: string; posts: MatchPost[] }[] = [];
+  let currentKey: string | null = null;
+  for (const post of posts) {
+    const key = `${post.scoreAwayAtPost ?? "-"}:${post.scoreHomeAtPost ?? "-"}`;
+    if (key !== currentKey) {
+      result.push({ label: formatStatusLabel("in_progress", post), posts: [post] });
+      currentKey = key;
+    } else {
+      result[result.length - 1].posts.push(post);
+    }
+  }
+  return result;
 }
 
 function formatGameTitle(post?: MatchPost) {
