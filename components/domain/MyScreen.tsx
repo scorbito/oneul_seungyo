@@ -12,7 +12,7 @@ import { ModalShell } from "@/components/common/ModalShell";
 import { Button } from "@/components/common/Button";
 import { InstallAppModal } from "@/components/domain/InstallAppModal";
 import { SeasonLevelCard } from "@/components/domain/SeasonLevelCard";
-import { MOCK_SEASON_LEVEL } from "@/lib/season-level/levels";
+import type { SeasonLevelState } from "@/lib/season-level/types";
 import { getTeam, teams } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
@@ -30,9 +30,10 @@ const menuItems = [
 
 type MyScreenProps = {
   friendsCount?: number;
+  seasonLevel?: SeasonLevelState | null;
 };
 
-export function MyScreen({ friendsCount = 0 }: MyScreenProps) {
+export function MyScreen({ friendsCount = 0, seasonLevel = null }: MyScreenProps) {
   const { profile, attendances, reviews, savedReviewIds, isAnonymous, updateProfile, showToast } = useAppState();
   const { isStandalone } = useInstallPrompt();
   const router = useRouter();
@@ -112,7 +113,7 @@ export function MyScreen({ friendsCount = 0 }: MyScreenProps) {
             + 자기소개 추가하기
           </button>
         )}
-        <SeasonLevelCard state={MOCK_SEASON_LEVEL} />
+        {seasonLevel ? <SeasonLevelCard state={seasonLevel} /> : null}
         <strong className="profile-rate">{profile.winRate}</strong>
         <p className="hd-hero-summary profile-record-summary">
           <span>총 {profile.attendanceCount}경기 ·</span>

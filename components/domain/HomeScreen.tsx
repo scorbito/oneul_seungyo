@@ -10,7 +10,7 @@ import { AppModals, type ModalKind } from "@/components/domain/AppModals";
 import { AppGuideModal } from "@/components/domain/AppGuideModal";
 import { AttendanceResultModal, type AttendanceResultPayload } from "@/components/domain/AttendanceResultModal";
 import { SeasonLevelMiniChip } from "@/components/domain/SeasonLevelCard";
-import { MOCK_SEASON_LEVEL } from "@/lib/season-level/levels";
+import type { SeasonLevelState } from "@/lib/season-level/types";
 import { getTeam } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
 import { finalizeAttendanceAction } from "@/lib/actions/attendance";
@@ -109,9 +109,11 @@ type HomeScreenProps = {
   latestNoticeAt?: string | null;
   /** 경기톡 글 개수 (game_id → count). 홈 카드 뱃지에 사용. */
   matchPostCounts?: Record<string, number>;
+  /** 현재 사용자의 시즌 레벨 — 비로그인 / XP 없음 시 null */
+  seasonLevel?: SeasonLevelState | null;
 };
 
-export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null, matchPostCounts = {} }: HomeScreenProps) {
+export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null, matchPostCounts = {}, seasonLevel = null }: HomeScreenProps) {
   const { attendances, profile, showToast, markAttendanceResult, acknowledgeAttendanceResult } = useAppState();
   const router = useRouter();
   const [modal, setModal] = useState<ModalKind>(null);
@@ -302,7 +304,7 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null, m
             <TeamBadge teamId={profile.mainTeamId} size="md" />
             <span className="hd-team-pill-text">내 팀 {myTeam.shortName}</span>
           </div>
-          <SeasonLevelMiniChip state={MOCK_SEASON_LEVEL} />
+          {seasonLevel ? <SeasonLevelMiniChip state={seasonLevel} /> : null}
         </div>
 
         <div className="hd-hero-center">

@@ -1,6 +1,7 @@
 "use server";
 
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { getUserSeasonLevel } from "@/lib/season-level/queries";
 
 export type PublicProfileRelationship = "self" | "none" | "friend" | "requested" | "incoming";
 
@@ -147,7 +148,11 @@ export async function getPublicProfileAction(targetUserId: string): Promise<Publ
     avatarUrl: profile.avatar_image_url ?? null,
     mainTeamId: profile.main_team_id,
     bio: profile.bio ?? null,
-    seasonLevel: null, // Step 10에서 실데이터 연결
+    seasonLevel: await getUserSeasonLevel(profile.id, seasonYear).then((s) => ({
+      level: s.level,
+      title: s.title,
+      totalXp: s.totalXp
+    })).catch(() => null),
     seasonStats,
     relationship,
     incomingRequestId
