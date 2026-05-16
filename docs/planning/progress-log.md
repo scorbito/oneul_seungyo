@@ -121,6 +121,26 @@
   - Phase 9 잔여 QA(`lint`, `build`, 색 대비, focus, 모바일 실기기)를 완료한 뒤 Phase 10 상태를 다시 갱신한다.
   - 초기 Supabase 적용 문서 2종은 현재 상태와 달라 혼란을 줄 수 있어 삭제하고, 실제 기준은 `docs/product-spec.md`, `supabase/*.sql`, `lib/actions/*`, `lib/supabase/*`로 단순화한다.
 
+### 2026-05-16 시즌 레벨 master 머지 + UI 폴리시 + 경기톡 타임라인 개선
+- Reviewer: Codex (self)
+- 범위: `feature/season-level` master 머지 ~ 프로덕션 배포 + 후속 UI/타임라인 폴리시
+- 테스트/확인:
+  - `npx tsc --noEmit --incremental false` 통과 (2회)
+  - `npm run lint` 통과 (기존 react-hooks/exhaustive-deps 워닝만 유지)
+  - Supabase SQL Editor에서 `supabase/add-match-post-inning.sql` 적용 완료(`match_posts.inning_at_post` 컬럼 추가 확인)
+  - 사용자 실측: 프로필 카드 배경/테두리/z-index/타임라인 라벨 위치 확인
+- 결론: Pass
+- Findings:
+  - P1: 프로필 편집 모달(z-index 30) 위로 시즌 레벨 카드(z-index 100)가 솟구쳐 보이던 문제 — `profile-rate` 텍스트 제거 후 100으로 올릴 이유가 사라져 `z-index: 2`로 내림 (커밋 `eb09a14`)
+  - P1: 경기톡 진행 중 타임라인에서 같은 status여도 점수가 다른 글들이 한 그룹으로 묶여 첫 글의 라벨만 보이던 문제 — `splitByScore` 헬퍼로 sub-group 분리 (커밋 `79f33e4`)
+  - P1: 글 작성 시점의 회차(이닝) 정보가 어디에도 박제되지 않아 라벨이 점수만 보였던 문제 — DB 컬럼 + KBO/네이버 동기화 + 스냅샷 박제 + UI 표시까지 풀스택 반영 (커밋 `8489381`)
+  - P2: 프로필 카드 배경 이미지가 세로 확장에 잘리던 문제 — `background-size: auto 100% + background-position: right center`로 해결 (커밋 `e7d0c95`)
+  - P2: 타임라인 라벨이 status별로 글 위/아래가 섞여 있어 일관성 없던 문제 — 모두 글 묶음 위로 통일, finished→in_progress 경계에 "경기 종료" 마커 추가 (커밋 `8489381`)
+- 후속 조치:
+  - 신규 글이 in_progress 시점에 작성될 때 회차가 정상 박제되는지 운영 환경에서 실측
+  - 기존 글은 `inning_at_post = NULL`이라 회차 없이 점수만 표시 (백필 불가 — 작성 시점 회차 정보가 어디에도 없음)
+  - 다음 KBO cron 사이클부터 `games.innings`가 in_progress 게임에도 채워지는지 확인
+
 ### 2026-05-16 시즌 레벨 Step 0 ~ 11 셀프 리뷰
 - Reviewer: Codex
 - 범위: `feature/season-level` 브랜치 전체 (Step 0 프로필 모달 ~ Step 11 회귀 검증)
