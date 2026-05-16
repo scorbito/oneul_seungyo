@@ -119,11 +119,21 @@
   font-weight: 600;
 }
 
-/* 내 팀 라인 — 텍스트 + 팀명 + 팀 배지 inline 정렬 */
+/* 내 팀 라인 — 텍스트 + 팀명 + 팀 배지 inline 정렬.
+   <p> 대신 <span>으로 변경(텍스트 baseline 정렬 영향 차단)하고
+   텍스트와 배지를 각각 별도 자식으로 두어 flex center가 정확히 동작하도록. */
 .phone-frame-dark .profile-card .profile-hero-team {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  margin: 2px 0 0;
+}
+
+.phone-frame-dark .profile-card .profile-hero-team-text {
+  font-size: 12px;
+  color: var(--hd-text-secondary);
+  font-weight: 600;
+  line-height: 1;
 }
 
 /* 후기 카드 .review-game-meta-match .team-badge 와 동일 형식. */

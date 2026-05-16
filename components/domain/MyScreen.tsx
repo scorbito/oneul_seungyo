@@ -92,10 +92,10 @@ export function MyScreen({ friendsCount = 0 }: MyScreenProps) {
           )}
           <div>
             <h1>{profile.nickname}</h1>
-            <p className="profile-hero-team">
-              내 팀 {profileTeam.name}
+            <span className="profile-hero-team">
+              <span className="profile-hero-team-text">내 팀 {profileTeam.name}</span>
               <TeamBadge teamId={profile.mainTeamId} size="sm" />
-            </p>
+            </span>
           </div>
           <button
             type="button"
