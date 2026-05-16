@@ -227,6 +227,22 @@ export async function registerAttendanceFromTicket(input: TicketRegisterInput): 
     return { ok: false, reason: "이 경기는 이미 직관 기록에 있어요." };
   }
 
+  // 6-2. 1일 1직관 사전 체크 — 같은 사용자가 같은 날짜에 이미 다른 경기 직관이 있는지.
+  // DB trigger가 막아주지만, 사용자에겐 친절한 안내를 먼저 제공.
+  const { data: sameDay } = await admin
+    .from("attendances")
+    .select("id, games!inner(game_date)")
+    .eq("user_id", userId)
+    .eq("games.game_date", game.game_date)
+    .limit(1)
+    .maybeSingle();
+  if (sameDay) {
+    return {
+      ok: false,
+      reason: "이미 이 날짜에 등록한 직관이 있어요. 기존 기록을 수정해 주세요."
+    };
+  }
+
   // 7. 이미지를 ticket-images 버킷에 업로드 (서버에서 직접)
   const ext = input.mimeType.split("/")[1] || "jpg";
   const path = `${userId}/ticket-${Date.now()}/${hash.slice(0, 12)}.${ext}`;
@@ -264,6 +280,12 @@ export async function registerAttendanceFromTicket(input: TicketRegisterInput): 
   if (insertErr || !created) {
     // 업로드한 이미지 정리
     await admin.storage.from("ticket-images").remove([path]).catch(() => {});
+
+    // 1일 1직관 trigger 위반은 사용자에게 친절한 메시지로 안내.
+    // (race condition으로 사전 체크를 지나간 경우 마지막 방어선.)
+    if (insertErr?.code === "23505" && insertErr.message?.includes("하루에 하나")) {
+      return { ok: false, reason: "하루에 하나의 직관만 기록할 수 있어요. 기존 기록을 수정해 주세요." };
+    }
     return { ok: false, reason: `직관 저장 실패: ${insertErr?.message ?? "unknown"}` };
   }
 

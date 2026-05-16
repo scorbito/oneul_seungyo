@@ -49,6 +49,20 @@ export async function createAttendanceAction(input: CreateAttendanceActionInput)
     throw new Error("선택한 경기 정보를 DB에서 찾지 못했습니다.");
   }
 
+  // 1일 1직관 사전 체크 — DB trigger가 막아주지만, 사용자에겐 친절한 안내를 먼저.
+  // 같은 user_id + 같은 game_date 직관이 이미 있는지 검사.
+  const { data: sameDay } = await admin
+    .from("attendances")
+    .select("id, games!inner(game_date)")
+    .eq("user_id", authData.user.id)
+    .eq("games.game_date", gameDate)
+    .limit(1)
+    .maybeSingle();
+
+  if (sameDay) {
+    throw new Error("이미 이 날짜에 등록한 직관이 있어요. 기존 기록을 수정해 주세요.");
+  }
+
   const verified = Boolean(input.ticketImageUrl);
   const { error } = await admin.from("attendances").insert({
     user_id: authData.user.id,
@@ -63,6 +77,10 @@ export async function createAttendanceAction(input: CreateAttendanceActionInput)
 
   if (error) {
     if (error.code === "23505") {
+      // trigger 메시지 키워드로 1일 1직관과 기존 unique(user_id, game_id)를 구분
+      if (error.message?.includes("하루에 하나")) {
+        throw new Error("하루에 하나의 직관만 기록할 수 있어요. 기존 기록을 수정해 주세요.");
+      }
       throw new Error("이미 등록한 직관 경기입니다.");
     }
     throw new Error(`직관 저장에 실패했습니다: ${error.message}`);
