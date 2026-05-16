@@ -115,13 +115,6 @@ export function MyScreen({ friendsCount = 0, seasonLevel = null }: MyScreenProps
           </button>
         )}
         {seasonLevel ? <SeasonLevelCard state={seasonLevel} /> : null}
-        <strong className="profile-rate">{profile.winRate}</strong>
-        <p className="hd-hero-summary profile-record-summary">
-          <span>총 {profile.attendanceCount}경기 ·</span>
-          <span className="hd-text-win">{profile.wins}승</span>
-          <span className="hd-text-loss">{profile.losses}패</span>
-          <span className="hd-text-draw">{profile.draws}무</span>
-        </p>
         <div className="profile-stat-grid" aria-label="내 직관 통계">
           <span>
             <em>직관</em>
