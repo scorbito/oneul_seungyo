@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { syncGamesForDate } from "@/lib/server/kbo/syncGames";
+import { grantXpEvent, revokeXpEvent, XP_VALUES } from "@/lib/season-level/events";
 
 export type CreateAttendanceActionInput = {
   date: string;
@@ -132,10 +133,10 @@ export async function deleteAttendanceAction(attendanceId: string) {
     }
   }
 
-  // 2) 티켓 이미지 path 미리 저장
+  // 2) 티켓 이미지 path + 게임 날짜 미리 저장 (XP 회수 시즌 계산)
   const { data: attendance, error: fetchErr } = await admin
     .from("attendances")
-    .select("ticket_image_url")
+    .select("ticket_image_url, games!inner(game_date)")
     .eq("id", attendanceId)
     .eq("user_id", authData.user.id)
     .maybeSingle();
@@ -162,6 +163,26 @@ export async function deleteAttendanceAction(attendanceId: string) {
     if (ticketPath) {
       const { error: tStErr } = await admin.storage.from("ticket-images").remove([ticketPath]);
       if (tStErr) console.warn(`[deleteAttendanceAction] ticket storage cleanup failed:`, tStErr.message);
+    }
+  }
+
+  // 5) 시즌 XP 회수 — 이 attendance에서 발생한 모든 XP (직관/티켓/후기/사진 보너스).
+  // 멱등이라 원본 지급이 없는 종류는 자동 스킵.
+  const games = attendance.games as unknown as { game_date: string } | null;
+  if (games?.game_date) {
+    const season = new Date(games.game_date).getFullYear();
+    const xpTypes = ["attendance_result_acknowledged", "ticket_verified", "review_created", "review_photo_bonus"] as const;
+    for (const sourceType of xpTypes) {
+      try {
+        await revokeXpEvent({
+          userId: authData.user.id,
+          season,
+          sourceType,
+          sourceId: attendanceId
+        });
+      } catch (xpErr) {
+        console.warn(`[deleteAttendanceAction] XP revoke ${sourceType} failed:`, xpErr);
+      }
     }
   }
 
@@ -372,12 +393,33 @@ export async function acknowledgeAttendanceResultAction(attendanceId: string): P
     .eq("id", attendanceId)
     .eq("user_id", userId)
     .is("result_acknowledged_at", null)
-    .select("id")
+    .select("id, game_id, games!inner(game_date)")
     .maybeSingle();
 
   if (error) {
     return { ok: false, reason: `결과 확인 처리 실패: ${error.message}` };
   }
+
+  // 첫 ack 시점에 시즌 XP +30 지급 (이미 ack됐던 경우 data는 null이라 자동 스킵).
+  if (data?.game_id) {
+    const games = data.games as unknown as { game_date: string } | null;
+    if (games?.game_date) {
+      const season = new Date(games.game_date).getFullYear();
+      try {
+        await grantXpEvent({
+          userId,
+          season,
+          type: "attendance_result_acknowledged",
+          sourceId: attendanceId,
+          xp: XP_VALUES.attendance_result_acknowledged
+        });
+      } catch (xpErr) {
+        // XP 지급 실패는 ack 자체를 막지 않음. 로그만 남기고 진행.
+        console.warn("[acknowledgeAttendanceResult] XP grant failed:", xpErr);
+      }
+    }
+  }
+
   // data가 null이면 이미 ack됐거나 본인 직관이 아님 — 둘 다 사용자 입장에선 OK.
   return { ok: true };
 }

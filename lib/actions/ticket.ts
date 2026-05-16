@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { parseTicketWithGemini } from "@/lib/server/vision/parseTicket";
+import { grantXpEvent, XP_VALUES } from "@/lib/season-level/events";
 
 export type TicketRegisterInput = {
   /** browser에서 base64로 인코딩한 이미지 (data: 접두사 없이 순수 base64) */
@@ -289,6 +290,20 @@ export async function registerAttendanceFromTicket(input: TicketRegisterInput): 
     return { ok: false, reason: `직관 저장 실패: ${insertErr?.message ?? "unknown"}` };
   }
 
+  // 티켓 인증 성공 시 시즌 XP +100 (멱등). 실패해도 등록은 그대로 OK.
+  try {
+    const season = new Date(game.game_date).getFullYear();
+    await grantXpEvent({
+      userId,
+      season,
+      type: "ticket_verified",
+      sourceId: created.id,
+      xp: XP_VALUES.ticket_verified
+    });
+  } catch (xpErr) {
+    console.warn("[registerAttendanceFromTicket] XP grant failed:", xpErr);
+  }
+
   revalidatePath("/");
   revalidatePath("/my");
   revalidatePath("/my/attendances");
@@ -428,6 +443,20 @@ export async function verifyAttendanceWithTicket(
     // 업로드 정리
     await admin.storage.from("ticket-images").remove([path]).catch(() => {});
     return { ok: false, reason: `인증 저장 실패: ${updateErr.message}` };
+  }
+
+  // 사후 티켓 인증 성공 시 시즌 XP +100 (멱등). 같은 attendanceId에 대해 이미 지급됐다면 자동 스킵.
+  try {
+    const season = new Date(game.game_date).getFullYear();
+    await grantXpEvent({
+      userId,
+      season,
+      type: "ticket_verified",
+      sourceId: input.attendanceId,
+      xp: XP_VALUES.ticket_verified
+    });
+  } catch (xpErr) {
+    console.warn("[verifyAttendanceWithTicket] XP grant failed:", xpErr);
   }
 
   revalidatePath("/");
