@@ -91,4 +91,8 @@
 
 - 2026-05-13: **MVP 출시 완료 후 사용자 모집/홍보 운영 단계로 전환**. 출시 전 검토·QA·배포 확인은 MVP 기준 완료 처리하고, 이후 항목은 운영 관측성, 법무/동의 보강, 운영 문서화, 다음 라운드 후보로 재분류한다.
 
-진행 상태: **MVP 출시 완료 및 사용자 모집 단계 진입**. 폴리시·인터랙션·성능·온보딩·PWA·새로고침 UX·에러 복구·공유 카드 캡처 모두 검증됨. React #310은 middleware HTTP redirect로 우회 해결. 후속 작업은 [qa-checklist.md](./qa-checklist.md)의 **운영·성장 백로그** 참조.
+- 2026-05-14 ~ 16: **시즌 레벨 Step 0 ~ 11 구현 완료** (`feature/season-level` 브랜치). P0 결정 사항 4건 확정 후 본 작업 진행 — 시스템 사진 fallback 제거, 시즌은 `int`(`game_date` 연도), 1일 1직관은 trigger 방식, 백필은 단발 스크립트. 자세한 진행 상태는 [../development/season-level-implementation.md § 5.2](../development/season-level-implementation.md) 참조.
+
+- 2026-05-16: **시즌 레벨 실측 라운드 — 결과 보기/XP 지급 버그 2건 fix**. (1) `acknowledgeAttendanceResultAction`이 `.update().select(games!inner(...))` PostgREST 패턴에서 빈 결과를 반환해 XP 지급 블록을 통과 못 함. UPDATE select를 본 테이블만으로 분리 후 `games`는 별도 쿼리(커밋 `5ebb636`). (2) "결과 보기" 모달이 안 뜨던 문제 — `addAttendance`가 mock ID(`att-{timestamp}`)로 client state 추가해 server UUID와 불일치(server action 호출 시 DB에서 못 찾음) + `.result-modal { position: fixed }`가 phone-frame `overflow:hidden`에 클리핑되어 viewport에 떠도 안 보임 + `setResultPayload` 가드로 두 번째 클릭 시 모달 안 열림. `createAttendanceAction`이 `{ attendanceId }` 반환 → client `addAttendance`가 server UUID 사용, `position fixed → absolute`(ModalShell과 동일 패턴), 가드 제거, `acknowledgeAttendanceResult`를 Promise 반환으로 변경해 실패 시 토스트 안내, client state에 score/result 비어있을 때 `finalizeAttendanceAction` fallback 추가(커밋 `f41b057`).
+
+진행 상태: **MVP 출시 완료 및 사용자 모집 단계 진입**. 폴리시·인터랙션·성능·온보딩·PWA·새로고침 UX·에러 복구·공유 카드 캡처 모두 검증됨. React #310은 middleware HTTP redirect로 우회 해결. 시즌 레벨 Step 0~11 구현 완료(`feature/season-level` 브랜치, master 머지 대기). 후속 작업은 [qa-checklist.md](./qa-checklist.md)의 **운영·성장 백로그** 참조.

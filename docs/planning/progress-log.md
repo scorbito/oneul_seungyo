@@ -120,3 +120,22 @@
 - 후속 조치:
   - Phase 9 잔여 QA(`lint`, `build`, 색 대비, focus, 모바일 실기기)를 완료한 뒤 Phase 10 상태를 다시 갱신한다.
   - 초기 Supabase 적용 문서 2종은 현재 상태와 달라 혼란을 줄 수 있어 삭제하고, 실제 기준은 `docs/product-spec.md`, `supabase/*.sql`, `lib/actions/*`, `lib/supabase/*`로 단순화한다.
+
+### 2026-05-16 시즌 레벨 Step 0 ~ 11 셀프 리뷰
+- Reviewer: Codex
+- 범위: `feature/season-level` 브랜치 전체 (Step 0 프로필 모달 ~ Step 11 회귀 검증)
+- 테스트/확인:
+  - `npx tsc --noEmit` 통과
+  - `npm run build` 통과
+  - `npm run lint` 통과 (기존 워닝만 유지)
+  - Supabase SQL Editor에서 `supabase/season-level.sql` 적용 완료(`season_xp_events` 테이블 + `one_attendance_per_day` trigger 생성 확인)
+  - 사용자 실측 라운드: 새 직관 등록 → 결과 보기 → 모달 표시 + XP +30 반영 확인
+- 결론: Pass with 2 In-Round Fixes
+- Findings:
+  - P0: `acknowledgeAttendanceResultAction`이 `.update().select(games!inner(...))` PostgREST 패턴에서 빈 결과 반환 → XP 지급 블록 통과 못 함. UPDATE select를 본 테이블만으로 분리 + `game_date`는 별도 쿼리(커밋 `5ebb636`)
+  - P0: `addAttendance`가 mock ID로 client state 추가해 server UUID와 불일치 → ack/finalize 호출이 DB에서 못 찾음. `.result-modal { position: fixed }`가 phone-frame `overflow:hidden`에 클리핑되어 안 보임. `setResultPayload` 가드로 두 번째 클릭 시 모달 안 열림. `createAttendanceAction`이 UUID 반환 + client에서 그대로 사용, position absolute로 변경, 가드 제거, `acknowledgeAttendanceResult` Promise 반환으로 실패 시 토스트(커밋 `f41b057`)
+  - P2: `lib/state/AppState.tsx`의 기존 react-hooks/exhaustive-deps 워닝 3건은 이번 작업 범위 외라 유지
+- 후속 조치:
+  - 운영자가 `scripts/backfill-season-xp.mjs --apply` 실행 (108개 이벤트 소급 적용 예정)
+  - master 머지 + Vercel 프로덕션 배포
+  - 본 운영 환경 실측 검증(직관 등록/결과 확인/XP 반영/카드 표시/Lv 진행)
