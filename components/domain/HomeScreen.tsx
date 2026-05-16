@@ -145,7 +145,10 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null, m
     }
 
     const applyPayload = () => {
-      setResultPayload((current) => current?.attendanceId === payload.attendanceId ? current : payload);
+      // 가드 제거 — 같은 attendance 다시 클릭해도 모달 다시 열기.
+      // 이전엔 current?.attendanceId === payload.attendanceId 면 set 안 했는데,
+      // 그러면 X로 닫은 후 다시 클릭 시 모달이 안 열리는 케이스가 있음.
+      setResultPayload(payload);
       resultOpenTimerRef.current = null;
     };
 
@@ -422,16 +425,51 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null, m
                     <button
                       type="button"
                       className="hd-game-end-btn"
+                      disabled={finalizingId === att.id}
                       onClick={() => {
                         const payload = buildResultPayload(att);
-                        if (!payload) {
-                          showToast("결과 데이터를 불러오지 못했어요.");
+                        if (payload) {
+                          openResultModal(payload, { persist: true });
                           return;
                         }
-                        openResultModal(payload, { persist: true });
+                        // client state에 score/result가 비어있는 경우 (cron 타이밍 차이 등):
+                        // 서버에서 직접 결과를 가져와 모달 열기 + client state 갱신.
+                        if (finalizingId === att.id) return;
+                        setFinalizingId(att.id);
+                        startFinalize(async () => {
+                          try {
+                            const res = await finalizeAttendanceAction(att.id);
+                            if (!res.ok) {
+                              showToast(res.reason);
+                              setFinalizingId(null);
+                              return;
+                            }
+                            markAttendanceResult(att.id, {
+                              result: res.result,
+                              myScore: res.myScore,
+                              opponentScore: res.opponentScore,
+                              supportTeamId: res.myTeamId,
+                              homeTeamId: att.homeTeamId
+                            });
+                            openResultModal({ attendanceId: att.id, ...res }, { persist: true, delayMs: 350 });
+                            setFinalizingId(null);
+                          } catch (err) {
+                            showToast(err instanceof Error ? err.message : "결과 확인 중 오류가 발생했어요.");
+                            setFinalizingId(null);
+                          }
+                        });
                       }}
                     >
-                      <Flag size={14} /> {isPast ? "결과 보기" : "경기 종료"}
+                      {finalizingId === att.id ? (
+                        <>
+                          <span className="onboarding-submit-spinner" aria-hidden="true" />
+                          확인 중...
+                        </>
+                      ) : (
+                        <>
+                          <Flag size={14} /> {isPast ? "결과 보기" : "경기 종료"}
+                        </>
+                      )}
                     </button>
                   ) : (
                     <button
@@ -629,16 +667,20 @@ export function HomeScreen({ weekGames = [], weekStart, latestNoticeAt = null, m
       <AppGuideModal open={guideOpen} onClose={closeGuide} />
       <AttendanceResultModal
         payload={resultPayload}
-        onClose={() => {
+        onClose={async () => {
           // 결과를 본 직관은 DB에 ack 시각 저장 → 다음 진입부터 "최근 직관"으로 이동.
-          if (resultPayload) acknowledgeAttendanceResult(resultPayload.attendanceId);
+          if (resultPayload) {
+            const res = await acknowledgeAttendanceResult(resultPayload.attendanceId);
+            if (!res.ok && res.reason) showToast(res.reason);
+          }
           closeResultModal();
           // 모달 닫은 후에 다른 페이지(/my, /my/attendances)도 최신 데이터 반영되도록.
           router.refresh();
         }}
-        onWriteReview={(attendanceId) => {
+        onWriteReview={async (attendanceId) => {
           // 후기 작성 흐름으로 넘어가는 것도 결과를 확인한 행위로 본다.
-          acknowledgeAttendanceResult(attendanceId);
+          const res = await acknowledgeAttendanceResult(attendanceId);
+          if (!res.ok && res.reason) showToast(res.reason);
           closeResultModal();
           setReviewTargetId(attendanceId);
           setModal("review");

@@ -18,7 +18,7 @@ function toIsoDate(date: string) {
   return date.includes(".") ? date.replaceAll(".", "-") : date;
 }
 
-export async function createAttendanceAction(input: CreateAttendanceActionInput) {
+export async function createAttendanceAction(input: CreateAttendanceActionInput): Promise<{ attendanceId: string }> {
   // Auth check via SSR client (auth.getUser is reliable through cookies).
   const ssr = createSupabaseServerClient();
   const { data: authData, error: authError } = await ssr.auth.getUser();
@@ -65,16 +65,20 @@ export async function createAttendanceAction(input: CreateAttendanceActionInput)
   }
 
   const verified = Boolean(input.ticketImageUrl);
-  const { error } = await admin.from("attendances").insert({
-    user_id: authData.user.id,
-    game_id: game.id,
-    support_team_id: input.supportTeamId,
-    ticket_image_url: input.ticketImageUrl || null,
-    verified,
-    verified_at: verified ? new Date().toISOString() : null,
-    verified_method: verified ? "mock" : null,
-    memo: input.memo || null
-  });
+  const { data: created, error } = await admin
+    .from("attendances")
+    .insert({
+      user_id: authData.user.id,
+      game_id: game.id,
+      support_team_id: input.supportTeamId,
+      ticket_image_url: input.ticketImageUrl || null,
+      verified,
+      verified_at: verified ? new Date().toISOString() : null,
+      verified_method: verified ? "mock" : null,
+      memo: input.memo || null
+    })
+    .select("id")
+    .single();
 
   if (error) {
     if (error.code === "23505") {
@@ -90,6 +94,8 @@ export async function createAttendanceAction(input: CreateAttendanceActionInput)
   revalidatePath("/");
   revalidatePath("/my");
   revalidatePath("/my/attendances");
+
+  return { attendanceId: created.id };
 }
 
 /** 인증 사진 공개 URL 또는 storage path에서 storage 경로만 추출 */
