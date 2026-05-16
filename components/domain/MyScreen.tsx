@@ -114,7 +114,12 @@ export function MyScreen({ friendsCount = 0 }: MyScreenProps) {
         )}
         <SeasonLevelCard state={MOCK_SEASON_LEVEL} />
         <strong className="profile-rate">{profile.winRate}</strong>
-        <span className="profile-record">{profile.wins}승 {profile.losses}패 {profile.draws}무</span>
+        <p className="hd-hero-summary profile-record-summary">
+          <span>총 {profile.attendanceCount}경기 ·</span>
+          <span className="hd-text-win">{profile.wins}승</span>
+          <span className="hd-text-loss">{profile.losses}패</span>
+          <span className="hd-text-draw">{profile.draws}무</span>
+        </p>
         {isAnonymous ? (
           <Link className="profile-anon-cta" href="/login" prefetch>
             정식 계정으로 전환하면 다른 기기에서도 볼 수 있어요 →

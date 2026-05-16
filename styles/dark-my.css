@@ -197,6 +197,13 @@
   font-weight: 600;
 }
 
+/* 승률 숫자 아래 통계 요약 — 홈 hd-hero-summary와 동일 형식.
+   카드가 align-items: stretch라 flex container가 자동으로 가로 채움. */
+.phone-frame-dark .profile-card .profile-record-summary {
+  margin: 8px auto 0;
+  justify-content: center;
+}
+
 .phone-frame-dark .profile-card .profile-edit-btn {
   margin-top: 18px;
   width: 100%;
