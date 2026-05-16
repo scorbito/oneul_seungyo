@@ -12,10 +12,10 @@
   gap: 12px;
   margin: 14px 0 0;
   padding: 18px 18px 20px;
-  background: linear-gradient(135deg, rgba(255, 106, 43, 0.14), rgba(255, 106, 43, 0.04));
+  /* 다른 다크 카드와 통일된 단색 배경. 강조는 테두리 + 진행 바로만. */
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 106, 43, 0.28);
   border-radius: 18px;
-  box-shadow: 0 6px 20px rgba(255, 106, 43, 0.08);
   color: var(--hd-text-primary);
 }
 
