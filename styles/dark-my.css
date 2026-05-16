@@ -43,7 +43,7 @@
   align-items: center;
   gap: 12px;
   text-align: left;
-  margin-bottom: 18px;
+  margin-bottom: 4px; /* 자기소개와의 간격을 줄임 (profile-bio의 margin-top과 합산) */
 }
 
 /* 닉네임 + 팀 이름 영역이 가운데를 차지해야 편집 아이콘 버튼이 우측 끝으로 밀림 */
@@ -111,8 +111,21 @@
   font-weight: 600;
 }
 
+/* 내 팀 라인 — 텍스트 + 팀 배지 + 팀명 inline 정렬 */
+.phone-frame-dark .profile-card .profile-hero-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.phone-frame-dark .profile-card .profile-hero-team .team-badge {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+
 .phone-frame-dark .profile-card .profile-bio {
-  margin: 12px 14px 0;
+  margin: 6px 14px 0;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.45;
