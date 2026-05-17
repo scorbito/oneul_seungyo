@@ -18,13 +18,7 @@ import { useAppState } from "@/lib/state/AppState";
 import { getThisWeekRangeKst } from "@/lib/utils/matchTalkWeek";
 import { getTeam } from "@/lib/constants/teams";
 import type { MatchPostEmotionTag } from "@/lib/types/domain";
-
-const EMOTION_OPTIONS: { id: MatchPostEmotionTag; emoji: string; label: string; hint: string }[] = [
-  { id: "cheer", emoji: "🎉", label: "환호", hint: "홈런·승리·좋은 플레이" },
-  { id: "support", emoji: "📣", label: "응원", hint: "경기 전/중 응원, 화이팅" },
-  { id: "anger", emoji: "😡", label: "분노", hint: "오심·부진·패배" },
-  { id: "anxiety", emoji: "😰", label: "불안", hint: "동점·마무리 위기" }
-];
+import { MATCH_POST_EMOTION_OPTIONS as EMOTION_OPTIONS } from "@/lib/constants/matchPostEmotion";
 
 const MAX_BODY = 300;
 

@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { Camera, Check, Heart, MessageCircle, Trash2 } from "lucide-react";
+import { Check, Heart, MessageCircle, Trash2 } from "lucide-react";
+import Lightbox from "yet-another-react-lightbox";
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
+import "yet-another-react-lightbox/styles.css";
 import { Button } from "@/components/common/Button";
 import { CommentThread } from "@/components/common/CommentThread";
 import { ModalShell } from "@/components/common/ModalShell";
@@ -15,14 +18,8 @@ import {
 } from "@/lib/actions/matchTalk";
 import { getTeam } from "@/lib/constants/teams";
 import { useAppState } from "@/lib/state/AppState";
-import type { MatchPost, MatchPostComment, MatchPostEmotionTag, MatchPostStatusSnapshot } from "@/lib/types/domain";
-
-const EMOTION_META: Record<MatchPostEmotionTag, { emoji: string; label: string }> = {
-  cheer: { emoji: "🔥", label: "환호" },
-  support: { emoji: "💪", label: "응원" },
-  anger: { emoji: "😤", label: "분노" },
-  anxiety: { emoji: "😰", label: "불안" }
-};
+import type { MatchPost, MatchPostComment, MatchPostStatusSnapshot } from "@/lib/types/domain";
+import { MATCH_POST_EMOTION_META } from "@/lib/constants/matchPostEmotion";
 
 const STATUS_ORDER: MatchPostStatusSnapshot[] = ["finished", "in_progress", "scheduled"];
 const STATUS_PRIORITY: Record<MatchPostStatusSnapshot, number> = {
@@ -242,9 +239,10 @@ function MatchTalkTimelineItem({ post, currentUserId, onToggleLike, onDeleted, o
   const [commentsLoaded, setCommentsLoaded] = useState(false);
   const [commentCount, setCommentCount] = useState(post.commentCount);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   const isOwner = Boolean(currentUserId && post.userId === currentUserId);
-  const emotion = EMOTION_META[post.emotionTag];
+  const emotion = MATCH_POST_EMOTION_META[post.emotionTag];
 
   const handleToggleComments = async () => {
     if (commentsOpen) {
@@ -381,9 +379,21 @@ function MatchTalkTimelineItem({ post, currentUserId, onToggleLike, onDeleted, o
 
         <p className="match-talk-timeline-body">{post.body}</p>
         {post.photoUrl ? (
-          <span className="match-talk-timeline-photo-badge">
-            <Camera size={14} /> 사진 있음
-          </span>
+          <button
+            type="button"
+            className="match-talk-timeline-photo-thumb"
+            onClick={() => setPhotoOpen(true)}
+            aria-label="사진 크게 보기"
+          >
+            <Image
+              src={post.photoUrl}
+              alt=""
+              width={160}
+              height={120}
+              sizes="160px"
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          </button>
         ) : null}
 
         <div className="match-talk-timeline-actions">
@@ -466,6 +476,19 @@ function MatchTalkTimelineItem({ post, currentUserId, onToggleLike, onDeleted, o
           </div>
         </div>
       </ModalShell>
+
+      {post.photoUrl ? (
+        <Lightbox
+          open={photoOpen}
+          close={() => setPhotoOpen(false)}
+          slides={[{ src: post.photoUrl }]}
+          plugins={[Zoom]}
+          zoom={{ maxZoomPixelRatio: 4, scrollToZoom: true, doubleTapDelay: 300, doubleClickDelay: 300 }}
+          carousel={{ finite: true }}
+          animation={{ fade: 200 }}
+          controller={{ closeOnBackdropClick: true }}
+        />
+      ) : null}
     </article>
   );
 }

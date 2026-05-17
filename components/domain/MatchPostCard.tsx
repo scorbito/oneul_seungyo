@@ -15,15 +15,9 @@ import {
   listMatchPostCommentsAction
 } from "@/lib/actions/matchTalk";
 import { useAppState } from "@/lib/state/AppState";
-import type { MatchPost, MatchPostComment, MatchPostEmotionTag } from "@/lib/types/domain";
+import type { MatchPost, MatchPostComment } from "@/lib/types/domain";
 import { useRouter } from "next/navigation";
-
-const EMOTION_META: Record<MatchPostEmotionTag, { emoji: string; label: string }> = {
-  cheer: { emoji: "🎉", label: "환호" },
-  support: { emoji: "📣", label: "응원" },
-  anger: { emoji: "😡", label: "분노" },
-  anxiety: { emoji: "😰", label: "불안" }
-};
+import { MATCH_POST_EMOTION_META } from "@/lib/constants/matchPostEmotion";
 
 type MatchPostCardProps = {
   post: MatchPost;
@@ -112,7 +106,7 @@ export function MatchPostCard({ post, currentUserId, onToggleLike, onClickGameFi
   };
 
   const isOwner = Boolean(currentUserId && post.userId === currentUserId);
-  const emotion = EMOTION_META[post.emotionTag];
+  const emotion = MATCH_POST_EMOTION_META[post.emotionTag];
 
   const homeTeam = post.game.homeTeamId ? getTeam(post.game.homeTeamId) : null;
   const awayTeam = post.game.awayTeamId ? getTeam(post.game.awayTeamId) : null;
@@ -285,9 +279,10 @@ export function MatchPostCard({ post, currentUserId, onToggleLike, onClickGameFi
             <Image
               src={post.photoUrl}
               alt=""
-              fill
+              width={960}
+              height={1280}
               sizes="(max-width: 480px) 100vw, 480px"
-              style={{ objectFit: "cover" }}
+              style={{ width: "100%", height: "auto" }}
             />
           </div>
         ) : null}

@@ -280,14 +280,22 @@
   word-break: break-word;
 }
 
-/* 사진 */
+/* 사진 — 원본 비율 유지(세로/가로 사진 모두 잘리지 않도록).
+   너무 긴 세로 사진은 max-height로 화면 1.2배 안에서 자름. */
 .phone-frame-dark .match-post-photo {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
   border-radius: 10px;
   overflow: hidden;
   background: #1a2640;
+}
+
+.phone-frame-dark .match-post-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
 }
 
 /* 액션 (좋아요/댓글) */

@@ -193,6 +193,29 @@
   padding: 7px 10px;
 }
 
+/* 타임라인 사진 썸네일 — 작은 카드로 표시, 탭하면 lightbox로 확대 */
+.match-talk-timeline-photo-thumb {
+  background: #1a2640;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  cursor: pointer;
+  display: block;
+  height: 96px;
+  margin-top: 10px;
+  overflow: hidden;
+  padding: 0;
+  transition: filter 0.18s ease, transform 0.06s ease;
+  width: 128px;
+}
+
+.match-talk-timeline-photo-thumb:hover {
+  filter: brightness(1.05);
+}
+
+.match-talk-timeline-photo-thumb:active {
+  transform: scale(0.98);
+}
+
 .match-talk-timeline-actions {
   align-items: center;
   display: flex;
