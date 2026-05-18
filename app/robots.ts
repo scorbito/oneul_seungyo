@@ -8,6 +8,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: [
+          "/",
+          "/robots.txt",
+          "/sitemap.xml",
           "/landing",
           "/login",
           "/my/help",
@@ -16,8 +19,7 @@ export default function robots(): MetadataRoute.Robots {
           "/legal/privacy"
         ],
         disallow: [
-          "/",                  // 로그인 시 홈 (랜딩으로 redirect — 인덱스 가치 없음)
-          "/my",                // 마이 메인 (auth 필요)
+          "/my/",               // 마이 하위 페이지 (auth 필요, 공개 도움말/문의는 allow 우선)
           "/my/attendances",
           "/my/reviews",
           "/my/tickets",
@@ -37,6 +39,9 @@ export default function robots(): MetadataRoute.Robots {
         // 네이버 크롤러도 동일하게 적용
         userAgent: "Yeti",
         allow: [
+          "/",
+          "/robots.txt",
+          "/sitemap.xml",
           "/landing",
           "/login",
           "/my/help",
@@ -44,7 +49,7 @@ export default function robots(): MetadataRoute.Robots {
           "/legal/terms",
           "/legal/privacy"
         ],
-        disallow: ["/", "/my/", "/api/", "/auth/", "/community", "/schedule", "/onboarding"]
+        disallow: ["/my/", "/api/", "/auth/", "/community", "/schedule", "/onboarding"]
       }
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
