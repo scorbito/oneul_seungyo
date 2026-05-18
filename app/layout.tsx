@@ -41,7 +41,7 @@ import "@/styles/dark-season-level.css";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://oneul-seungyo.vercel.app";
 const SITE_TITLE = "오늘은 승요";
-const SITE_DESCRIPTION = "KBO 직관 승률을 기록하고 친구와 후기를 공유하세요. 두산·LG·기아·삼성 등 10팀 일정 자동 연동, 티켓 사진으로 직관 자동 인증.";
+const SITE_DESCRIPTION = "오늘은 승요앱에서 KBO 직관 승률을 기록하고 친구와 후기를 공유하세요. 두산·LG·기아·삼성 등 10팀 일정 자동 연동, 티켓 사진으로 직관 자동 인증.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -52,6 +52,8 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   keywords: [
     "오늘은 승요",
+    "오늘은 승요 앱",
+    "오늘은 승요앱",
     "KBO 직관",
     "야구 직관 기록",
     "야구 직관 앱",
